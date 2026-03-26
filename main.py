@@ -1271,7 +1271,147 @@ async def segment_yeniden_seslendir(
         return JSONResponse({"hata": str(e)}, status_code=500)
 
 
-@app.get("/api/words/{dosya_adi}")
+@app.post("/api/ses_klonla/")
+async def ses_klonla(
+    ses_dosyasi: UploadFile = File(...),
+    isim: str = Form("Klonlanan Ses"),
+):
+    """
+    ElevenLabs Instant Voice Cloning API ile ses klonlar.
+    Min 30s, max 5 dakika ses dosyası önerilir.
+    Free plan desteklemez — Creator+ gerektirir.
+    """
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+
+    try:
+        # Geçici dosyaya kaydet
+        b_id = uuid.uuid4().hex[:8]
+        ext  = os.path.splitext(ses_dosyasi.filename or "ses.mp3")[1] or ".mp3"
+        tmp  = os.path.join(TEMP_DIR, f"clone_{b_id}{ext}")
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(ses_dosyasi.file, f)
+
+        boyut_mb = os.path.getsize(tmp) / (1024*1024)
+        log.info(f"[Klonlama] {ses_dosyasi.filename} — {boyut_mb:.1f}MB")
+
+        # ElevenLabs Add Voice endpoint
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(tmp, "rb") as f:
+                r = await client.post(
+                    "https://api.elevenlabs.io/v1/voices/add",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    data={"name": isim, "description": "VoiceFlow Studio klonu"},
+                    files={"files": (ses_dosyasi.filename, f, "audio/mpeg")},
+                )
+
+        os.remove(tmp)
+
+        if r.status_code == 200:
+            voice_id = r.json().get("voice_id")
+            log.info(f"[Klonlama] Başarılı → {voice_id}")
+            return JSONResponse({
+                "basari": True,
+                "voice_id": voice_id,
+                "isim": isim,
+                "mesaj": "Ses başarıyla klonlandı. Artık bu sesi seçebilirsiniz."
+            })
+        elif r.status_code == 422:
+            return JSONResponse({
+                "hata": "Ses dosyası çok kısa veya kalitesi düşük. En az 30 saniyelik net ses yükleyin.",
+                "detay": r.text[:200]
+            }, status_code=422)
+        elif r.status_code == 401:
+            return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=401)
+        else:
+            detay = r.json() if r.headers.get("content-type","").startswith("application/json") else r.text[:200]
+            # Free plan kontrolü
+            if "quota" in str(detay).lower() or "limit" in str(detay).lower():
+                return JSONResponse({
+                    "hata": "Ses klonlama için ElevenLabs Creator planı gereklidir (22$/ay).",
+                    "plan_gerekli": True
+                }, status_code=402)
+            return JSONResponse({"hata": f"ElevenLabs hatası: {detay}"}, status_code=r.status_code)
+
+    except Exception as e:
+        log.error(f"[Klonlama Hata] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.delete("/api/ses_sil/{voice_id}")
+async def ses_sil(voice_id: str):
+    """Klonlanmış sesi ElevenLabs'tan siler."""
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.delete(
+                f"https://api.elevenlabs.io/v1/voices/{voice_id}",
+                headers={"xi-api-key": ELEVENLABS_API_KEY},
+            )
+        if r.status_code == 200:
+            return JSONResponse({"basari": True})
+        return JSONResponse({"hata": r.text[:100]}, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.get("/api/sesler/")
+async def sesler_listele():
+    """Hesaptaki tüm sesleri listeler (klonlar dahil)."""
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://api.elevenlabs.io/v1/voices",
+                headers={"xi-api-key": ELEVENLABS_API_KEY},
+            )
+        if r.status_code == 200:
+            sesler = r.json().get("voices", [])
+            return JSONResponse({
+                "sesler": [
+                    {
+                        "voice_id": v["voice_id"],
+                        "isim": v["name"],
+                        "kategori": v.get("category", "premade"),
+                        "klonlanmis": v.get("category") == "cloned",
+                    }
+                    for v in sesler
+                ]
+            })
+        return JSONResponse({"hata": r.text[:100]}, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.get("/api/kota/")
+async def kota_kontrol():
+    """ElevenLabs karakter kotasını kontrol eder."""
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://api.elevenlabs.io/v1/user/subscription",
+                headers={"xi-api-key": ELEVENLABS_API_KEY},
+            )
+        if r.status_code == 200:
+            d = r.json()
+            kullanilan = d.get("character_count", 0)
+            limit      = d.get("character_limit", 10000)
+            kalan      = limit - kullanilan
+            return JSONResponse({
+                "tier": d.get("tier", "free"),
+                "kullanilan": kullanilan,
+                "limit": limit,
+                "kalan": kalan,
+                "yuzde": round(kullanilan / limit * 100, 1) if limit else 0,
+                "klonlama_destekli": d.get("can_use_instant_voice_cloning", False),
+            })
+        return JSONResponse({"hata": r.text[:100]}, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
 async def words_al(dosya_adi: str):
     """TikTok modu için kelime bazlı zaman damgalarını döndürür."""
     base = dosya_adi.replace('.srt', '')

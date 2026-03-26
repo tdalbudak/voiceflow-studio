@@ -738,10 +738,11 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
           <i class="fa-solid fa-microphone-lines" style="font-size:18px;"></i>
           <div>
             <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Kendi Sesini Klonla</div>
-            <div style="font-size:11px;color:#d1fae5;margin-top:2px;">3 saniyelik ses yükle — AI birebir kopyalar</div>
+            <div style="font-size:11px;color:#d1fae5;margin-top:2px;" id="clone_card_sub">MP3/WAV yükle — AI birebir kopyalar · Creator plan gerektirir</div>
           </div>
+          <div id="kota_badge" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:100px;display:none;"></div>
         </div>
-        <input type="file" id="clone_inp" hidden accept="audio/*" onchange="sesKlonla(this)">
+        <input type="file" id="clone_inp" hidden accept="audio/*,video/mp4" onchange="sesKlonla(this)">
       </div>
     </div>
 
@@ -1424,14 +1425,98 @@ function updateSub(){
 }
 
 /* ═══ SES KLONLAMA ═══ */
-function sesKlonla(inp){
+async function sesKlonla(inp){
   if(!inp.files||!inp.files[0])return;
-  toast(`<i class="fa-solid fa-spinner fa-spin"></i> Klonlanıyor...`,'tok',4000);
-  const fd=new FormData();fd.append('ses_dosyasi',inp.files[0]);
-  fetch(`${B}/api/ses_klonla/`,{method:'POST',body:fd})
-    .then(r=>r.json()).then(d=>{if(d.voice_id){voice=d.voice_id;toast('✓ Ses klonlandı');}else toast('Ses klonlama yakında aktif','twarn');})
-    .catch(()=>toast('Ses klonlama yakında aktif','twarn'));
+  const dosya = inp.files[0];
+
+  // Boyut kontrolü — 25MB max
+  if(dosya.size > 25*1024*1024){
+    toast('Dosya çok büyük. Maksimum 25MB yükleyebilirsiniz.','terr'); return;
+  }
+
+  // Format kontrolü
+  const gecerliFormlar = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/mp4','audio/m4a','video/mp4'];
+  if(!gecerliFormlar.includes(dosya.type) && !dosya.name.match(/\.(mp3|wav|ogg|m4a|mp4|flac)$/i)){
+    toast('Desteklenmeyen format. MP3, WAV, OGG veya M4A yükleyin.','terr'); return;
+  }
+
+  // Önce kota kontrolü
+  try{
+    const kota = await fetch(`${B}/api/kota/`).then(r=>r.json());
+    if(!kota.klonlama_destekli){
+      toast('⚠ Ses klonlama için ElevenLabs Creator planı (22$/ay) gereklidir.','twarn',6000);
+      return;
+    }
+  }catch(e){}
+
+  const klonAdi = prompt('Klonlanacak sesin adı:', 'Benim Sesim');
+  if(!klonAdi)return;
+
+  // Progress toast
+  const tid = Date.now();
+  toast(`<i class="fa-solid fa-spinner fa-spin"></i> "${klonAdi}" klonlanıyor... (30-60 saniye)`,'tok',60000);
+
+  try{
+    const fd = new FormData();
+    fd.append('ses_dosyasi', dosya);
+    fd.append('isim', klonAdi);
+
+    const r = await fetch(`${B}/api/ses_klonla/`, {method:'POST', body:fd});
+    const d = await r.json();
+
+    if(d.basari && d.voice_id){
+      voice = d.voice_id;
+
+      // Ses listelerine ekle
+      const yeniSes = {id: d.voice_id, name: klonAdi, desc:'Klonlanmış ses — sizin sesiniz', color:'#22c55e'};
+      VOICES.unshift(yeniSes);
+
+      // TTS listesini güncelle
+      const tl = document.getElementById('tts_voice_list');
+      if(tl){
+        const yeniEl = document.createElement('div');
+        yeniEl.id = `tvli_${d.voice_id}`;
+        yeniEl.onclick = ()=>{ selVoiceById(d.voice_id); _ttsHL(); };
+        yeniEl.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--accent2);background:var(--s4);';
+        yeniEl.innerHTML=`<span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span><span style="font-size:12px;font-weight:700;">${klonAdi} ★</span><span style="font-size:11px;color:var(--muted2);flex:1;">Klonlanmış sesiniz</span>`;
+        tl.prepend(yeniEl);
+      }
+
+      // Modal ses listesi güncelle
+      buildVoiceList();
+      selVoiceById(d.voice_id);
+
+      // localStorage'a kaydet
+      try{
+        const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
+        klonlar.push({voice_id:d.voice_id, isim:klonAdi, tarih:Date.now()});
+        localStorage.setItem('voiceflow_klonlar', JSON.stringify(klonlar));
+      }catch(e){}
+
+      toast(`✓ "${klonAdi}" başarıyla klonlandı ve seçildi!`);
+
+    } else if(d.plan_gerekli){
+      toast('ElevenLabs Creator planı gereklidir (22$/ay). Ses klonlama free planda desteklenmez.','twarn',8000);
+    } else {
+      toast(`Klonlama hatası: ${d.hata||'Bilinmeyen hata'}`,'terr',6000);
+    }
+  }catch(e){
+    toast('Bağlantı hatası — klonlama başarısız','terr');
+  }
 }
+
+// Kaydedilmiş klonları yükle
+function klonlariYukle(){
+  try{
+    const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
+    klonlar.forEach(k=>{
+      if(!VOICES.find(v=>v.id===k.voice_id)){
+        VOICES.unshift({id:k.voice_id, name:k.isim, desc:'Klonlanmış ses', color:'#22c55e'});
+      }
+    });
+  }catch(e){}
+}
+klonlariYukle();
 function selVoice(id,el){
   voice=id;
   document.querySelectorAll('.vc').forEach(c=>c.classList.remove('on'));
@@ -1953,21 +2038,33 @@ async function sunucuKontrol(){
     if(!r.ok)throw new Error();
     const d=await r.json();
 
-    // API key uyarıları
     const uyarilar=[];
     if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY eksik');
     if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY eksik');
     if(!d.ffmpeg)uyarilar.push('FFmpeg yüklü değil — altyazı/dublaj çalışmaz');
+    if(uyarilar.length>0) toast(`⚠ Yapılandırma uyarısı: ${uyarilar.join(' · ')}`, 'twarn', 8000);
 
-    if(uyarilar.length>0){
-      toast(`⚠ Yapılandırma uyarısı: ${uyarilar.join(' · ')}`, 'twarn', 8000);
+    // ElevenLabs kota kontrolü
+    if(d.elevenlabs_key){
+      try{
+        const kota = await fetch(`${B}/api/kota/`).then(r=>r.json());
+        const badge = document.getElementById('kota_badge');
+        if(badge){
+          badge.style.display = 'block';
+          const renk = kota.yuzde > 90 ? '#ef4444' : kota.yuzde > 70 ? '#f59e0b' : '#22c55e';
+          badge.style.color = renk;
+          badge.textContent = `${kota.kalan.toLocaleString()} karakter kaldı`;
+        }
+        if(kota.kalan < 500) toast(`⚠ ElevenLabs kotanız dolmak üzere: ${kota.kalan} karakter kaldı. Planınızı yükseltin.`, 'twarn', 8000);
+        if(kota.klonlama_destekli){
+          const sub = document.getElementById('clone_card_sub');
+          if(sub) sub.textContent = 'MP3/WAV yükle — AI birebir kopyalar ✓ Klonlama aktif';
+        }
+      }catch(e){}
     }
 
-    // Son proje banner'ı göster
     projeYukle();
-
   }catch(e){
-    // Backend çalışmıyor
     const banner=document.createElement('div');
     banner.style.cssText='position:fixed;top:0;left:0;right:0;background:var(--red2);color:#fff;text-align:center;padding:10px;font-size:13px;font-weight:600;z-index:9999;';
     banner.innerHTML='⚠ Backend bağlantısı yok — <code>uvicorn main:app --reload</code> komutunu çalıştırın';
