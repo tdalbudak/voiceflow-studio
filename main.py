@@ -60,11 +60,11 @@ DEEPL_DILLER = {
 # ── Index.html serve et (production'da ayrı sunucu yoksa) ──
 @app.get("/", response_class=HTMLResponse)
 async def root():
-   landing = "landing.html" if os.path.exists("landing.html") else "index.html"
-if os.path.exists(landing):
-    with open(landing, encoding="utf-8") as f:
-        return HTMLResponse(f.read())
-return HTMLResponse("<h1>VoiceFlow Studio API</h1><p>index.html bulunamadı.</p>")
+    landing = "landing.html" if os.path.exists("landing.html") else "index.html"
+    if os.path.exists(landing):
+        with open(landing, encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>VoiceFlow Studio API</h1><p>index.html bulunamadı.</p>")
 
 # ── Sağlık kontrolü ──
 @app.get("/health")
@@ -1384,9 +1384,11 @@ async def segmentleri_listele(dosya_adi: str):
         })
     except Exception as e:
         return JSONResponse({"hata": str(e)}, status_code=500)
-    @app.get("/app", response_class=HTMLResponse)
+
+
+@app.get("/app", response_class=HTMLResponse)
 async def app_page():
     if os.path.exists("index.html"):
         with open("index.html", encoding="utf-8") as f:
             return HTMLResponse(f.read())
-    return HTMLResponse("<h1>Uygulama bulunamadı.</h1>")
+    return HTMLResponse("<h1>Uygulama bulunamadi.</h1>")
