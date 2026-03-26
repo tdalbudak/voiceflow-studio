@@ -479,6 +479,15 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
     <!-- TTS Input -->
     <div class="tts-wrap hidden" id="tts_wrap">
       <textarea class="tts-ta" id="txt_input" placeholder="Sese çevrilecek metni buraya yazın...&#10;&#10;Birden fazla dile çevirip seslendirmek için önce 'Hedef Dil' seçin."></textarea>
+
+      <!-- Ses seçimi -->
+      <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--s2);">
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Ses Aktörü</div>
+        <div style="display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;" id="tts_voice_list">
+          <!-- JS ile doldurulacak -->
+        </div>
+      </div>
+
       <div class="tts-toolbar">
         <div class="tts-viz">
           <svg class="tts-wavesvg" viewBox="0 0 140 48">
@@ -1182,6 +1191,14 @@ async function speakerMapKaydet() {
     if (r.ok) toast('✓ Konuşmacı ses haritası kaydedildi — Dublaj başlatınca uygulanacak');
   } catch(e) { toast('Kayıt hatası','terr'); }
 }
+function _ttsHL(){
+  document.querySelectorAll('[id^="tvli_"]').forEach(el=>{
+    const id=el.id.replace('tvli_','');
+    el.style.background=voice===id?'var(--s4)':'';
+    el.style.borderColor=voice===id?'var(--accent2)':'transparent';
+  });
+}
+
 const VOICES = [
   { id:'nPczCjzI2devNBz1zQrb', name:'Brian',   desc:'Derin, Rezonant ve Rahatlatıcı',    color:'#3b82f6' },
   { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',   desc:'Olgun, Güven Verici, Kararlı',       color:'#8b5cf6' },
@@ -1218,14 +1235,14 @@ function buildVoiceList() {
 function selVoiceById(id) {
   voice = id;
   document.querySelectorAll('[id^="vli_"]').forEach(el => {
-    el.style.background    = '';
-    el.style.borderColor   = 'transparent';
+    el.style.background  = '';
+    el.style.borderColor = 'transparent';
   });
   const el = document.getElementById(`vli_${id}`);
   if (el) { el.style.background = 'var(--s4)'; el.style.borderColor = 'var(--accent2)'; }
-  // dropdown da güncelle
   const sel = document.getElementById('voice_select');
   if (sel) sel.value = id;
+  _ttsHL();
 }
 
 function voiceSecildi(sel) { selVoiceById(sel.value); }
@@ -1382,10 +1399,22 @@ function sw(m){
     document.getElementById('tts_wrap').classList.remove('hidden');
     document.getElementById('sec_voice_btn').classList.remove('hidden');
     document.getElementById('sec_style').classList.remove('hidden');
-    // Sağda video yok — ses görseli göster
     document.getElementById('rp').classList.add('hidden');
     btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
     title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
+    // TTS ses listesini doldur
+    const tl=document.getElementById('tts_voice_list');
+    if(tl&&!tl.children.length){
+      tl.innerHTML=VOICES.map(v=>`
+        <div onclick="selVoiceById('${v.id}');_ttsHL()" id="tvli_${v.id}"
+          style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid transparent;transition:all .12s;"
+          onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}'){this.style.background='';this.style.borderColor='transparent';}">
+          <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:600;">${v.name}</span>
+          <span style="font-size:11px;color:var(--muted2);flex:1;">${v.desc}</span>
+        </div>`).join('');
+      _ttsHL();
+    }
   }
 }
 
