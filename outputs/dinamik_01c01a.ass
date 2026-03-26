@@ -1,0 +1,31 @@
+[Script Info]
+ScriptType=v4.00+
+PlayResX=1280
+PlayResY=720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Dinamik,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.65,0:00:02.72,Dinamik,,0,0,0,,Hello, friend.
+Dialogue: 0,0:00:04.74,0:00:06.12,Dinamik,,0,0,0,,Hello, hello, buddy.
+Dialogue: 0,0:00:06.86,0:00:08.61,Dinamik,,0,0,0,,Şükran, come sit next to Şüray for a moment.
+Dialogue: 0,0:00:08.93,0:00:09.48,Dinamik,,0,0,0,,All right, sir.
+Dialogue: 0,0:00:11.11,0:00:11.72,Dinamik,,0,0,0,,What's up?
+Dialogue: 0,0:00:12.27,0:00:14.19,Dinamik,,0,0,0,,No, sir, not even a drop of water—we don’t want any.
+Dialogue: 0,0:00:14.67,0:00:15.98,Dinamik,,0,0,0,,There's a pair of pants there.
+Dialogue: 0,0:00:16.30,0:00:17.78,Dinamik,,0,0,0,,The pipe is yours now—congratulations.
+Dialogue: 0,0:00:18.32,0:00:21.07,Dinamik,,0,0,0,,We have nothing to do with the water; it’s because of my brother.
+Dialogue: 0,0:00:21.42,0:00:22.01,Dinamik,,0,0,0,,Are you free?
+Dialogue: 0,0:00:22.96,0:00:23.89,Dinamik,,0,0,0,,So, do I belong here?
+Dialogue: 0,0:00:24.21,0:00:24.89,Dinamik,,0,0,0,,It's in my pocket.
+Dialogue: 0,0:00:25.75,0:00:27.23,Dinamik,,0,0,0,,What kind of plow should we use?
+Dialogue: 0,0:00:27.62,0:00:28.69,Dinamik,,0,0,0,,You saw us in the garden.
+Dialogue: 0,0:00:29.14,0:00:30.14,Dinamik,,0,0,0,,Did you think he was a gardener?
+Dialogue: 0,0:00:30.64,0:00:31.92,Dinamik,,0,0,0,,I am Özgür, my driver.
+Dialogue: 0,0:00:32.50,0:00:33.46,Dinamik,,0,0,0,,Wise, wise.
+Dialogue: 0,0:00:33.85,0:00:36.67,Dinamik,,0,0,0,,I also remember the world middleweight boxing champion.
+Dialogue: 0,0:00:37.02,0:00:37.70,Dinamik,,0,0,0,,It's a mistake.
+Dialogue: 0,0:00:38.84,0:00:39.93,Dinamik,,0,0,0,,That looks nice.

@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>VoiceFlow Studio — AI Dublaj & Altyazı</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;
+  --s1:#0d1117;
+  --s2:#111827;
+  --s3:#1a2336;
+  --s4:#1e2b3f;
+  --border:#1f2d42;
+  --border2:#263548;
+  --txt:#e8edf5;
+  --muted:#5a7090;
+  --muted2:#8ba3be;
+  --accent:#2563eb;
+  --accent2:#3b82f6;
+  --accent3:#60a5fa;
+  --adim:#1e3a5f;
+  --green:#16a34a;
+  --green2:#22c55e;
+  --yellow:#d97706;
+  --yellow2:#f59e0b;
+  --red:#dc2626;
+  --red2:#ef4444;
+  --purple:#7c3aed;
+  --purple2:#8b5cf6;
+  --pink:#db2777;
+  --pink2:#ec4899;
+  --r:6px;--r2:10px;--r3:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;line-height:1.5;}
+
+/* ══ SCROLLBAR ══ */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ══ NAVBAR ══ */
+.nav{height:52px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;z-index:200;}
+.nav-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;letter-spacing:-.3px;white-space:nowrap;margin-right:4px;}
+.nav-logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent2),var(--purple2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.nav-tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;margin:0 auto;}
+.nav-tab{padding:5px 13px;font-size:12px;font-weight:600;color:var(--muted2);cursor:pointer;border-radius:7px;transition:all .18s;white-space:nowrap;display:flex;align-items:center;gap:5px;letter-spacing:-.1px;}
+.nav-tab.on{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.4);}
+.nav-tab:hover:not(.on){color:var(--txt);background:var(--s3);}
+.nav-right{display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.btn-run{background:linear-gradient(90deg,#ea580c,var(--red2));color:#fff;border:none;padding:7px 15px;border-radius:18px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .18s;font-family:inherit;}
+.btn-run:hover{transform:scale(1.03);box-shadow:0 0 12px rgba(239,68,68,.4);}
+.run-dot{width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Export */
+.xwrap{position:relative;}
+.btn-dl{background:var(--green);color:#fff;border:none;padding:7px 12px;border-radius:var(--r2);font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;}
+.xdrop{position:absolute;top:calc(100% + 5px);right:0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);min-width:145px;z-index:500;display:none;box-shadow:0 8px 22px rgba(0,0,0,.6);overflow:hidden;}
+.xwrap:hover .xdrop{display:block;}
+.xitem{padding:9px 13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s;font-size:12px;font-weight:500;}
+.xitem:hover{background:var(--s3);color:var(--accent3);}
+
+/* Cloud connect */
+.cloud-btn{background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 10px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;}
+.cloud-btn:hover{border-color:var(--accent2);color:var(--accent3);}
+
+/* ══ WORKSPACE ══ */
+.ws{display:flex;flex:1;min-height:0;}
+
+/* ══ LEFT PANEL ══ */
+.lp{width:248px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.lp-sec{padding:12px 13px;border-bottom:1px solid var(--border);}
+.lp-sec:last-child{border-bottom:none;}
+.sec-hd{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.frow{display:flex;flex-direction:column;gap:3px;margin-bottom:7px;}
+.frow:last-child{margin-bottom:0;}
+.frow label{font-size:11px;font-weight:600;color:var(--muted2);}
+.frow select,.frow input[type=text]{width:100%;padding:7px 9px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;cursor:pointer;transition:border .15s;}
+.frow select:focus,.frow input:focus{border-color:var(--accent2);}
+.chk{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 0;}
+.chk input{accent-color:var(--accent2);width:14px;height:14px;cursor:pointer;}
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px;}
+.style-card{background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer;transition:all .15s;font-size:11px;font-weight:600;text-align:center;color:var(--muted2);}
+.style-card:hover,.style-card.on{border-color:var(--accent2);color:var(--accent3);background:var(--adim);}
+.style-card .si{font-size:14px;display:block;margin-bottom:2px;}
+.btn-lp{width:100%;padding:8px;background:var(--bg);color:var(--accent2);border:1px solid var(--accent2);border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;margin-top:4px;}
+.btn-lp:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* ══ CENTER ══ */
+.cp{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);}
+.cp-head{padding:9px 13px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:8px;}
+.cp-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:var(--txt);}
+.cp-meta{display:flex;align-items:center;gap:8px;}
+.live-badge{font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent3);background:var(--adim);padding:3px 8px;border-radius:5px;display:none;}
+.as-toggle{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted2);cursor:pointer;user-select:none;}
+.as-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);transition:background .2s;}
+
+/* Sub toolbar */
+.stb{padding:7px 11px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;gap:7px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.tbg{display:flex;align-items:center;gap:4px;padding-right:7px;border-right:1px solid var(--border);}
+.tbg:last-child{border:none;}
+.tbbtn{width:28px;height:28px;border-radius:5px;border:1px solid var(--border2);background:var(--bg);color:var(--txt);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;}
+.tbbtn.on{background:var(--accent2);border-color:var(--accent2);}
+.tbsel{padding:5px 7px;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--txt);font-size:11px;font-family:inherit;outline:none;cursor:pointer;}
+.cpick{width:28px;height:28px;padding:1px;border:1px solid var(--border2);border-radius:5px;cursor:pointer;background:transparent;}
+
+/* Segment list */
+.slist{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;}
+.empty-state{display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--muted);text-align:center;}
+.empty-state i{font-size:32px;color:var(--border2);}
+
+/* ══ SEGMENT CARD — rakip site kalitesi ══ */
+.sc{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 11px;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:border .15s,background .15s;position:relative;}
+.sc:hover{border-color:var(--border2);background:var(--s3);}
+.sc.sc-act{border-color:var(--accent2)!important;background:rgba(37,99,235,.06)!important;}
+.sc.sc-play{border-color:var(--green2)!important;background:rgba(34,197,94,.04)!important;}
+.sc.sc-overlap{border-color:var(--red2)!important;}
+.sc-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.sc-num{font-size:13px;font-weight:700;color:var(--txt);min-width:22px;font-family:'DM Mono',monospace;}
+.sp-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.cps-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.sc-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted2);flex:1;}
+.sc-dur{font-size:10px;color:var(--muted);background:var(--bg);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;}
+.sc-acts{display:flex;gap:2px;opacity:0;transition:opacity .15s;}
+.sc:hover .sc-acts{opacity:1;}
+.sca{background:transparent;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;transition:background .12s;font-size:11px;}
+.sca:hover{background:var(--border2);}
+.sca.edit{color:var(--muted2);}
+.sca.cut{color:var(--red2);}
+.sca.merge{color:var(--yellow2);}
+.sc-txt{font-size:13px;color:var(--txt);line-height:1.55;padding:0 2px;}
+.ita{width:100%;background:rgba(37,99,235,.07);border:1.5px solid var(--accent2);border-radius:var(--r);color:#fff;font-size:13px;font-family:inherit;resize:vertical;outline:none;padding:6px 8px;min-height:46px;line-height:1.5;}
+
+/* Speaker colors */
+.sp0{background:rgba(59,130,246,.14);color:#60a5fa;}
+.sp1{background:rgba(34,197,94,.14);color:#4ade80;}
+.sp2{background:rgba(245,158,11,.14);color:#fbbf24;}
+.sp3{background:rgba(236,72,153,.14);color:#f472b6;}
+.sp4{background:rgba(139,92,246,.14);color:#a78bfa;}
+/* CPS */
+.cps-ok{background:rgba(34,197,94,.14);color:#4ade80;}
+.cps-warn{background:rgba(245,158,11,.14);color:#fbbf24;}
+.cps-bad{background:rgba(239,68,68,.14);color:#f87171;}
+
+/* Deepl bar */
+.dbar{margin:6px 8px 0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:8px 11px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.dsel{flex:1;min-width:100px;padding:5px 7px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:11px;font-family:inherit;outline:none;cursor:pointer;}
+.dbtn{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;padding:5px 13px;border-radius:var(--r);font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;}
+.dresult{padding:6px 8px 0;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green2);}
+
+/* TTS */
+.tts-wrap{flex:1;display:flex;flex-direction:column;}
+.tts-ta{flex:1;background:transparent;border:none;color:var(--txt);font-size:16px;font-family:inherit;resize:none;outline:none;padding:22px;line-height:1.7;}
+.tts-toolbar{background:var(--s2);border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.tts-player{background:var(--s2);border-top:1px solid var(--border);padding:13px;display:flex;align-items:center;gap:10px;}
+
+/* TTS ses simgesi */
+.tts-viz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:120px;}
+.tts-wavesvg{width:140px;height:48px;}
+.tts-label{font-size:12px;color:var(--muted2);font-weight:500;}
+
+/* ══ RIGHT PANEL ══ */
+.rp{width:390px;background:var(--s1);border-left:1px solid var(--border);display:flex;flex-direction:column;gap:12px;padding:12px;flex-shrink:0;overflow-y:auto;}
+.vbox{width:100%;background:#000;border-radius:var(--r2);overflow:hidden;aspect-ratio:16/9;position:relative;border:1px solid var(--border);box-shadow:0 6px 20px rgba(0,0,0,.5);}
+.vbox video,.vbox audio{width:100%;height:100%;object-fit:contain;background:#000;}
+.dz{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;background:rgba(13,17,23,.93);border:1.5px dashed var(--accent2);border-radius:var(--r2);cursor:pointer;z-index:5;transition:all .18s;}
+.dz:hover{border-color:var(--green2);background:rgba(13,17,23,.97);}
+.dz-icon{font-size:32px;color:var(--accent2);}
+.dz-txt{font-size:13px;font-weight:600;}
+.dz-sub{font-size:11px;color:var(--muted2);}
+
+/* Cloud upload btns */
+.cloud-row{display:flex;gap:5px;}
+.cloud-pill{flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 8px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;font-family:inherit;}
+.cloud-pill:hover{border-color:var(--accent2);color:var(--accent3);}
+
+.mixer{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:12px;}
+.mix-title{font-size:11px;font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:5px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.mix-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.mix-row:last-child{margin-bottom:0;}
+.mix-row i{color:var(--muted);width:14px;font-size:11px;text-align:center;}
+.mix-lbl{display:flex;flex-direction:column;width:100px;}
+.mix-lbl b{font-size:11px;}
+.mix-lbl small{font-size:10px;color:var(--muted2);}
+input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
+
+/* ══ TIMELINE ══ */
+.tl{height:118px;background:#060810;border-top:1px solid var(--border);padding:6px 12px;display:flex;flex-direction:column;flex-shrink:0;}
+.tl-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.tl-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px;}
+.tl-dur{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);}
+.tl-track{flex:1;background:var(--s1);border-radius:5px;position:relative;overflow:hidden;border:1px solid var(--border);user-select:none;}
+.ph{position:absolute;top:0;bottom:0;width:2px;background:var(--red2);left:0;z-index:20;box-shadow:0 0 5px var(--red2);pointer-events:none;transition:left .1s linear;}
+.tb{position:absolute;top:14%;bottom:14%;background:var(--adim);border:1px solid #1d4ed8;border-radius:3px;padding:1px 4px;color:#fff;overflow:hidden;cursor:grab;display:flex;flex-direction:column;z-index:5;transition:border-color .15s,background .15s;min-width:3px;}
+.tb:active{cursor:grabbing;z-index:10;}
+.tb:hover{background:#1e3a8a;border-color:var(--accent3);}
+.tb.ov{border-color:var(--red2)!important;background:rgba(239,68,68,.2)!important;}
+.tb.pb{border-color:var(--green2)!important;background:rgba(34,197,94,.12)!important;}
+.rh{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:ew-resize;background:rgba(255,255,255,.08);border-left:1px solid rgba(255,255,255,.12);border-radius:0 3px 3px 0;z-index:15;transition:background .12s;}
+.rh:hover{background:rgba(96,165,250,.35);}
+.tb-id{font-size:9px;font-weight:800;pointer-events:none;}
+.tb-txt{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#cbd5e1;pointer-events:none;}
+
+/* ══ MODAL ══ */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:5000;}
+.modal{background:var(--s1);width:780px;max-height:88vh;border-radius:16px;border:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 48px rgba(0,0,0,.8);}
+.mhd{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,var(--s2),var(--s1));}
+.mhd h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.mbody{padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;}
+.mrow{display:flex;gap:14px;}
+.mcol{flex:1;display:flex;flex-direction:column;gap:5px;}
+.mcol label{font-size:11px;font-weight:700;color:var(--muted2);}
+.mcol select{width:100%;padding:9px;font-size:13px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg);color:#fff;outline:none;cursor:pointer;}
+.clone-card{background:linear-gradient(135deg,#065f46,#047857);border:1.5px dashed #34d399;color:#fff;padding:15px;border-radius:var(--r2);text-align:center;cursor:pointer;transition:all .22s;}
+.clone-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(16,185,129,.4);border-style:solid;}
+.clone-card h3{font-size:14px;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;}
+.clone-card p{font-size:11px;color:#d1fae5;margin:0;}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.vc{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r2);padding:8px 9px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .18s;}
+.vc:hover,.vc.on{border-color:var(--accent2);background:var(--adim);border-width:2px;}
+.vc img{width:34px;height:34px;border-radius:50%;background:var(--bg);}
+.vi{flex:1;display:flex;flex-direction:column;}
+.vi b{font-size:11px;}
+.vi small{font-size:10px;color:var(--muted2);}
+.badge{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;}
+.bp{background:#d97706;color:#fff;}
+.bf{background:#16a34a;color:#fff;}
+.mfoot{padding:14px 18px;border-top:1px solid var(--border);background:var(--s1);}
+
+/* ══ STATUS ══ */
+.sbox{position:fixed;bottom:14px;right:14px;background:var(--s2);border:1px solid var(--accent2);padding:14px;border-radius:var(--r2);width:275px;z-index:6000;box-shadow:0 8px 22px rgba(0,0,0,.7);}
+.sbox-row{display:flex;justify-content:space-between;margin-bottom:7px;align-items:center;}
+.stxt{font-size:12px;font-weight:600;}
+.spct{color:var(--accent2);font-weight:700;font-size:12px;font-family:'DM Mono',monospace;}
+.prog{width:100%;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .4s ease;width:0%;}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:14px;right:14px;padding:9px 15px;border-radius:var(--r);z-index:9999;font-weight:600;font-size:12px;box-shadow:0 5px 16px rgba(0,0,0,.5);animation:sup .22s ease;pointer-events:none;}
+.tok{background:var(--green);color:#fff;}
+.twarn{background:var(--yellow2);color:#000;}
+.terr{background:var(--red2);color:#fff;}
+@keyframes sup{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+
+/* Overlap banner */
+.ovbanner{margin:5px 8px 0;background:rgba(217,119,6,.1);border:1px solid var(--yellow2);border-radius:var(--r);padding:7px 11px;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:var(--yellow2);}
+.fixbtn{background:var(--yellow2);color:#000;border:none;padding:4px 9px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit;}
+
+/* Confidence highlight */
+.w-low{border-bottom:2px solid var(--yellow2);color:var(--yellow2);cursor:pointer;border-radius:2px;padding:0 1px;transition:background .12s;}
+.w-low:hover{background:rgba(245,158,11,.15);}
+.w-bad{border-bottom:2px solid var(--red2);color:var(--red2);cursor:pointer;border-radius:2px;padding:0 1px;transition:background .12s;}
+.w-bad:hover{background:rgba(239,68,68,.15);}
+
+/* Kelime öneri popup */
+.word-popup{position:fixed;background:var(--s1);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:8px;z-index:9999;min-width:180px;box-shadow:0 8px 22px rgba(0,0,0,.7);}
+.word-popup-title{font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;padding:2px 6px 6px;border-bottom:1px solid var(--border);margin-bottom:5px;}
+.word-popup-item{padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;border-radius:5px;transition:background .12s;display:flex;align-items:center;gap:7px;}
+.word-popup-item:hover{background:var(--s3);color:var(--accent3);}
+.word-popup-item i{font-size:10px;color:var(--muted2);}
+
+/* Speaker voice map panel */
+.speaker-map-panel{margin:6px 8px 0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;display:none;}
+.speaker-map-title{font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.speaker-map-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.speaker-map-row:last-child{margin-bottom:0;}
+.sp-dot-big{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.sp-label{font-size:12px;font-weight:600;min-width:90px;}
+.sp-voice-sel{flex:1;padding:5px 7px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:11px;font-family:inherit;outline:none;cursor:pointer;}
+
+/* ── TİKTOK ALTYAZI OVERLAY ── */
+.tiktok-overlay{position:absolute;bottom:12%;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;padding:0 12px;pointer-events:none;z-index:15;}
+.tiktok-word{font-size:22px;font-weight:900;color:#fff;text-shadow:2px 2px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000;transition:all .08s;opacity:.7;transform:scale(.95);}
+.tiktok-word.tw-active{opacity:1;transform:scale(1.12);color:#facc15;text-shadow:0 0 12px rgba(250,204,21,.8),2px 2px 0 #000,-2px -2px 0 #000;}
+.tiktok-word.tw-done{opacity:.5;}
+
+/* TikTok toggle */
+.tiktok-btn{background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;}
+.tiktok-btn.on{background:rgba(250,204,21,.15);border-color:#facc15;color:#facc15;}
+
+/* Undo/Redo toolbar */
+.undo-bar{display:flex;gap:4px;align-items:center;}
+.undo-btn{background:var(--s3);border:1px solid var(--border2);color:var(--muted2);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;font-family:inherit;}
+.undo-btn:hover:not(:disabled){border-color:var(--accent2);color:var(--accent3);}
+.undo-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* Canlı altyazı önizleme overlay (video üzerinde) */
+.live-sub-overlay{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;font-size:16px;font-weight:700;padding:6px 16px;border-radius:6px;text-align:center;max-width:90%;pointer-events:none;z-index:12;display:none;text-shadow:1px 1px 2px #000;line-height:1.4;}
+
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🎙</div>
+    VoiceFlow
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab" id="tab_desifre" onclick="sw('desifre')">📝 Transkript</div>
+    <div class="nav-tab" id="tab_altyazi" onclick="sw('altyazi')">💬 Altyazı</div>
+    <div class="nav-tab on" id="tab_seslendirme" onclick="sw('seslendirme')">🎙 Dublaj</div>
+    <div class="nav-tab" id="tab_metinden_sese" onclick="sw('metinden_sese')">✍ Metin→Ses</div>
+  </div>
+  <div class="nav-right">
+    <button class="cloud-btn" onclick="cloudConnect('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive</button>
+    <button class="cloud-btn" onclick="cloudConnect('dropbox')"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
+    <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Başlat</button>
+    <div class="xwrap hidden" id="xwrap">
+      <button class="btn-dl"><i class="fa-solid fa-download"></i> İndir ▾</button>
+      <div class="xdrop">
+        <div class="xitem" onclick="xport('original')"><i class="fa-solid fa-file-video" style="color:var(--accent2)"></i>Orijinal</div>
+        <div class="xitem" onclick="xport('srt')"><i class="fa-solid fa-closed-captioning" style="color:var(--green2)"></i>SRT</div>
+        <div class="xitem" onclick="xport('vtt')"><i class="fa-solid fa-closed-captioning" style="color:var(--yellow2)"></i>VTT</div>
+        <div class="xitem" onclick="xport('ass')"><i class="fa-solid fa-closed-captioning" style="color:var(--purple2)"></i>ASS (Gelişmiş)</div>
+        <div class="xitem" onclick="xport('txt')"><i class="fa-solid fa-file-lines" style="color:var(--muted2)"></i>TXT (Zaman Damgalı)</div>
+        <div class="xitem" onclick="xport('txt_clean')"><i class="fa-solid fa-align-left" style="color:var(--muted2)"></i>TXT (Düz Metin)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="ws" id="ws">
+
+  <!-- LEFT -->
+  <div class="lp" id="lp">
+
+    <!-- Dil -->
+    <div class="lp-sec" id="sec_dil">
+      <div class="sec-hd"><i class="fa-solid fa-language"></i> Proje Dili</div>
+      <div class="frow">
+        <label>Kaynak Dil</label>
+        <select id="src_lang">
+          <option value="auto">Otomatik Algıla 🤖</option>
+          <option value="tr">Türkçe 🇹🇷</option>
+          <option value="en">English 🇺🇸</option>
+          <option value="es">Español 🇪🇸</option>
+          <option value="fr">Français 🇫🇷</option>
+          <option value="de">Deutsch 🇩🇪</option>
+          <option value="it">Italiano 🇮🇹</option>
+          <option value="pt">Português 🇧🇷</option>
+          <option value="ru">Русский 🇷🇺</option>
+          <option value="zh">中文 🇨🇳</option>
+          <option value="ja">日本語 🇯🇵</option>
+          <option value="ar">العربية 🇸🇦</option>
+          <option value="ko">한국어 🇰🇷</option>
+        </select>
+      </div>
+      <div class="frow">
+        <label>Hedef Dil</label>
+        <select id="tgt_lang">
+          <option value="tr">Türkçe 🇹🇷</option>
+          <option value="en">English 🇺🇸</option>
+          <option value="es">Español 🇪🇸</option>
+          <option value="fr">Français 🇫🇷</option>
+          <option value="de">Deutsch 🇩🇪</option>
+          <option value="it">Italiano 🇮🇹</option>
+          <option value="pt">Português 🇧🇷</option>
+          <option value="ru">Русский 🇷🇺</option>
+          <option value="zh">中文 🇨🇳</option>
+          <option value="ja">日本語 🇯🇵</option>
+          <option value="ar">العربية 🇸🇦</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Altyazı Tasarımcısı -->
+    <div class="lp-sec hidden" id="sec_sub_design">
+      <div class="sec-hd"><i class="fa-solid fa-palette"></i> Altyazı Tasarımı</div>
+      <div class="frow">
+        <label>Font</label>
+        <select id="sub_font" onchange="updateSub()">
+          <option value="Arial">Arial</option>
+          <option value="Impact,sans-serif">Impact</option>
+          <option value="Georgia,serif">Georgia</option>
+          <option value="Verdana,sans-serif">Verdana</option>
+          <option value="Courier New,monospace">Courier New</option>
+          <option value="Tahoma,sans-serif">Tahoma</option>
+        </select>
+      </div>
+      <div class="frow">
+        <label>Punto Boyutu</label>
+        <select id="sub_size" onchange="updateSub()">
+          <option value="6">6pt</option><option value="8">8pt</option>
+          <option value="10">10pt</option><option value="12">12pt</option>
+          <option value="14">14pt</option><option value="16">16pt</option>
+          <option value="18">18pt</option><option value="20">20pt</option>
+          <option value="22" selected>22pt</option><option value="24">24pt</option>
+          <option value="28">28pt</option><option value="32">32pt</option>
+          <option value="36">36pt</option><option value="42">42pt</option>
+        </select>
+      </div>
+      <div class="frow">
+        <label>Renk</label>
+        <input type="color" id="sub_color" value="#ffffff" onchange="updateSub()" style="width:100%;height:32px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;padding:2px;">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button id="btn_bold" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Kalın</button>
+        <button id="btn_shadow" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Gölge</button>
+      </div>
+      <div class="frow" style="margin-top:8px;">
+        <label>Konum</label>
+        <select id="sub_pos" onchange="updateSub()">
+          <option value="bottom">Alt</option>
+          <option value="center">Orta</option>
+          <option value="top">Üst</option>
+        </select>
+      </div>
+      <button class="btn-lp" style="margin-top:6px;" onclick="xport('srt_notes')">
+        <i class="fa-solid fa-file-arrow-down"></i> Notlar Olarak İndir
+      </button>
+    </div>
+
+    <!-- Çeviri Stili -->
+    <div class="lp-sec" id="sec_style">
+      <div class="sec-hd"><i class="fa-solid fa-wand-magic-sparkles"></i> Çeviri Tonu</div>
+      <div class="style-grid" id="style_grid">
+        <div class="style-card on" data-style="normal" onclick="setStyle(this)"><span class="si">📋</span>Birebir</div>
+        <div class="style-card" data-style="arkadaşça" onclick="setStyle(this)"><span class="si">😊</span>Arkadaşça</div>
+        <div class="style-card" data-style="komik ve eğlenceli" onclick="setStyle(this)"><span class="si">😂</span>Komik</div>
+        <div class="style-card" data-style="resmi ve kurumsal" onclick="setStyle(this)"><span class="si">💼</span>Resmi</div>
+        <div class="style-card" data-style="iş belgesi" onclick="setStyle(this)"><span class="si">📄</span>İş Belgesi</div>
+        <div class="style-card" data-style="yaratıcı ve edebi" onclick="setStyle(this)"><span class="si">✨</span>Yaratıcı</div>
+      </div>
+    </div>
+
+    <!-- Ses Ayarları -->
+    <div class="lp-sec hidden" id="sec_audio">
+      <div class="sec-hd"><i class="fa-solid fa-microchip"></i> Ses & Motor</div>
+      <label class="chk"><input type="checkbox" id="noise_clean"><span style="color:#10b981">Gürültü Temizle</span></label>
+      <label class="chk"><input type="checkbox" id="diarize" checked><span style="color:var(--pink2)">Konuşmacı Ayrımı</span></label>
+      <label class="chk"><input type="checkbox" id="tiktok_mode"><span style="color:var(--purple2)">TikTok Altyazı Modu</span></label>
+    </div>
+
+    <!-- Ses Aktörü -->
+    <div class="lp-sec hidden" id="sec_voice_btn">
+      <button class="btn-lp" onclick="openModal()">
+        <i class="fa-solid fa-headset"></i> Ses Aktörünü Değiştir
+      </button>
+    </div>
+
+  </div>
+
+  <!-- CENTER -->
+  <div class="cp" id="cp">
+    <div class="cp-head">
+      <span class="cp-title" id="cp_title"><i class="fa-solid fa-layer-group"></i> Çalışma Alanı</span>
+      <div class="cp-meta">
+        <div class="undo-bar">
+          <button class="undo-btn" id="undo_btn" onclick="undo()" disabled title="Geri Al (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="undo-btn" id="redo_btn" onclick="redo()" disabled title="Yenile (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+        <button class="tiktok-btn" id="tiktok_btn" onclick="toggleTikTok()" title="TikTok Altyazı Modu">
+          <i class="fa-brands fa-tiktok"></i> TikTok
+        </button>
+        <div class="as-toggle" onclick="toggleAS()" title="Auto-Scroll">
+          <span class="as-dot" id="as_dot"></span>
+          <span style="font-size:10px;font-weight:600;">Auto-Scroll</span>
+        </div>
+        <span class="live-badge" id="live_badge">▶ 00:00:00</span>
+      </div>
+    </div>
+
+    <!-- Segment List -->
+    <div class="slist" id="slist">
+      <div class="empty-state">
+        <i class="fa-solid fa-film"></i>
+        <span>Medya yükleyip işlemi başlatın</span>
+      </div>
+    </div>
+
+    <!-- TTS Input -->
+    <div class="tts-wrap hidden" id="tts_wrap">
+      <textarea class="tts-ta" id="txt_input" placeholder="Sese çevrilecek metni buraya yazın...&#10;&#10;Birden fazla dile çevirip seslendirmek için önce 'Hedef Dil' seçin."></textarea>
+      <div class="tts-toolbar">
+        <div class="tts-viz">
+          <svg class="tts-wavesvg" viewBox="0 0 140 48">
+            <rect x="0" y="16" width="4" height="16" rx="2" fill="#3b82f6" opacity=".5"/>
+            <rect x="8" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".7"/>
+            <rect x="16" y="4" width="4" height="40" rx="2" fill="#3b82f6" opacity=".9"/>
+            <rect x="24" y="10" width="4" height="28" rx="2" fill="#3b82f6" opacity=".8"/>
+            <rect x="32" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".6"/>
+            <rect x="40" y="6" width="4" height="36" rx="2" fill="#3b82f6"/>
+            <rect x="48" y="12" width="4" height="24" rx="2" fill="#3b82f6" opacity=".7"/>
+            <rect x="56" y="2" width="4" height="44" rx="2" fill="#3b82f6" opacity=".9"/>
+            <rect x="64" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".8"/>
+            <rect x="72" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".6"/>
+            <rect x="80" y="4" width="4" height="40" rx="2" fill="#3b82f6" opacity=".9"/>
+            <rect x="88" y="10" width="4" height="28" rx="2" fill="#3b82f6" opacity=".7"/>
+            <rect x="96" y="16" width="4" height="16" rx="2" fill="#3b82f6" opacity=".5"/>
+            <rect x="104" y="6" width="4" height="36" rx="2" fill="#3b82f6" opacity=".8"/>
+            <rect x="112" y="12" width="4" height="24" rx="2" fill="#3b82f6" opacity=".6"/>
+            <rect x="120" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".7"/>
+            <rect x="128" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".5"/>
+            <rect x="136" y="18" width="4" height="12" rx="2" fill="#3b82f6" opacity=".4"/>
+          </svg>
+          <span class="tts-label" id="tts_status">Ses üretmeye hazır</span>
+        </div>
+      </div>
+      <div class="tts-player hidden" id="tts_player">
+        <i class="fa-solid fa-waveform-lines" style="color:var(--accent2);font-size:18px;"></i>
+        <audio id="tts_audio" controls style="flex:1;height:34px;"></audio>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="rp" id="rp">
+    <div class="vbox" id="vbox">
+      <div class="dz" id="dz" onclick="document.getElementById('finput').click()">
+        <div class="dz-icon">☁</div>
+        <div class="dz-txt">Medya Yükle</div>
+        <div class="dz-sub">Video veya ses dosyası</div>
+        <input type="file" id="finput" hidden accept="video/*,audio/*">
+      </div>
+      <video id="vid" controls style="display:none;"></video>
+      <audio id="aud" controls style="display:none;width:100%;position:absolute;bottom:0;"></audio>
+      <div id="live_sub_overlay" class="live-sub-overlay"></div>
+      <div id="tiktok_overlay" class="tiktok-overlay"></div>
+    </div>
+
+    <!-- Cloud row -->
+    <div class="cloud-row">
+      <button class="cloud-pill" onclick="cloudUpload('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive'dan Aç</button>
+      <button class="cloud-pill" onclick="cloudUpload('dropbox')"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
+      <button class="cloud-pill" onclick="cloudUpload('url')"><i class="fa-solid fa-link"></i> URL</button>
+    </div>
+
+    <div class="mixer" id="mixer">
+      <div class="mix-title"><i class="fa-solid fa-sliders"></i> Stüdyo Mikseri</div>
+      <div class="mix-row">
+        <i class="fa-solid fa-music"></i>
+        <div class="mix-lbl"><b>Orijinal</b><small>Arka Plan Ses</small></div>
+        <input type="range" min="0" max="100" value="15" id="src_vol">
+      </div>
+      <div class="mix-row">
+        <i class="fa-solid fa-microphone"></i>
+        <div class="mix-lbl"><b>Dublaj</b><small>AI Sesi</small></div>
+        <input type="range" min="0" max="100" value="100" id="dub_vol">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="tl" id="tl">
+  <div class="tl-hd">
+    <span class="tl-title"><i class="fa-solid fa-timeline"></i> Timeline &nbsp;<span style="color:var(--muted);font-weight:400;font-size:9px;text-transform:none;letter-spacing:0;">Space · ←→ ±5s · Shift ±1s</span></span>
+    <span class="tl-dur" id="tl_dur">00:00</span>
+  </div>
+  <div class="tl-track" id="tl_track">
+    <div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>
+  </div>
+</div>
+
+<!-- MODAL — Veed.io stili -->
+<div id="modal" class="mbg hidden">
+  <div class="modal" style="width:520px;max-height:95vh;">
+    <div class="mhd" style="padding:18px 22px;">
+      <h2 style="font-size:15px;" id="modal_title"><i class="fa-solid fa-gears" style="color:var(--accent2)"></i> Proje Kurulumu</h2>
+      <i class="fa-solid fa-xmark" style="cursor:pointer;font-size:18px;color:var(--red2);" onclick="closeModal()"></i>
+    </div>
+
+    <!-- ADIM 1: Dil Seçimi (Veed.io stili) -->
+    <div class="mbody" id="modal_step1" style="gap:14px;">
+      <div id="modal_lang_row">
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted2);margin-bottom:7px;">Videoda konuşulan dil nedir?</div>
+          <div style="position:relative;">
+            <select id="m_src" style="width:100%;padding:11px 14px;padding-left:52px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;">
+              <option value="auto">Otomatik Algıla 🤖</option>
+              <option value="tr">Turkish 🇹🇷 Türkçe</option>
+              <option value="en">English 🇺🇸</option>
+              <option value="es">Spanish 🇪🇸</option>
+              <option value="fr">French 🇫🇷</option>
+              <option value="de">German 🇩🇪</option>
+              <option value="it">Italian 🇮🇹</option>
+              <option value="pt">Portuguese 🇧🇷</option>
+              <option value="ru">Russian 🇷🇺</option>
+              <option value="zh">Chinese 🇨🇳</option>
+              <option value="ja">Japanese 🇯🇵</option>
+              <option value="ar">Arabic 🇸🇦</option>
+              <option value="ko">Korean 🇰🇷</option>
+            </select>
+            <div id="src_flag" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none;">🌐</div>
+          </div>
+        </div>
+
+        <!-- Çeviri toggle -->
+        <div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:16px;">⚡</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;">Çeviri Ekle</div>
+              <div style="font-size:11px;color:var(--muted2);">Hedef dile otomatik çevir</div>
+            </div>
+          </div>
+          <label style="position:relative;display:inline-block;width:42px;height:24px;cursor:pointer;">
+            <input type="checkbox" id="translation_toggle" checked onchange="toggleTranslation()" style="opacity:0;width:0;height:0;">
+            <span id="toggle_track" style="position:absolute;inset:0;background:var(--accent2);border-radius:12px;transition:.2s;">
+              <span style="position:absolute;left:2px;top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;transform:translateX(18px);display:block;" id="toggle_thumb"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Hedef dil (toggle açıksa görünür) -->
+        <div id="tgt_row" style="margin-bottom:14px;">
+          <div style="position:relative;">
+            <select id="m_tgt" style="width:100%;padding:11px 14px;padding-left:52px;background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;">
+              <option value="tr">Turkish 🇹🇷 Türkçe</option>
+              <option value="en" selected>English 🇺🇸</option>
+              <option value="es">Spanish 🇪🇸</option>
+              <option value="fr">French 🇫🇷</option>
+              <option value="de">German 🇩🇪</option>
+              <option value="it">Italian 🇮🇹</option>
+              <option value="pt">Portuguese 🇧🇷</option>
+              <option value="ru">Russian 🇷🇺</option>
+              <option value="zh">Chinese 🇨🇳</option>
+              <option value="ja">Japanese 🇯🇵</option>
+              <option value="ar">Arabic 🇸🇦</option>
+            </select>
+            <div id="tgt_flag" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none;">🇺🇸</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transcript yükle seçeneği -->
+      <div id="transcript_upload_row" style="display:none;margin-bottom:4px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted2);margin-bottom:7px;">Transkript Dosyası (İsteğe Bağlı)</div>
+        <label style="display:flex;align-items:center;gap:10px;background:var(--s3);border:1.5px dashed var(--border2);border-radius:var(--r2);padding:12px 16px;cursor:pointer;transition:border .2s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-file-arrow-up" style="color:var(--accent2);font-size:18px;"></i>
+          <div>
+            <div style="font-size:13px;font-weight:600;" id="transcript_label">SRT veya TXT Yükle</div>
+            <div style="font-size:11px;color:var(--muted2);">Var olan transkripti kullan</div>
+          </div>
+          <input type="file" id="transcript_input" hidden accept=".srt,.txt,.vtt" onchange="transcriptYukle(this)">
+        </label>
+      </div>
+
+      <!-- Daha Fazla Seçenek -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Daha Fazla Seçenek</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <button onclick="openManualTranscript()" style="background:var(--s3);border:1.5px solid var(--border2);color:var(--txt);padding:11px 16px;border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;transition:border .15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-pen" style="color:var(--muted2);"></i> Manuel Transkript Gir
+          </button>
+          <label style="background:var(--s3);border:1.5px solid var(--border2);color:var(--txt);padding:11px 16px;border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;transition:border .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-cloud-arrow-up" style="color:var(--muted2);"></i> Altyazı Dosyası Yükle
+            <input type="file" hidden accept=".srt,.txt,.vtt" onchange="transcriptYukle(this)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADIM 2: Ses Seçimi (Dublaj için) -->
+    <div class="mbody hidden" id="modal_step2" style="gap:12px;">
+      <div style="margin-bottom:6px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Özelleştir</div>
+        <div style="font-size:12px;color:var(--muted2);">Çeviri dilini ve ses tipini seçin.</div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:4px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Çeviri Dili</div>
+          <select id="m_tgt2" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
+            <option value="en" selected>English 🇺🇸</option>
+            <option value="tr">Türkçe 🇹🇷</option>
+            <option value="es">Spanish 🇪🇸</option>
+            <option value="fr">French 🇫🇷</option>
+            <option value="de">German 🇩🇪</option>
+            <option value="ru">Russian 🇷🇺</option>
+            <option value="zh">Chinese 🇨🇳</option>
+            <option value="ja">Japanese 🇯🇵</option>
+            <option value="ar">Arabic 🇸🇦</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Ses</div>
+          <select id="voice_select" onchange="voiceSecildi(this)" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
+            <option value="">Seç...</option>
+            <option value="nPczCjzI2devNBz1zQrb">Brian — Derin, Rezonant</option>
+            <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Olgun, Güvenilir</option>
+            <option value="pNInz6obpgDQGcFmaJgB">Adam — Güçlü, Kararlı</option>
+            <option value="JBFqnCBsd6RMkjVDRZzb">George — Sıcak, Hikayeci</option>
+            <option value="iP95p4xoKVk53GoZ742B">Chris — Karizmatik</option>
+            <option value="cgSgspJ2msm6clMCkdW9">Jessica — Neşeli, Sıcak</option>
+            <option value="FGY2WhTYpPnrIDTdsKH5">Laura — Enerjik, Özgün</option>
+            <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — Dinamik, Genç</option>
+            <option value="onwK4e9ZLuTAKqWW03F9">Daniel — Radyo Spikerı</option>
+            <option value="SAz9YHcvj6GT2YYXdXww">River — Sakin, Nötr</option>
+            <option value="E7GwUhgj9sbeAZgubRba">Bahadır 🇹🇷 — Derin Belgesel</option>
+            <option value="xFsOR54lR471QiCvQ5re">İlknur 🇹🇷 — Net, Sıcak</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Ses listesi — Veed.io stili renkli noktalar -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Ses Aktörleri</div>
+      <div id="voice_list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <!-- Arka plan sesi koru -->
+      <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:4px;">
+        <i class="fa-solid fa-volume-low" style="color:var(--muted2);font-size:14px;"></i>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">Arka Plan Sesini Koru</div>
+          <div style="font-size:11px;color:var(--muted2);">Orijinal ses arka planda %10 seviyede</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
+          <input type="checkbox" id="bg_audio_keep" checked style="opacity:0;width:0;height:0;">
+          <span style="position:absolute;inset:0;background:var(--accent2);border-radius:10px;">
+            <span style="position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;transform:translateX(16px);display:block;"></span>
+          </span>
+        </label>
+      </div>
+
+      <!-- Ses klonla -->
+      <div class="clone-card" onclick="document.getElementById('clone_inp').click()" style="padding:12px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-microphone-lines" style="font-size:18px;"></i>
+          <div>
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Kendi Sesini Klonla</div>
+            <div style="font-size:11px;color:#d1fae5;margin-top:2px;">3 saniyelik ses yükle — AI birebir kopyalar</div>
+          </div>
+        </div>
+        <input type="file" id="clone_inp" hidden accept="audio/*" onchange="sesKlonla(this)">
+      </div>
+    </div>
+
+    <div class="mfoot" style="display:flex;gap:8px;">
+      <button id="modal_back_btn" onclick="modalStep(1)" class="btn-dl" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);flex:0 0 auto;width:80px;justify-content:center;height:42px;border-radius:var(--r);font-family:inherit;display:none;">
+        ← Geri
+      </button>
+      <button id="modal_main_btn" onclick="modalMainAction()" class="btn-dl" style="flex:1;justify-content:center;height:42px;font-size:14px;background:var(--accent);border-radius:var(--r);font-family:inherit;">
+        <i class="fa-solid fa-closed-captioning"></i> <span id="modal_btn_text">Otomatik Altyazı Başlat</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="sbox hidden" id="sbox">
+  <div class="sbox-row">
+    <span class="stxt" id="stxt">İşleniyor...</span>
+    <span class="spct" id="spct">0%</span>
+  </div>
+  <div class="prog"><div class="pfill" id="pfill"></div></div>
+</div>
+
+<script>
+/* ═══════════════════════════════════
+   GLOBALS
+═══════════════════════════════════ */
+const B="http://127.0.0.1:8000";
+let mod="seslendirme", voice="nPczCjzI2devNBz1zQrb";
+let pFile=null, pURL=null;
+let aSrt=null, aDosya=null;
+let segs=[], dur=0, autoScroll=true;
+let cStyle="normal";
+const SP=['sp0','sp1','sp2','sp3','sp4'];
+
+/* ═══ UNDO / REDO ═══ */
+const _undoStack = [];
+const _redoStack = [];
+
+function _pushUndo(action) {
+  _undoStack.push(action);
+  if (_undoStack.length > 50) _undoStack.shift();
+  _redoStack.length = 0;
+  _updateUndoUI();
+}
+
+function _updateUndoUI() {
+  const u = document.getElementById('undo_btn');
+  const r = document.getElementById('redo_btn');
+  if (u) u.disabled = _undoStack.length === 0;
+  if (r) r.disabled = _redoStack.length === 0;
+}
+
+async function undo() {
+  if (!_undoStack.length) return;
+  const action = _undoStack.pop();
+  _redoStack.push(action);
+  await _applyUndoRedo(action.undo);
+  _updateUndoUI();
+  toast('↩ Geri alındı');
+}
+
+async function redo() {
+  if (!_redoStack.length) return;
+  const action = _redoStack.pop();
+  _undoStack.push(action);
+  await _applyUndoRedo(action.redo);
+  _updateUndoUI();
+  toast('↪ Yenilendi');
+}
+
+async function _applyUndoRedo(state) {
+  if (!state || !aSrt) return;
+  if (state.type === 'metin') {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('segment_no', state.no);
+    fd.append('yeni_metin', state.metin);
+    await fetch(`${B}/api/metin_guncelle/`, { method:'POST', body:fd });
+    const el = document.getElementById(`t_${state.no}`);
+    if (el) el.innerHTML = state.metin.split(' ').map(k=>kelimeHtml(k)).join(' ');
+  } else if (state.type === 'zaman') {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('segment_no', state.no);
+    fd.append('yeni_baslangic', state.start);
+    fd.append('yeni_bitis', state.end);
+    await fetch(`${B}/api/zaman_guncelle/`, { method:'POST', body:fd });
+    await reload();
+  } else if (state.type === 'render') {
+    renderSegs(state.srt, aSrt, true);
+  }
+}
+
+/* ═══ TİKTOK ALTYAZI MODU ═══ */
+let _tiktokOn   = false;
+let _tiktokWords = [];
+
+function toggleTikTok() {
+  _tiktokOn = !_tiktokOn;
+  const btn = document.getElementById('tiktok_btn');
+  const overlay = document.getElementById('tiktok_overlay');
+  const liveSub = document.getElementById('live_sub_overlay');
+  btn?.classList.toggle('on', _tiktokOn);
+  if (_tiktokOn) {
+    if (liveSub) liveSub.style.display = 'none'; // TikTok modu aktifken normal overlay kapat
+    _loadTikTokWords();
+    toast('🎵 TikTok modu açık — kelimeler video ile yanıp söner');
+  } else {
+    if (overlay) overlay.innerHTML = '';
+    toast('TikTok modu kapatıldı');
+  }
+}
+
+async function _loadTikTokWords() {
+  if (!aSrt) return;
+  try {
+    const r = await fetch(`${B}/api/words/${aSrt}`);
+    if (!r.ok) { toast('Kelime verisi yok — önce deşifre yapın','twarn'); _tiktokOn=false; return; }
+    const d = await r.json();
+    _tiktokWords = d.words || [];
+    _buildTikTokOverlay();
+  } catch(e) { toast('Kelime verisi yüklenemedi','terr'); }
+}
+
+function _buildTikTokOverlay() {
+  const overlay = document.getElementById('tiktok_overlay');
+  if (!overlay) return;
+  overlay.innerHTML = _tiktokWords.map((w, i) =>
+    `<span class="tiktok-word" id="tw_${i}">${w.word}</span>`
+  ).join('');
+}
+
+function _updateTikTokHighlight(currentTime) {
+  if (!_tiktokOn || !_tiktokWords.length) return;
+  _tiktokWords.forEach((w, i) => {
+    const el = document.getElementById(`tw_${i}`);
+    if (!el) return;
+    if (currentTime >= w.start && currentTime < w.end) {
+      el.className = 'tiktok-word tw-active';
+      el.scrollIntoView?.({ block:'nearest', inline:'center' });
+    } else if (currentTime >= w.end) {
+      el.className = 'tiktok-word tw-done';
+    } else {
+      el.className = 'tiktok-word';
+    }
+  });
+}
+
+/* ═══ CANLI ALTYAZI ÖNİZLEME ═══ */
+function _updateLiveSubtitle(currentTime) {
+  const overlay = document.getElementById('live_sub_overlay');
+  if (!overlay || _tiktokOn) return;
+  if (!segs.length) { overlay.style.display='none'; return; }
+  const aktif = segs.find(s => currentTime >= s.start && currentTime < s.end);
+  if (aktif) {
+    overlay.textContent = aktif.text;
+    overlay.style.display = 'block';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+/* ═══ UTILS ═══ */
+function p2(n){return String(n).padStart(2,'0');}
+function p3(n){return String(n).padStart(3,'0');}
+function s2t(s){s=Math.max(0,s);return`${p2(Math.floor(s/3600))}:${p2(Math.floor((s%3600)/60))}:${p2(Math.floor(s%60))},${p3(Math.round((s-Math.floor(s))*1000))}`;}
+function t2s(str){if(!str)return 0;const c=str.trim().replace(',','.');const p=c.split(':');return parseFloat(p[0])*3600+parseFloat(p[1])*60+parseFloat(p[2]);}
+function fmt(s){return`${p2(Math.floor(s/3600))}:${p2(Math.floor((s%3600)/60))}:${p2(Math.floor(s%60))}`;}
+function cps(txt,d){return d<=0?0:Math.round(txt.replace(/\s/g,'').length/d);}
+function cpsC(c){return c<=20?'cps-ok':c<=27?'cps-warn':'cps-bad';}
+
+function toast(msg,t='ok',ms=2600){
+  const e=document.createElement('div');
+  e.className=`toast t${t}`;e.innerHTML=msg;
+  document.body.appendChild(e);
+  setTimeout(()=>e.remove(),ms);
+}
+
+function setStyle(el){
+  document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  cStyle=el.dataset.style;
+}
+
+function toggleAS(){
+  autoScroll=!autoScroll;
+  document.getElementById('as_dot').style.background=autoScroll?'var(--green2)':'var(--muted)';
+}
+
+/* ═══ CLOUD (placeholder) ═══ */
+function cloudConnect(svc){
+  toast(`<i class="fa-solid fa-spinner fa-spin"></i> ${svc==='gdrive'?'Google Drive':'Dropbox'} bağlantısı yakında aktif olacak`,'twarn',3000);
+}
+function cloudUpload(svc){
+  if(svc==='url'){
+    const url=prompt('Video URL girin (YouTube, Vimeo vb.):');
+    if(url)toast('URL desteği yakında aktif olacak','twarn',3000);
+  }else cloudConnect(svc);
+}
+
+/* ═══ EXPORT ═══ */
+function xport(fmt_){
+  if(!aSrt&&!aDosya)return toast('Önce işlem tamamlayın','twarn');
+  if(fmt_==='original'){window.open(`${B}/indir/${aDosya||aSrt}`,'_blank');return;}
+  if(fmt_==='srt'){if(!aSrt)return toast('SRT yok','twarn');window.open(`${B}/indir/${aSrt}`,'_blank');return;}
+  if(!aSrt)return toast('SRT yok','twarn');
+
+  fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>{
+    const base=aSrt.replace('.srt','');
+    const bloklar=c.trim().split(/\n\n+/).filter(b=>b.trim().split('\n').length>=3);
+
+    if(fmt_==='vtt'){
+      // WebVTT — virgül yerine nokta, WEBVTT başlığı
+      const vtt='WEBVTT\n\n'+c
+        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,'$1.$2');
+      dl(vtt, base+'.vtt', 'text/vtt');
+
+    }else if(fmt_==='ass'){
+      // Advanced SubStation Alpha — video player'larda en iyi kalite
+      const assHeader=`[Script Info]
+Title: ${base}
+ScriptType: v4.00+
+WrapStyle: 0
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+`;
+      const assTime=s=>{
+        const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),cs=Math.round((s-Math.floor(s))*100);
+        return `${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+      };
+      const events=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join('\\N').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        return `Dialogue: 0,${assTime(t2s(tp[0]))},${assTime(t2s(tp[1]))},Default,,0,0,0,,${metin}`;
+      }).join('\n');
+      dl(assHeader+events, base+'.ass', 'text/plain');
+
+    }else if(fmt_==='txt'){
+      // Zaman damgalı — [00:01:23]  metin
+      const lines=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        return `[${fmt(t2s(tp[0]))}]  ${metin}`;
+      });
+      dl(lines.join('\n'), base+'_zaman_damgali.txt', 'text/plain');
+
+    }else if(fmt_==='txt_clean'){
+      // Sadece metin, alt alta
+      const lines=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        return l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+      });
+      dl(lines.join('\n'), base+'_metin.txt', 'text/plain');
+
+    }else if(fmt_==='srt_notes'){
+      // Not formatı: zaman → metin, aralarında boşluk
+      const lines=[];
+      bloklar.forEach(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        lines.push(`${fmt(t2s(tp[0]))}  →  ${fmt(t2s(tp[1]))}`);
+        lines.push(metin);
+        lines.push('');
+      });
+      dl(lines.join('\n'), base+'_notlar.txt', 'text/plain');
+    }
+  }).catch(()=>toast('Export hatası','terr'));
+}
+function dl(c,n,m){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([c],{type:m}));
+  a.download=n; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══ FILE INPUT ═══ */
+document.getElementById('finput').addEventListener('change',function(){
+  if(!this.files.length)return;
+  pFile=this.files[0];pURL=URL.createObjectURL(pFile);
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal_lang_row').style.display='block';
+  document.getElementById('transcript_upload_row').style.display = 'block';
+  modalStep(1);
+  updateModalBtn();
+  if(mod==='seslendirme'){
+    document.getElementById('modal_btn_text').textContent='Ses Seçimine Geç →';
+    document.getElementById('modal_main_btn').querySelector('i').className='fa-solid fa-arrow-right';
+  }
+});
+
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
+
+function finishSetup(){
+  // Adım 1 verileri
+  const srcVal = document.getElementById('m_src')?.value || 'auto';
+  const hasTranslation = document.getElementById('translation_toggle')?.checked;
+  const tgtVal = hasTranslation
+    ? (document.getElementById('m_tgt2')?.value || document.getElementById('m_tgt')?.value || 'en')
+    : '';
+
+  document.getElementById('src_lang').value = srcVal;
+  document.getElementById('tgt_lang').value = tgtVal;
+
+  // Arka plan ses tercihi
+  const bgKeep = document.getElementById('bg_audio_keep')?.checked;
+  // (dublaj motoruna geçirilmek üzere global'e yaz)
+  window._bgVol = bgKeep ? 0.1 : 0.0;
+
+  closeModal();
+  if (mod !== 'metinden_sese') loadMedia();
+}
+/* ═══ CONFIDENCE & KELİME ÖNERİ ═══ */
+let _confidence = {};
+const SP_COLORS = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#8b5cf6','#06b6d4'];
+
+async function confidenceYukle(srtAdi) {
+  try {
+    const r = await fetch(`${B}/api/confidence/${srtAdi}`);
+    if (r.ok) _confidence = await r.json();
+  } catch(e) { _confidence = {}; }
+}
+
+function kelimeHtml(kelime) {
+  // Noktalama temizle, confidence bul
+  const temiz = kelime.toLowerCase().replace(/[.,?!;:]/g,'');
+  const conf  = _confidence[temiz];
+  if (conf === undefined || conf >= 0.85) return kelime;
+  if (conf >= 0.70) return `<span class="w-low" data-word="${kelime}" data-conf="${conf}" onclick="kelimeOneriAc(event,this)">${kelime}<sup style="font-size:8px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+  return `<span class="w-bad" data-word="${kelime}" data-conf="${conf}" onclick="kelimeOneriAc(event,this)">${kelime}<sup style="font-size:8px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+}
+
+async function kelimeOneriAc(e, el) {
+  e.stopPropagation();
+  document.getElementById('word_popup')?.remove();
+
+  const kelime = el.dataset.word;
+  const conf   = parseFloat(el.dataset.conf);
+
+  const popup = document.createElement('div');
+  popup.id = 'word_popup';
+  popup.className = 'word-popup';
+  popup.style.left = Math.min(e.clientX, window.innerWidth-200) + 'px';
+  popup.style.top  = (e.clientY + 12) + 'px';
+  popup.innerHTML = `
+    <div class="word-popup-title">
+      <i class="fa-solid fa-triangle-exclamation" style="color:${conf>=0.7?'var(--yellow2)':'var(--red2)'}"></i>
+      Düşük Güven: ${Math.round(conf*100)}%
+    </div>
+    <div id="popup_items"><div style="padding:8px;font-size:11px;color:var(--muted2);"><i class="fa-solid fa-spinner fa-spin"></i> Öneriler yükleniyor...</div></div>`;
+  document.body.appendChild(popup);
+
+  // AI önerilerini al
+  try {
+    const fd = new FormData();
+    fd.append('kelime', kelime);
+    const r = await fetch(`${B}/api/kelime_oneri/`, { method:'POST', body:fd });
+    const d = await r.json();
+    const items = document.getElementById('popup_items');
+    items.innerHTML = d.oneriler.map(o => `
+      <div class="word-popup-item" onclick="kelimeUygula('${el.id||''}','${o}',this)">
+        <i class="fa-solid fa-arrow-right"></i> ${o}
+      </div>`).join('') +
+      `<div class="word-popup-item" style="border-top:1px solid var(--border);margin-top:4px;" onclick="manuelDuzelt('${kelime}')">
+        <i class="fa-solid fa-pen"></i> Manuel Düzenle
+      </div>`;
+  } catch(e) {
+    document.getElementById('popup_items').innerHTML = '<div style="padding:8px;font-size:11px;color:var(--red2);">Öneri alınamadı</div>';
+  }
+
+  setTimeout(() => {
+    document.addEventListener('click', function closeP(ev) {
+      if (!popup.contains(ev.target)) { popup.remove(); document.removeEventListener('click', closeP); }
+    });
+  }, 10);
+}
+
+function kelimeUygula(elId, yeniKelime, item) {
+  document.getElementById('word_popup')?.remove();
+  toast(`✓ "${yeniKelime}" uygulandı — segment düzenlemeden değiştirin`, 'tok', 3000);
+}
+
+function manuelDuzelt(kelime) {
+  document.getElementById('word_popup')?.remove();
+  toast(`"${kelime}" için ilgili kartta çift tıklayarak düzenleyin`, 'tok', 3000);
+}
+
+/* ═══ SPEAKER VOICE MAP ═══ */
+let _speakerMap = {};
+
+function speakerMapPanelOlustur(segmentler) {
+  // Benzersiz konuşmacıları bul
+  const speakers = new Set();
+  segmentler.forEach(s => {
+    const m = s.text?.match(/\[Konuşmacı (\d+)\]/);
+    if (m) speakers.add(m[1]);
+  });
+  if (speakers.size === 0) return;
+
+  const panel = document.getElementById('speaker_map_panel');
+  if (!panel) return;
+
+  panel.style.display = 'block';
+  const voiceOpts = VOICES.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+
+  panel.innerHTML = `
+    <div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>
+    ${[...speakers].sort().map((sp, i) => `
+      <div class="speaker-map-row">
+        <span class="sp-dot-big" style="background:${SP_COLORS[parseInt(sp)%SP_COLORS.length]};"></span>
+        <span class="sp-label">Konuşmacı ${sp}</span>
+        <select class="sp-voice-sel" id="spv_${sp}" onchange="speakerSesGuncelle()">
+          <option value="${voice}">— Varsayılan Ses —</option>
+          ${voiceOpts}
+        </select>
+      </div>`).join('')}
+    <button onclick="speakerMapKaydet()" style="margin-top:6px;width:100%;padding:7px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+      <i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet
+    </button>`;
+}
+
+function speakerSesGuncelle() {
+  document.querySelectorAll('[id^="spv_"]').forEach(sel => {
+    const spNo = sel.id.replace('spv_','');
+    if (sel.value) _speakerMap[spNo] = sel.value;
+  });
+}
+
+async function speakerMapKaydet() {
+  if (!aSrt) return;
+  speakerSesGuncelle();
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('speaker_map', JSON.stringify(_speakerMap));
+    const r = await fetch(`${B}/api/speaker_map/`, { method:'POST', body:fd });
+    if (r.ok) toast('✓ Konuşmacı ses haritası kaydedildi — Dublaj başlatınca uygulanacak');
+  } catch(e) { toast('Kayıt hatası','terr'); }
+}
+const VOICES = [
+  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',   desc:'Derin, Rezonant ve Rahatlatıcı',    color:'#3b82f6' },
+  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',   desc:'Olgun, Güven Verici, Kararlı',       color:'#8b5cf6' },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',    desc:'Dominant, Güçlü',                    color:'#ef4444' },
+  { id:'JBFqnCBsd6RMkjVDRZzb', name:'George',  desc:'Sıcak, Büyüleyici Hikayeci',         color:'#f59e0b' },
+  { id:'iP95p4xoKVk53GoZ742B', name:'Chris',   desc:'Karizmatik, Samimi',                 color:'#10b981' },
+  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica', desc:'Neşeli, Parlak, Sıcak',              color:'#ec4899' },
+  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',   desc:'Enerjik, Özgün Tavır',               color:'#06b6d4' },
+  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',    desc:'Dinamik, Sosyal Medya İçerik',       color:'#84cc16' },
+  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',  desc:'İstikrarlı Radyo Spikerı',           color:'#6366f1' },
+  { id:'SAz9YHcvj6GT2YYXdXww', name:'River',   desc:'Rahat, Nötr, Bilgilendirici',        color:'#14b8a6' },
+  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır 🇹🇷', desc:'Derin, Hikayesel, Belgesel',    color:'#f97316' },
+  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur 🇹🇷', desc:'Net, Sıcak ve Genç',             color:'#a855f7' },
+];
+
+function buildVoiceList() {
+  const el = document.getElementById('voice_list');
+  if (!el) return;
+  el.innerHTML = VOICES.map(v => `
+    <div onclick="selVoiceById('${v.id}')" id="vli_${v.id}"
+      style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1.5px solid transparent;"
+      onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}')this.style.background='';this.style.borderColor=voice==='${v.id}'?'var(--accent2)':'transparent'">
+      <span style="width:10px;height:10px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+      <div style="flex:1;">
+        <span style="font-size:13px;font-weight:600;">${v.name}</span>
+        <span style="font-size:11px;color:var(--muted2);margin-left:8px;">${v.desc}</span>
+      </div>
+      <i class="fa-solid fa-play" style="color:var(--muted);font-size:10px;" title="Önizle"></i>
+    </div>
+  `).join('');
+  selVoiceById(voice);
+}
+
+function selVoiceById(id) {
+  voice = id;
+  document.querySelectorAll('[id^="vli_"]').forEach(el => {
+    el.style.background    = '';
+    el.style.borderColor   = 'transparent';
+  });
+  const el = document.getElementById(`vli_${id}`);
+  if (el) { el.style.background = 'var(--s4)'; el.style.borderColor = 'var(--accent2)'; }
+  // dropdown da güncelle
+  const sel = document.getElementById('voice_select');
+  if (sel) sel.value = id;
+}
+
+function voiceSecildi(sel) { selVoiceById(sel.value); }
+
+function toggleTranslation() {
+  const on  = document.getElementById('translation_toggle').checked;
+  const row = document.getElementById('tgt_row');
+  const trk = document.getElementById('toggle_thumb');
+  if (row) row.style.display = on ? 'block' : 'none';
+  if (trk) trk.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
+  document.getElementById('toggle_track').style.background = on ? 'var(--accent2)' : 'var(--border2)';
+  updateModalBtn();
+}
+
+function updateModalBtn() {
+  const btn  = document.getElementById('modal_btn_text');
+  const icon = document.getElementById('modal_main_btn').querySelector('i');
+  if (!btn) return;
+  const hasTranslation = document.getElementById('translation_toggle')?.checked;
+  if (mod === 'seslendirme') {
+    btn.textContent = 'Sese Uygula';
+    if (icon) icon.className = 'fa-solid fa-microphone-lines';
+  } else if (mod === 'metinden_sese') {
+    btn.textContent = 'Stüdyoya Geç';
+    if (icon) icon.className = 'fa-solid fa-arrow-right';
+  } else if (hasTranslation) {
+    btn.textContent = 'Çevirili Altyazı Başlat';
+    if (icon) icon.className = 'fa-solid fa-language';
+  } else {
+    btn.textContent = 'Otomatik Altyazı Başlat';
+    if (icon) icon.className = 'fa-solid fa-closed-captioning';
+  }
+}
+
+function modalStep(n) {
+  document.getElementById('modal_step1').classList.toggle('hidden', n !== 1);
+  document.getElementById('modal_step2').classList.toggle('hidden', n !== 2);
+  document.getElementById('modal_back_btn').style.display = n === 2 ? 'flex' : 'none';
+  if (n === 2) buildVoiceList();
+}
+
+function modalMainAction() {
+  if (mod === 'seslendirme' && document.getElementById('modal_step1') && !document.getElementById('modal_step1').classList.contains('hidden')) {
+    // Dublaj: adım 1'den adım 2'ye geç
+    modalStep(2);
+    return;
+  }
+  finishSetup();
+}
+
+function openModal() {
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal_lang_row').style.display = 'block';
+  document.getElementById('transcript_upload_row').style.display = 'none';
+  modalStep(1);
+  updateModalBtn();
+  // Dublaj modundaysa Adım 2'ye geç butonu göster
+  if (mod === 'seslendirme') {
+    document.getElementById('modal_btn_text').textContent = 'Ses Seçimine Geç →';
+    document.getElementById('modal_main_btn').querySelector('i').className = 'fa-solid fa-arrow-right';
+  }
+}
+
+function openManualTranscript() {
+  closeModal();
+  toast('Manuel transkript: Segment listesinde çift tıklayarak metin düzenleyebilirsiniz', 'tok', 4000);
+}
+
+function transcriptYukle(inp) {
+  if (!inp.files || !inp.files[0]) return;
+  const file = inp.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const content = e.target.result;
+    // SRT veya TXT içeriği — aSrt olarak set et, kartlara render et
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    // Sahte bir dosya adı ver
+    aSrt = `yuklenen_${Date.now()}.srt`;
+    // Backend'e yükle
+    const fd = new FormData();
+    fd.append('dosya', new File([blob], aSrt));
+    // Direkt render et
+    if (file.name.endsWith('.srt') || content.includes(' --> ')) {
+      closeModal();
+      renderSegs(content, aSrt);
+      toast(`✓ ${file.name} yüklendi`, 'tok');
+    } else {
+      // TXT → basit render
+      closeModal();
+      toast('TXT dosyası yüklendi — SRT formatı tercih edilir', 'twarn', 3500);
+    }
+  };
+  reader.readAsText(file);
+  document.getElementById('transcript_label').textContent = `✓ ${file.name}`;
+}
+
+// Dil bayrakları
+const FLAG_MAP = {
+  auto:'🌐', tr:'🇹🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷', de:'🇩🇪',
+  it:'🇮🇹', pt:'🇧🇷', ru:'🇷🇺', zh:'🇨🇳', ja:'🇯🇵', ar:'🇸🇦', ko:'🇰🇷'
+};
+document.getElementById('m_src')?.addEventListener('change', function() {
+  document.getElementById('src_flag').textContent = FLAG_MAP[this.value] || '🌐';
+});
+document.getElementById('m_tgt')?.addEventListener('change', function() {
+  document.getElementById('tgt_flag').textContent = FLAG_MAP[this.value] || '🌐';
+});
+
+/* ═══ RESET & SWITCH ═══ */
+function reset(){
+  pFile=null;pURL=null;aSrt=null;aDosya=null;segs=[];dur=0;
+  document.getElementById('finput').value='';
+  ['vid','aud'].forEach(id=>{const e=document.getElementById(id);e.src='';e.style.display='none';});
+  document.getElementById('dz').style.display='flex';
+  document.getElementById('tts_player').classList.add('hidden');
+  document.getElementById('tts_audio').src='';
+  document.getElementById('tts_status').textContent='Ses üretmeye hazır';
+  document.getElementById('slist').innerHTML='<div class="empty-state"><i class="fa-solid fa-film"></i><span>Medya yükleyip işlemi başlatın</span></div>';
+  document.getElementById('tl_track').innerHTML='<div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>';
+  document.getElementById('xwrap').classList.add('hidden');
+  document.getElementById('live_badge').style.display='none';
+}
+
+function sw(m){
+  reset();mod=m;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(`tab_${m}`).classList.add('on');
+
+  const hide=['sec_sub_design','sec_audio','sec_voice_btn','mixer','tl','sec_style'];
+  hide.forEach(id=>{document.getElementById(id)?.classList.add('hidden');});
+  document.getElementById('slist').classList.remove('hidden');
+  document.getElementById('tts_wrap').classList.add('hidden');
+  document.getElementById('rp').classList.remove('hidden');
+
+  const title=document.getElementById('cp_title');
+  const btn=document.getElementById('btn_run');
+
+  if(m==='desifre'){
+    document.getElementById('tl').classList.add('hidden');
+    document.getElementById('sec_style').classList.remove('hidden');
+    btn.innerHTML='<span class="run-dot"></span> Transkripti Başlat';
+    title.innerHTML='<i class="fa-solid fa-pen-to-square"></i> Transkript & Metin Dökümü';
+  }else if(m==='altyazi'){
+    ['sec_sub_design','sec_audio','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
+    title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
+  }else if(m==='seslendirme'){
+    ['sec_audio','sec_voice_btn','mixer','tl','sec_style'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    btn.innerHTML='<span class="run-dot"></span> Dublajı Başlat';
+    title.innerHTML='<i class="fa-solid fa-layer-group"></i> Dublaj Editörü';
+  }else if(m==='metinden_sese'){
+    document.getElementById('slist').classList.add('hidden');
+    document.getElementById('tts_wrap').classList.remove('hidden');
+    document.getElementById('sec_voice_btn').classList.remove('hidden');
+    document.getElementById('sec_style').classList.remove('hidden');
+    // Sağda video yok — ses görseli göster
+    document.getElementById('rp').classList.add('hidden');
+    btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
+    title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
+  }
+}
+
+/* ═══ ALTYAZI STİL (sol panelden) ═══ */
+function updateSub(){
+  // Artık draggable subtitle yok — sadece ffmpeg parametreleri güncellenir
+}
+
+/* ═══ SES KLONLAMA ═══ */
+function sesKlonla(inp){
+  if(!inp.files||!inp.files[0])return;
+  toast(`<i class="fa-solid fa-spinner fa-spin"></i> Klonlanıyor...`,'tok',4000);
+  const fd=new FormData();fd.append('ses_dosyasi',inp.files[0]);
+  fetch(`${B}/api/ses_klonla/`,{method:'POST',body:fd})
+    .then(r=>r.json()).then(d=>{if(d.voice_id){voice=d.voice_id;toast('✓ Ses klonlandı');}else toast('Ses klonlama yakında aktif','twarn');})
+    .catch(()=>toast('Ses klonlama yakında aktif','twarn'));
+}
+function selVoice(id,el){
+  voice=id;
+  document.querySelectorAll('.vc').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ═══ MEDIA LOAD ═══ */
+function loadMedia(){
+  const isA=pFile.type.startsWith('audio');
+  document.getElementById('dz').style.display='none';
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=isA?a:v;
+  if(isA)v.style.display='none'; else a.style.display='none';
+  media.style.display='block';media.src=pURL;
+  media.onloadedmetadata=()=>{
+    dur=media.duration||0;
+    const m=Math.floor(dur/60),s=Math.floor(dur%60);
+    document.getElementById('tl_dur').textContent=`${p2(m)}:${p2(s)}`;
+    document.getElementById('tl_track').innerHTML='<div id="ph" class="ph"></div>';
+    setupTU(media);
+  };
+}
+
+function setupTU(media){
+  const lb=document.getElementById('live_badge');
+  media.ontimeupdate=()=>{
+    const pct=dur>0?(media.currentTime/dur)*100:0;
+    const ph=document.getElementById('ph');if(ph)ph.style.left=`${pct}%`;
+    if(lb&&lb.style.display!=='none')lb.textContent='▶ '+fmt(media.currentTime);
+
+    const cur=media.currentTime;
+
+    // Canlı altyazı önizleme (video üzerinde)
+    _updateLiveSubtitle(cur);
+
+    // TikTok kelime highlight
+    _updateTikTokHighlight(cur);
+
+    if(!segs.length)return;
+    const aktif=segs.find(s=>cur>=s.start&&cur<s.end);
+    document.querySelectorAll('.sc.sc-play').forEach(c=>c.classList.remove('sc-play'));
+    document.querySelectorAll('.tb.pb').forEach(b=>b.classList.remove('pb'));
+    if(aktif){
+      const k=document.getElementById(`c_${aktif.no}`);
+      if(k){k.classList.add('sc-play');if(autoScroll)k.scrollIntoView({behavior:'smooth',block:'nearest'});}
+      document.getElementById(`b_${aktif.no}`)?.classList.add('pb');
+    }
+  };
+}
+
+/* ═══ START ═══ */
+async function startProcess(){
+  if(mod==='metinden_sese'&&!document.getElementById('txt_input').value.trim())return alert('Metin girin!');
+  if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
+  const fd=new FormData();
+  fd.append('modul',mod);fd.append('ses_id',voice);
+  fd.append('kaynak_dil',document.getElementById('src_lang').value);
+  fd.append('hedef_dil',document.getElementById('tgt_lang').value);
+  if(mod==='metinden_sese')fd.append('yazili_metin',document.getElementById('txt_input').value);
+  else fd.append('dosya',pFile);
+  if(mod==='altyazi'){
+    fd.append('f_name',document.getElementById('sub_font').value);
+    fd.append('f_size',document.getElementById('sub_size').value);
+    fd.append('f_color',document.getElementById('sub_color').value);
+    fd.append('is_bold',document.getElementById('btn_bold').classList.contains('on'));
+    fd.append('is_shadow',document.getElementById('btn_shadow').classList.contains('on'));
+    fd.append('m_v','20');
+  }
+  document.getElementById('sbox').classList.remove('hidden');
+  try{
+    const r=await fetch(`${B}/api/islem/`,{method:'POST',body:fd});
+    if(r.ok){const d=await r.json();pollStatus(d.beklenen_dosya_adi);}
+  }catch(e){alert('Backend açık mı? (uvicorn main:app --reload)');document.getElementById('sbox').classList.add('hidden');}
+}
+
+function pollStatus(fn){
+  const fill=document.getElementById('pfill'),tx=document.getElementById('stxt'),pc=document.getElementById('spct');
+  const iv=setInterval(async()=>{
+    try{
+      const r=await fetch(`${B}/durum/${fn}`);if(!r.ok)return;
+      const d=await r.json();
+      tx.textContent=d.durum;pc.textContent=`${d.yuzde}%`;fill.style.width=`${d.yuzde}%`;
+
+      // Hata durumu — yuzde 0 ve "Hata:" ile başlıyorsa
+      if(d.yuzde===0&&d.durum.startsWith('Hata:')){
+        clearInterval(iv);
+        document.getElementById('sbox').classList.add('hidden');
+        // Hata toast'u — 8 saniye göster
+        toast(d.durum,'terr',8000);
+        return;
+      }
+
+      if(d.yuzde===100){
+        clearInterval(iv);
+        document.getElementById('sbox').classList.add('hidden');
+        // Uyarı var mı?
+        if(d.durum.startsWith('Uyarı:')){
+          toast(d.durum,'twarn',5000);
+        }
+        showResult(fn);
+      }
+    }catch(e){}
+  },1500);
+}
+
+function showResult(fn){
+  aDosya=fn;
+  document.getElementById('xwrap').classList.remove('hidden');
+  if(mod==='metinden_sese'){
+    document.getElementById('tts_player').classList.remove('hidden');
+    document.getElementById('tts_status').textContent='✓ Ses üretildi';
+    const a=document.getElementById('tts_audio');a.src=`${B}/dinle/${fn}?v=${Date.now()}`;a.play();
+  }else if(mod==='desifre'){
+    aSrt=fn;
+    fetch(`${B}/dinle/${fn}`).then(r=>r.text()).then(c=>renderSegs(c,fn)).catch(()=>{});
+  }else if(mod==='altyazi'){
+    const v=document.getElementById('vid');v.src=`${B}/dinle/${fn}?v=${Date.now()}`;v.play();
+    document.getElementById('live_badge').style.display='inline';
+    aSrt=fn.replace('.mp4','.srt');
+    fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
+    setTimeout(()=>waveform(fn),1800);
+  }else if(mod==='seslendirme'){
+    document.getElementById('live_badge').style.display='inline';
+    aSrt=fn.replace('.mp4','.srt');
+    const v=document.getElementById('vid');v.src=`${B}/dinle/${fn}?v=${Date.now()}`;v.play();
+    fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
+    setTimeout(()=>waveform(fn),1800);
+  }
+}
+
+/* ═══ RENDER SEGMENTS ═══ */
+function renderSegs(srt,fn,tr=false){
+  const blocks=srt.trim().split(/\n\n+/);
+  segs=[];
+  blocks.forEach(b=>{
+    const l=b.trim().split('\n');if(l.length<3)return;
+    const tp=l[1].split(' --> ');if(tp.length!==2)return;
+    const st=t2s(tp[0]),en=t2s(tp[1]);
+    const raw=l.slice(2).join(' ');
+    const sm=raw.match(/\[Konuşmacı (\d+)\]:\s*/);
+    segs.push({no:l[0].trim(),start:st,end:en,text:raw.replace(/\[Konuşmacı \d+\]:\s*/,''),speaker:sm?parseInt(sm[1]):0,tStr:l[1],rawText:raw});
+  });
+
+  // Confidence verisi yükle (render'ı bloklamaz)
+  if(fn) confidenceYukle(fn);
+
+  let html=`
+  <div class="dresult"><i class="fa-solid fa-circle-check"></i>${tr?'Çeviri':'Transkript'} Tamamlandı — ${segs.length} segment
+    <span style="font-size:10px;color:var(--muted2);margin-left:8px;"><span style="color:var(--yellow2)">■</span> Düşük güven <span style="color:var(--red2);margin-left:4px;">■</span> Çok düşük</span>
+  </div>
+  <div class="dbar">
+    <i class="fa-solid fa-language" style="color:var(--accent2);font-size:14px;"></i>
+    <span style="font-size:11px;font-weight:700;color:var(--muted2);">DeepL</span>
+    <select class="dsel" id="dl_lang">
+      <option value="EN">🇺🇸 İngilizce</option>
+      <option value="DE">🇩🇪 Almanca</option>
+      <option value="FR">🇫🇷 Fransızca</option>
+      <option value="ES">🇪🇸 İspanyolca</option>
+      <option value="TR" selected>🇹🇷 Türkçe</option>
+      <option value="RU">🇷🇺 Rusça</option>
+      <option value="JA">🇯🇵 Japonca</option>
+      <option value="ZH">🇨🇳 Çince</option>
+      <option value="AR">🇸🇦 Arapça</option>
+    </select>
+    <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>
+    <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>
+  </div>
+  <div id="speaker_map_panel" class="speaker-map-panel"></div>
+  <div style="padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;">`;
+
+  segs.forEach(seg=>{
+    const d=seg.end-seg.start;
+    const c=cps(seg.text,d);
+    const spC=SP[seg.speaker%SP.length];
+    const cC=cpsC(c);
+    const safe=seg.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html+=`
+    <div class="sc" id="c_${seg.no}" onclick="cClick('${seg.no}',${seg.start})">
+      <div class="sc-top">
+        <span class="sc-num">${String(seg.no).padStart(2,'0')}</span>
+        <span class="sp-badge ${spC}">Konuşmacı ${seg.speaker}</span>
+        <span class="cps-badge ${cC}">${c} CPS</span>
+        <span class="sc-time">${seg.tStr}</span>
+        <span class="sc-dur">${d.toFixed(1)}s</span>
+        <div class="sc-acts">
+          <button class="sca edit" title="Düzenle" onclick="event.stopPropagation();iEdit('${seg.no}','${safe}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="sca cut" title="Böl" onclick="event.stopPropagation();sBol('${seg.no}')"><i class="fa-solid fa-scissors"></i></button>
+          <button class="sca merge" title="Birleştir" onclick="event.stopPropagation();sBirlestir('${seg.no}')"><i class="fa-solid fa-link"></i></button>
+          ${mod==='seslendirme'&&aDosya?`<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub('${seg.no}')"><i class="fa-solid fa-rotate"></i></button>`:''}
+        </div>
+      </div>
+      <div class="sc-txt" id="t_${seg.no}">${seg.text}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  document.getElementById('slist').innerHTML=html;
+
+  // Birden fazla konuşmacı varsa ses eşleştirme paneli
+  const uSpk=new Set(segs.map(s=>s.speaker));
+  if(uSpk.size>1){
+    speakerMapPanelOlustur(segs.map(s=>({text:s.rawText||s.text})));
+    if(fn)fetch(`${B}/api/speaker_map/${fn}`).then(r=>r.json()).then(d=>{
+      _speakerMap=d;
+      Object.entries(d).forEach(([sp,vid])=>{const sel=document.getElementById(`spv_${sp}`);if(sel)sel.value=vid;});
+    }).catch(()=>{});
+  }
+
+  if(mod!=='desifre')drawTL(blocks);
+  setTimeout(checkOV,600);
+
+  // Confidence yüklendikten sonra highlight uygula
+  setTimeout(()=>{
+    if(Object.keys(_confidence).length>0){
+      segs.forEach(seg=>{
+        const el=document.getElementById(`t_${seg.no}`);
+        if(el)el.innerHTML=seg.text.split(' ').map(k=>kelimeHtml(k)).join(' ');
+      });
+    }
+  },1800);
+}
+
+function cClick(no,st){
+  document.querySelectorAll('.sc.sc-act').forEach(c=>c.classList.remove('sc-act'));
+  document.getElementById(`c_${no}`)?.classList.add('sc-act');
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:(a.style.display!=='none'&&a.src?a:null);
+  if(media)media.currentTime=st;
+  const b=document.getElementById(`b_${no}`);if(b){b.style.borderColor='var(--accent3)';setTimeout(()=>b.style.borderColor='',700);}
+}
+
+/* ═══ DEEPL ═══ */
+async function deepL(){
+  if(!aSrt)return alert('Transkript tamamlayın!');
+  document.getElementById('dlbtn').style.display='none';
+  document.getElementById('dlload').style.display='flex';
+  const fd=new FormData();fd.append('srt_dosya_adi',aSrt);fd.append('hedef_dil',document.getElementById('dl_lang').value);
+  try{
+    const r=await fetch(`${B}/api/cevir/`,{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){aSrt=d.cevrilmis_dosya_adi;const sr=await fetch(`${B}/dinle/${d.cevrilmis_dosya_adi}`);renderSegs(await sr.text(),d.cevrilmis_dosya_adi,true);}
+    else toast(`Çeviri hatası: ${d.hata}`,'terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+  document.getElementById('dlbtn').style.display='';
+  document.getElementById('dlload').style.display='none';
+}
+
+/* ═══ INLINE EDIT ═══ */
+async function iEdit(no,old){
+  if(!aSrt)return;
+  const tx=document.getElementById(`t_${no}`);
+  if(!tx||tx.querySelector('textarea'))return;
+  const orig=tx.innerHTML;tx.innerHTML='';
+  const ta=document.createElement('textarea');ta.className='ita';ta.value=old;ta.rows=2;
+  const save=async()=>{
+    const nw=ta.value.trim();ta.disabled=true;
+    if(nw===old){tx.innerHTML=orig;return;}
+    try{
+      _pushUndo({undo:{type:'metin',no,metin:old},redo:{type:'metin',no,metin:nw}});
+      const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_metin',nw);
+      const r=await fetch(`${B}/api/metin_guncelle/`,{method:'POST',body:fd});
+      if(r.ok){
+        tx.innerHTML=nw.split(' ').map(k=>kelimeHtml(k)).join(' ');
+        const c=document.getElementById(`c_${no}`);if(c){c.style.borderColor='var(--green2)';setTimeout(()=>c.style.borderColor='',900);}
+        const s=segs.find(x=>x.no==no);if(s){s.text=nw;s.rawText=nw;}
+        toast('✓ Kaydedildi');
+      }else tx.innerHTML=orig;
+    }catch(e){tx.innerHTML=orig;}
+  };
+  ta.addEventListener('blur',save);
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();save();}
+    if(e.key==='Escape'){ta.removeEventListener('blur',save);tx.innerHTML=orig;}
+  });
+  tx.appendChild(ta);ta.focus();ta.select();
+}
+
+/* ═══ SEG BOL / BİRLEŞTİR ═══ */
+async function sBol(no){
+  if(!aSrt)return;
+  const s=segs.find(x=>x.no==no);if(!s)return;
+  const k=s.start+(s.end-s.start)/2;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('kesim_saniye',k);
+  try{const r=await fetch(`${B}/api/segment_bol/`,{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Bölündü');}}catch(e){}
+}
+async function sBirlestir(no){
+  if(!aSrt)return;
+  if(!confirm(`#${no} ile #${parseInt(no)+1} birleştirilsin mi?`))return;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);
+  try{const r=await fetch(`${B}/api/segment_birlestir/`,{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Birleştirildi');}}catch(e){}
+}
+async function reload(){
+  if(!aSrt)return;
+  const r=await fetch(`${B}/dinle/${aSrt}`);
+  if(r.ok)renderSegs(await r.text(),aSrt,true);
+}
+
+/* ═══ SEGMENT YENİDEN SESLENDİR ═══ */
+async function segRedub(no){
+  if(!aDosya||!aSrt)return toast('Önce dublaj tamamlayın','twarn');
+  const seg=segs.find(s=>s.no==no);
+  if(!seg)return;
+  if(!confirm(`#${no} segmenti yeniden seslendir?\n"${seg.text.substring(0,60)}..."`))return;
+
+  toast(`<i class="fa-solid fa-spinner fa-spin"></i> #${no} seslendiriliyor...`,'tok',8000);
+  try{
+    const fd=new FormData();
+    fd.append('video_dosya_adi',aDosya);
+    fd.append('srt_dosya_adi',aSrt);
+    fd.append('segment_no',no);
+    fd.append('ses_id',voice);
+    const r=await fetch(`${B}/api/segment_yeniden_seslendir/`,{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.islem_id){
+      // Durumu takip et
+      const iv=setInterval(async()=>{
+        const sr=await fetch(`${B}/durum/${d.islem_id}`);
+        const sd=await sr.json();
+        if(sd.yuzde===100){
+          clearInterval(iv);
+          toast(`✓ #${no} yeniden seslendirildi`);
+          // Videoyu yenile
+          const v=document.getElementById('vid');
+          if(v.src)v.src=v.src.split('?')[0]+'?v='+Date.now();
+        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
+          clearInterval(iv);
+          toast(sd.durum,'terr',5000);
+        }
+      },1500);
+    }else{
+      toast(d.hata||'Hata','terr');
+    }
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
+
+/* ═══ TIMELINE ═══ */
+function drawTL(blocks){
+  const track=document.getElementById('tl_track');if(!track)return;
+  Array.from(track.children).forEach(c=>{if(c.id!=='ph'&&c.id!=='wcv')c.remove();});
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:a;
+  const D=(media?.duration&&!isNaN(media.duration))?media.duration:(dur||100);
+  blocks.forEach(blk=>{
+    const l=blk.trim().split('\n');if(l.length<3)return;
+    const no=l[0].trim(),tp=l[1].split(' --> ');if(tp.length!==2)return;
+    const st=t2s(tp[0]),en=t2s(tp[1]);
+    const lp=(st/D)*100,wp=Math.max(((en-st)/D)*100,0.4);
+    const txt=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/,'');
+    const div=document.createElement('div');
+    div.className='tb';div.id=`b_${no}`;
+    div.style.left=`${lp}%`;div.style.width=`${wp}%`;
+    div.title=`#${no}: ${l[1]}\n${txt}`;
+    div.innerHTML=`<div class="tb-id">${no}</div><div class="tb-txt">${txt}</div>`;
+    div.addEventListener('mousedown',e=>{
+      if(e.target.classList.contains('rh'))return;
+      e.preventDefault();
+      const tw=track.clientWidth,sx=e.clientX,ol=lp;
+      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.left=`${Math.max(0,Math.min(100-wp,ol+dp))}%`;};
+      const up=async()=>{
+        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+        const nl=parseFloat(div.style.left),ns=(nl/100)*D,ne=ns+(en-st);
+        await utTime(no,ns,ne,div);
+      };
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+    const rh=document.createElement('div');rh.className='rh';rh.title='Süreyi değiştir';
+    rh.addEventListener('mousedown',e=>{
+      e.stopPropagation();e.preventDefault();
+      const tw=track.clientWidth,sx=e.clientX,ow=wp;
+      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.width=`${Math.max(0.4,Math.min(100-lp,ow+dp))}%`;};
+      const up=async()=>{
+        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+        const nw=parseFloat(div.style.width),ne=st+(nw/100)*D;
+        await utTime(no,st,ne,div);toast(`#${no} güncellendi`);
+      };
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+    div.appendChild(rh);
+    div.addEventListener('click',e=>{if(e.target.classList.contains('rh'))return;cClick(no,st);});
+    track.appendChild(div);
+  });
+}
+
+async function utTime(no,ns,ne,blk){
+  if(!aSrt)return;
+  try{
+    const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_baslangic',ns);fd.append('yeni_bitis',ne);
+    const r=await fetch(`${B}/api/zaman_guncelle/`,{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){
+      const s=segs.find(x=>x.no==no);if(s){s.start=ns;s.end=ne;}
+      const te=document.querySelector(`#c_${no} .sc-time`);if(te)te.textContent=`${s2t(ns)} --> ${s2t(ne)}`;
+      if(blk){blk.style.borderColor='var(--green2)';setTimeout(()=>blk.style.borderColor='',700);}
+    }
+  }catch(e){}
+}
+
+/* ═══ WAVEFORM ═══ */
+async function waveform(dosya){
+  if(mod!=='altyazi'&&mod!=='seslendirme')return;
+  try{
+    const track=document.getElementById('tl_track');if(!track)return;
+    document.getElementById('wcv')?.remove();
+    const cv=document.createElement('canvas');cv.id='wcv';
+    cv.style.cssText='position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0.25;';
+    cv.width=track.clientWidth||800;cv.height=track.clientHeight||90;
+    track.insertBefore(cv,track.firstChild);
+    const r=await fetch(`${B}/api/waveform/${dosya}?orneklem=600`);if(!r.ok)return;
+    const d=await r.json();if(!d.waveform?.length)return;
+    const ctx=cv.getContext('2d'),step=cv.width/d.waveform.length,mid=cv.height/2;
+    ctx.fillStyle='#3b82f6';
+    d.waveform.forEach((v,i)=>{const h=Math.max(2,v*cv.height*.85);ctx.fillRect(i*step,mid-h/2,Math.max(step-.5,.5),h);});
+  }catch(e){}
+}
+
+/* ═══ OVERLAP ═══ */
+async function checkOV(){
+  if(!aSrt)return;
+  try{
+    const r=await fetch(`${B}/api/cakisma_tespit/${aSrt}`);if(!r.ok)return;
+    const d=await r.json();
+    document.getElementById('ov_banner')?.remove();
+    if(d.cakisma_sayisi>0){
+      d.cakismalar?.forEach(c=>document.getElementById(`b_${c.segment_a}`)?.classList.add('ov'));
+      const b=document.createElement('div');b.className='ovbanner';b.id='ov_banner';
+      b.innerHTML=`<span><i class="fa-solid fa-triangle-exclamation"></i> ${d.cakisma_sayisi} zaman çakışması</span><button class="fixbtn" onclick="fixOV()">Düzelt</button>`;
+      document.getElementById('slist').insertBefore(b,document.getElementById('slist').firstChild);
+    }
+  }catch(e){}
+}
+async function fixOV(){
+  if(!aSrt)return;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('bosluk_ms',80);
+  try{const r=await fetch(`${B}/api/cakisma_duzelt/`,{method:'POST',body:fd});const d=await r.json();if(d.basari){await reload();toast(`✓ ${d.duzeltilen_cakisma} çakışma düzeltildi`);}}catch(e){}
+}
+
+/* ═══ KLAVYE ═══ */
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement?.tagName?.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
+  if(['input','textarea','select'].includes(tag))return;
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:(a.style.display!=='none'&&a.src?a:null);
+  if(!media)return;
+  if(e.code==='Space'){e.preventDefault();media.paused?media.play():media.pause();}
+  else if(e.code==='ArrowLeft'){e.preventDefault();media.currentTime=Math.max(0,media.currentTime-(e.shiftKey?1:5));}
+  else if(e.code==='ArrowRight'){e.preventDefault();media.currentTime=Math.min(media.duration||Infinity,media.currentTime+(e.shiftKey?1:5));}
+});
+
+/* ═══ PROJE KAYDETME (localStorage) ═══ */
+const PROJE_KEY = 'voiceflow_son_proje';
+
+function projeKaydet(){
+  if(!aSrt&&!aDosya)return;
+  try{
+    localStorage.setItem(PROJE_KEY, JSON.stringify({
+      aSrt, aDosya, mod,
+      src_lang: document.getElementById('src_lang')?.value,
+      tgt_lang: document.getElementById('tgt_lang')?.value,
+      zaman: Date.now()
+    }));
+  }catch(e){}
+}
+
+function projeYukle(){
+  try{
+    const kayit = JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
+    if(!kayit)return;
+    const gecenDakika = (Date.now()-kayit.zaman)/60000;
+    if(gecenDakika>480)return; // 8 saatten eski kayıtları yükleme
+
+    const banner=document.createElement('div');
+    banner.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--accent2);border-radius:var(--r2);padding:12px 18px;z-index:4000;display:flex;align-items:center;gap:12px;box-shadow:0 8px 22px rgba(0,0,0,.6);font-size:13px;';
+    banner.innerHTML=`
+      <i class="fa-solid fa-folder-open" style="color:var(--accent2)"></i>
+      <span>Son proje bulundu: <b>${kayit.aDosya||kayit.aSrt}</b> (${Math.round(gecenDakika)} dakika önce)</span>
+      <button onclick="projeGeriYukle()" style="background:var(--accent);border:none;color:#fff;padding:5px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;">Devam Et</button>
+      <button onclick="this.closest('div').remove()" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:0 4px;">×</button>
+    `;
+    banner.id='proje_banner';
+    document.body.appendChild(banner);
+    setTimeout(()=>banner.remove(),15000);
+  }catch(e){}
+}
+
+async function projeGeriYukle(){
+  document.getElementById('proje_banner')?.remove();
+  try{
+    const kayit=JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
+    if(!kayit)return;
+    aSrt=kayit.aSrt; aDosya=kayit.aDosya;
+    if(kayit.src_lang)document.getElementById('src_lang').value=kayit.src_lang;
+    if(kayit.tgt_lang)document.getElementById('tgt_lang').value=kayit.tgt_lang;
+
+    // Modü geç
+    sw(kayit.mod||'desifre');
+
+    // SRT varsa kartları yükle
+    if(aSrt){
+      const r=await fetch(`${B}/dinle/${aSrt}`);
+      if(r.ok){
+        const srt=await r.text();
+        renderSegs(srt,aSrt,true);
+        document.getElementById('xwrap').classList.remove('hidden');
+        toast('✓ Proje yüklendi');
+      }
+    }
+  }catch(e){toast('Proje yüklenemedi','terr');}
+}
+
+// Proje değişince otomatik kaydet
+setInterval(projeKaydet, 30000); // 30 saniyede bir
+window.addEventListener('beforeunload', projeKaydet); // Sayfa kapanırken
+
+/* ═══ SUNUCU BAĞLANTI KONTROLÜ ═══ */
+async function sunucuKontrol(){
+  try{
+    const r=await fetch(`${B}/health`,{signal:AbortSignal.timeout(3000)});
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+
+    // API key uyarıları
+    const uyarilar=[];
+    if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY eksik');
+    if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY eksik');
+    if(!d.ffmpeg)uyarilar.push('FFmpeg yüklü değil — altyazı/dublaj çalışmaz');
+
+    if(uyarilar.length>0){
+      toast(`⚠ Yapılandırma uyarısı: ${uyarilar.join(' · ')}`, 'twarn', 8000);
+    }
+
+    // Son proje banner'ı göster
+    projeYukle();
+
+  }catch(e){
+    // Backend çalışmıyor
+    const banner=document.createElement('div');
+    banner.style.cssText='position:fixed;top:0;left:0;right:0;background:var(--red2);color:#fff;text-align:center;padding:10px;font-size:13px;font-weight:600;z-index:9999;';
+    banner.innerHTML='⚠ Backend bağlantısı yok — <code>uvicorn main:app --reload</code> komutunu çalıştırın';
+    document.body.prepend(banner);
+  }
+}
+
+// Sayfa yüklenince kontrol et
+setTimeout(sunucuKontrol, 500);
+</script>
+</body>
+</html>

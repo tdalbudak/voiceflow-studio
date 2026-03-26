@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: voiceflow-studio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: DEEPL_API_KEY
+        sync: false
+    disk:
+      name: voiceflow-data
+      mountPath: /app/ciktilar
+      sizeGB: 10

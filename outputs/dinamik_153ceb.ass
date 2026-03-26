@@ -1,0 +1,32 @@
+[Script Info]
+ScriptType=v4.00+
+PlayResX=1280
+PlayResY=720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Dinamik,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.70,0:00:02.74,Dinamik,,0,0,0,,Hallo, Bruder.
+Dialogue: 0,0:00:04.76,0:00:06.16,Dinamik,,0,0,0,,Hallo, hallo, Bruder.
+Dialogue: 0,0:00:06.90,0:00:08.59,Dinamik,,0,0,0,,Şükran, du, der du die Muschri verstehst, schau doch mal vorbei.
+Dialogue: 0,0:00:08.98,0:00:09.50,Dinamik,,0,0,0,,In Ordnung, mein Herr.
+Dialogue: 0,0:00:11.14,0:00:11.74,Dinamik,,0,0,0,,Was gibt’s?
+Dialogue: 0,0:00:12.32,0:00:14.22,Dinamik,,0,0,0,,Nein, der Zähler zählt, und wir sagen auch nein.
+Dialogue: 0,0:00:14.69,0:00:16.00,Dinamik,,0,0,0,,Da ist ein Glas, da ist ein Teller.
+Dialogue: 0,0:00:16.33,0:00:17.82,Dinamik,,0,0,0,,Das Leitungswasser gehört dir – viel Glück damit.
+Dialogue: 0,0:00:18.33,0:00:21.10,Dinamik,,0,0,0,,Wir haben nichts mit dem Wasser zu tun, sondern nur wegen meines Bruders.
+Dialogue: 0,0:00:21.44,0:00:22.03,Dinamik,,0,0,0,,Hast du Zeit?
+Dialogue: 0,0:00:22.98,0:00:23.92,Dinamik,,0,0,0,,Gehöre ich etwa dazu?
+Dialogue: 0,0:00:24.23,0:00:24.89,Dinamik,,0,0,0,,Der Ausländer sagte.
+Dialogue: 0,0:00:25.89,0:00:27.33,Dinamik,,0,0,0,,Was für ein Mist, den ich da gebaut habe.
+Dialogue: 0,0:00:27.66,0:00:28.73,Dinamik,,0,0,0,,Du hast uns im Garten gesehen.
+Dialogue: 0,0:00:29.16,0:00:30.14,Dinamik,,0,0,0,,Hast du gedacht, es gäbe einen Gärtner?
+Dialogue: 0,0:00:30.66,0:00:31.96,Dinamik,,0,0,0,,Ich bin Özgür, mein Fahrer.
+Dialogue: 0,0:00:32.52,0:00:33.60,Dinamik,,0,0,0,,Arif. Arif.
+Dialogue: 0,0:00:33.82,0:00:36.71,Dinamik,,0,0,0,,Ich erinnere mich auch an den Weltmeister im Boxen, ihr alten Hasen.
+Dialogue: 0,0:00:37.00,0:00:37.56,Dinamik,,0,0,0,,Das ist ein Fehler.
+Dialogue: 0,0:00:37.85,0:00:38.06,Dinamik,,0,0,0,,Das ist er.
+Dialogue: 0,0:00:39.03,0:00:39.97,Dinamik,,0,0,0,,Jetzt legst du los.

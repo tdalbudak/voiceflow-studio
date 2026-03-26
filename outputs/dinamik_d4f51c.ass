@@ -1,0 +1,31 @@
+[Script Info]
+ScriptType=v4.00+
+PlayResX=1280
+PlayResY=720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Dinamik,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.65,0:00:02.72,Dinamik,,0,0,0,,नमस्ते, दोस्त।
+Dialogue: 0,0:00:04.74,0:00:06.12,Dinamik,,0,0,0,,नमस्ते यार।
+Dialogue: 0,0:00:06.86,0:00:08.61,Dinamik,,0,0,0,,शुक्रान, क्या तुम आकर शूराय के बगल में बैठोगे?
+Dialogue: 0,0:00:08.93,0:00:09.48,Dinamik,,0,0,0,,ठीक है, सर।
+Dialogue: 0,0:00:11.11,0:00:11.72,Dinamik,,0,0,0,,क्या चल रहा है?
+Dialogue: 0,0:00:12.27,0:00:14.19,Dinamik,,0,0,0,,नहीं, सर, एक बूंद पानी भी नहीं—हम इसे बिल्कुल नहीं लेंगे।
+Dialogue: 0,0:00:14.67,0:00:15.98,Dinamik,,0,0,0,,वहाँ एक पैंट की जोड़ी है।
+Dialogue: 0,0:00:16.30,0:00:17.78,Dinamik,,0,0,0,,अब पाइप तुम्हारा है; बधाई हो।
+Dialogue: 0,0:00:18.32,0:00:21.07,Dinamik,,0,0,0,,हमारा पानी से कोई लेना-देना नहीं है; यह सब मेरे भाई की वजह से है।
+Dialogue: 0,0:00:21.42,0:00:22.01,Dinamik,,0,0,0,,क्या आप फ्री हैं?
+Dialogue: 0,0:00:22.96,0:00:23.89,Dinamik,,0,0,0,,क्या मैं यहाँ का हिस्सा हूँ?
+Dialogue: 0,0:00:24.21,0:00:24.89,Dinamik,,0,0,0,,यह मेरी जेब में है।
+Dialogue: 0,0:00:25.75,0:00:27.23,Dinamik,,0,0,0,,हम क्या करें?
+Dialogue: 0,0:00:27.62,0:00:28.69,Dinamik,,0,0,0,,तुमने हमें बगीचे में देखा।
+Dialogue: 0,0:00:29.14,0:00:30.14,Dinamik,,0,0,0,,क्या आपको लगा कि वह माली था?
+Dialogue: 0,0:00:30.64,0:00:31.92,Dinamik,,0,0,0,,मैं ओज़गुर हूँ, मेरा ड्राइवर।
+Dialogue: 0,0:00:32.50,0:00:33.46,Dinamik,,0,0,0,,आरिफ, आरिफ।
+Dialogue: 0,0:00:33.85,0:00:36.67,Dinamik,,0,0,0,,मुझे विश्व मुक्केबाजी चैंपियन भी याद है।
+Dialogue: 0,0:00:37.02,0:00:37.70,Dinamik,,0,0,0,,यह एक गलती है।
+Dialogue: 0,0:00:38.84,0:00:39.93,Dinamik,,0,0,0,,यह एक अच्छी बारीकी है।

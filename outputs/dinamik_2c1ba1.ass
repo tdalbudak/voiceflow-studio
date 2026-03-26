@@ -1,0 +1,32 @@
+[Script Info]
+ScriptType=v4.00+
+PlayResX=1280
+PlayResY=720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Dinamik,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.85,0:00:02.96,Dinamik,,0,0,0,,Hello, friend.
+Dialogue: 0,0:00:05.24,0:00:06.32,Dinamik,,0,0,0,,Hello, Mom. Hello, brother.
+Dialogue: 0,0:00:07.00,0:00:08.72,Dinamik,,0,0,0,,Şükran, come over here for a moment.
+Dialogue: 0,0:00:09.00,0:00:09.92,Dinamik,,0,0,0,,All right, sir.
+Dialogue: 0,0:00:11.33,0:00:11.82,Dinamik,,0,0,0,,What's up?
+Dialogue: 0,0:00:12.27,0:00:14.33,Dinamik,,0,0,0,,If not, then no—not even a jug of water for us.
+Dialogue: 0,0:00:14.77,0:00:16.19,Dinamik,,0,0,0,,The faucet is over there, the bucket is over there.
+Dialogue: 0,0:00:16.48,0:00:17.87,Dinamik,,0,0,0,,The water is yours now—congratulations.
+Dialogue: 0,0:00:18.37,0:00:20.26,Dinamik,,0,0,0,,We’ve got nothing to do with water, bro.
+Dialogue: 0,0:00:20.48,0:00:21.19,Dinamik,,0,0,0,,That's why.
+Dialogue: 0,0:00:21.50,0:00:22.14,Dinamik,,0,0,0,,Are you available?
+Dialogue: 0,0:00:23.01,0:00:24.00,Dinamik,,0,0,0,,What am I suited for?
+Dialogue: 0,0:00:24.23,0:00:24.98,Dinamik,,0,0,0,,Blue jay.
+Dialogue: 0,0:00:26.42,0:00:27.48,Dinamik,,0,0,0,,What am I doing?
+Dialogue: 0,0:00:27.66,0:00:29.03,Dinamik,,0,0,0,,You saw us in the garden.
+Dialogue: 0,0:00:29.03,0:00:30.46,Dinamik,,0,0,0,,Did you think I was a gardener?
+Dialogue: 0,0:00:30.76,0:00:32.97,Dinamik,,0,0,0,,I’m Arif, Mr. Özgür’s driver.
+Dialogue: 0,0:00:33.38,0:00:33.70,Dinamik,,0,0,0,,Arif.
+Dialogue: 0,0:00:33.96,0:00:36.79,Dinamik,,0,0,0,,I am also the World Cycling Box Champion, Atilla Baytar.
+Dialogue: 0,0:00:37.15,0:00:38.17,Dinamik,,0,0,0,,Hehe he.
+Dialogue: 0,0:00:39.17,0:00:40.03,Dinamik,,0,0,0,,Are you giving us a hard time?

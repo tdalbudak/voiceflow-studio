@@ -1,0 +1,31 @@
+[Script Info]
+ScriptType=v4.00+
+PlayResX=1280
+PlayResY=720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Dinamik,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,40,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.65,0:00:02.72,Dinamik,,0,0,0,,{\k60} Merhaba {\k46} kardeş.
+Dialogue: 0,0:00:04.74,0:00:06.12,Dinamik,,0,0,0,,{\k59} Merhaba {\k44} merhaba {\k33} kardeş.
+Dialogue: 0,0:00:06.86,0:00:08.61,Dinamik,,0,0,0,,{\k41} Şükran {\k37} sen {\k12} bir {\k23} şürayın {\k22} yanına {\k14} geç {\k23} bakayım.
+Dialogue: 0,0:00:08.93,0:00:09.48,Dinamik,,0,0,0,,{\k17} Tamam {\k36} beyim.
+Dialogue: 0,0:00:11.11,0:00:11.72,Dinamik,,0,0,0,,{\k60} Hayırdır?
+Dialogue: 0,0:00:12.27,0:00:14.19,Dinamik,,0,0,0,,{\k20} Hayır {\k45} sayır, {\k22} sudan {\k17} bir {\k9} bir {\k10} don {\k13} da {\k18} biz {\k23} hayır.
+Dialogue: 0,0:00:14.67,0:00:15.98,Dinamik,,0,0,0,,{\k43} Çeşim {\k22} orada {\k24} bir {\k14} don {\k25} orada.
+Dialogue: 0,0:00:16.30,0:00:17.78,Dinamik,,0,0,0,,{\k30} Boru {\k19} süre {\k43} senindir {\k32} hayırlı {\k22} olsun.
+Dialogue: 0,0:00:18.32,0:00:21.07,Dinamik,,0,0,0,,{\k25} Bizim {\k46} suyla {\k14} bir {\k35} işimiz {\k24} yok {\k33} kardeş {\k75} sebebiyle {\k19} var.
+Dialogue: 0,0:00:21.42,0:00:22.01,Dinamik,,0,0,0,,{\k39} Müsaat {\k19} misin?
+Dialogue: 0,0:00:22.96,0:00:23.89,Dinamik,,0,0,0,,{\k39} Neymiş {\k24} ait {\k29} miyim?
+Dialogue: 0,0:00:24.21,0:00:24.89,Dinamik,,0,0,0,,{\k30} Bülüğü {\k17} cep {\k19} ha.
+Dialogue: 0,0:00:25.75,0:00:27.23,Dinamik,,0,0,0,,{\k76} Ne {\k21} çapa {\k50} semişelim.
+Dialogue: 0,0:00:27.62,0:00:28.69,Dinamik,,0,0,0,,{\k11} Sen {\k26} bizi {\k32} bahçede {\k37} gördün.
+Dialogue: 0,0:00:29.14,0:00:30.14,Dinamik,,0,0,0,,{\k33} Bahçıvan {\k16} mı {\k50} zendettin?
+Dialogue: 0,0:00:30.64,0:00:31.92,Dinamik,,0,0,0,,{\k9} Ben {\k50} özgürü {\k16} benim {\k52} şoförü.
+Dialogue: 0,0:00:32.50,0:00:33.46,Dinamik,,0,0,0,,{\k39} Arif, {\k39} arif.
+Dialogue: 0,0:00:33.85,0:00:36.67,Dinamik,,0,0,0,,{\k17} Ben {\k11} de {\k56} dünyarı {\k35} siktet {\k26} box {\k61} şampiyonu {\k33} hatırlar {\k38} baytır.
+Dialogue: 0,0:00:37.02,0:00:37.70,Dinamik,,0,0,0,,{\k15} He {\k52} he.
+Dialogue: 0,0:00:38.84,0:00:39.93,Dinamik,,0,0,0,,{\k75} Güzelmiş {\k33} koyuyorsun.
