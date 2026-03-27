@@ -905,11 +905,42 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('elevenlabs_401')}", "yuzde": 0}
             return
 
+        # ses_id boşsa varsayılan
+        if not ses_id or ses_id.strip() == "":
+            ses_id = "nPczCjzI2devNBz1zQrb"
+            log.warning("[Motor] ses_id boş — Brian varsayılan kullanılıyor")
+
         # ── METİNDEN SESE ──────────────────────────────────
         if modul == "metinden_sese":
-            islem_durumlari[out_file] = {"durum": "ElevenLabs sesi sentezliyor...", "yuzde": 50}
-            ok = await elevenlabs_ses_uret(yazili_metin, ses_id, os.path.join(OUTPUT_DIR, out_file))
-            islem_durumlari[out_file] = {"durum": "Tamamlandı" if ok else "Hata", "yuzde": 100 if ok else 0}
+            islem_durumlari[out_file] = {"durum": "Metin hazırlanıyor...", "yuzde": 20}
+
+            # Hedef dil varsa önce çevir
+            metin_final = yazili_metin or ""
+            if hedef_dil and hedef_dil.upper() not in ("TR", "AUTO", "") and DEEPL_API_KEY:
+                try:
+                    islem_durumlari[out_file] = {"durum": "DeepL ile çevriliyor...", "yuzde": 35}
+                    async with httpx.AsyncClient() as c:
+                        dr = await c.post(
+                            "https://api.deepl.com/v2/translate",
+                            headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
+                            data={"text": metin_final, "target_lang": DEEPL_DILLER.get(hedef_dil.upper(), hedef_dil.upper())},
+                            timeout=30.0,
+                        )
+                        if dr.status_code == 200:
+                            metin_final = dr.json()["translations"][0]["text"]
+                            log.info(f"[TTS] Metin çevrildi → {hedef_dil}: {metin_final[:60]}...")
+                except Exception as e:
+                    log.warning(f"[TTS Çeviri Hata] {e} — orijinal metin kullanılıyor")
+
+            # Normalize et
+            metin_final = metin_normalize(metin_final, hedef_dil.lower() if hedef_dil else "tr")
+
+            islem_durumlari[out_file] = {"durum": "ElevenLabs sesi sentezliyor...", "yuzde": 60}
+            ok = await elevenlabs_ses_uret(metin_final, ses_id, os.path.join(OUTPUT_DIR, out_file))
+            if ok:
+                islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
+            else:
+                islem_durumlari[out_file] = {"durum": "Hata: Ses üretilemedi. Ses ID geçerli mi?", "yuzde": 0}
             return
 
         # ── DEŞİFRE ────────────────────────────────────────

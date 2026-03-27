@@ -1919,25 +1919,47 @@ function setupTU(media){
 async function startProcess(){
   if(mod==='metinden_sese'&&!document.getElementById('txt_input').value.trim())return alert('Metin girin!');
   if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
+
+  // Ses seçimi kontrolü
+  if(!voice || voice === ''){
+    // Varsayılan ses ata
+    voice = VOICES[0]?.id || 'nPczCjzI2devNBz1zQrb';
+    toast('Ses seçilmedi — varsayılan ses kullanılıyor', 'twarn', 2000);
+  }
+
   const fd=new FormData();
-  fd.append('modul',mod);fd.append('ses_id',voice);
-  fd.append('kaynak_dil',document.getElementById('src_lang').value);
-  fd.append('hedef_dil',document.getElementById('tgt_lang').value);
-  if(mod==='metinden_sese')fd.append('yazili_metin',document.getElementById('txt_input').value);
-  else fd.append('dosya',pFile);
+  fd.append('modul',mod);
+  fd.append('ses_id',voice);
+  fd.append('kaynak_dil',document.getElementById('src_lang').value||'tr');
+  fd.append('hedef_dil',document.getElementById('tgt_lang').value||'');
+  if(mod==='metinden_sese'){
+    const metin = document.getElementById('txt_input').value.trim();
+    if(!metin){ alert('Metin girin!'); return; }
+    fd.append('yazili_metin', metin);
+  } else {
+    fd.append('dosya',pFile);
+  }
   if(mod==='altyazi'){
-    fd.append('f_name',document.getElementById('sub_font').value);
-    fd.append('f_size',document.getElementById('sub_size').value);
-    fd.append('f_color',document.getElementById('sub_color').value);
-    fd.append('is_bold',document.getElementById('btn_bold').classList.contains('on'));
-    fd.append('is_shadow',document.getElementById('btn_shadow').classList.contains('on'));
+    fd.append('f_name',document.getElementById('sub_font')?.value||'Arial');
+    fd.append('f_size',document.getElementById('sub_size')?.value||'22');
+    fd.append('f_color',document.getElementById('sub_color')?.value||'#ffffff');
+    fd.append('is_bold',document.getElementById('btn_bold')?.classList.contains('on')||true);
+    fd.append('is_shadow',document.getElementById('btn_shadow')?.classList.contains('on')||true);
     fd.append('m_v','20');
   }
   document.getElementById('sbox').classList.remove('hidden');
   try{
     const r=await fetch(`${B}/api/islem/`,{method:'POST',body:fd});
     if(r.ok){const d=await r.json();pollStatus(d.beklenen_dosya_adi);}
-  }catch(e){alert('Backend açık mı? (uvicorn main:app --reload)');document.getElementById('sbox').classList.add('hidden');}
+    else {
+      const err = await r.json().catch(()=>({hata:'Sunucu hatası'}));
+      toast(err.hata||'İstek başarısız','terr',4000);
+      document.getElementById('sbox').classList.add('hidden');
+    }
+  }catch(e){
+    toast('Backend bağlantı hatası','terr',4000);
+    document.getElementById('sbox').classList.add('hidden');
+  }
 }
 
 function pollStatus(fn){
