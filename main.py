@@ -69,15 +69,58 @@ async def root():
 # ── Sağlık kontrolü ──
 @app.get("/health")
 async def health():
+    uyarilar = []
+    if not DEEPGRAM_API_KEY:   uyarilar.append("DEEPGRAM_API_KEY eksik")
+    if not ELEVENLABS_API_KEY: uyarilar.append("ELEVENLABS_API_KEY eksik")
+    if not DEEPL_API_KEY:      uyarilar.append("DEEPL_API_KEY eksik — çeviri çalışmaz")
+    if not ffmpeg_var_mi():    uyarilar.append("FFmpeg bulunamadı")
+
     return {
-        "status": "ok",
+        "status": "ok" if not uyarilar else "degraded",
         "ffmpeg": ffmpeg_var_mi(),
         "deepgram_key": bool(DEEPGRAM_API_KEY),
         "elevenlabs_key": bool(ELEVENLABS_API_KEY),
         "deepl_key": bool(DEEPL_API_KEY),
+        "uyarilar": uyarilar,
         "max_dosya_mb": MAX_DOSYA_MB,
         "max_sure_dakika": MAX_SURE_DAKIKA,
+        "versiyon": "2.0.0",
     }
+
+
+@app.on_event("startup")
+async def baslangic_kontrolu():
+    """Uygulama başlarken key kontrolü yap, eksikleri logla."""
+    log.info("=" * 50)
+    log.info("VoiceFlow Studio başlatılıyor...")
+    if not DEEPGRAM_API_KEY:   log.warning("⚠ DEEPGRAM_API_KEY eksik — deşifre çalışmaz")
+    if not ELEVENLABS_API_KEY: log.warning("⚠ ELEVENLABS_API_KEY eksik — TTS çalışmaz")
+    if not DEEPL_API_KEY:      log.warning("⚠ DEEPL_API_KEY eksik — çeviri çalışmaz")
+    if ffmpeg_var_mi():        log.info("✓ FFmpeg mevcut")
+    else:                      log.warning("⚠ FFmpeg bulunamadı")
+    log.info("=" * 50)
+    # Başlangıçta eski dosyaları temizle
+    asyncio.create_task(_periyodik_temizle())
+
+
+async def _periyodik_temizle():
+    """Her 6 saatte bir 24 saatten eski geçici dosyaları sil."""
+    while True:
+        await asyncio.sleep(6 * 3600)  # 6 saat bekle
+        try:
+            import time
+            sinir = time.time() - 86400  # 24 saat önce
+            temizlenen = 0
+            for klasor in [TEMP_DIR, OUTPUT_DIR]:
+                for dosya in os.listdir(klasor):
+                    yol = os.path.join(klasor, dosya)
+                    if os.path.isfile(yol) and os.path.getmtime(yol) < sinir:
+                        os.unlink(yol)
+                        temizlenen += 1
+            if temizlenen:
+                log.info(f"[Temizlik] {temizlenen} eski dosya silindi")
+        except Exception as e:
+            log.error(f"[Temizlik Hata] {e}")
 
 # ── Dosya boyutu kontrolü ──
 def _dosya_kontrol(dosya_yolu: str) -> tuple[bool, str]:
@@ -446,17 +489,234 @@ def ffmpeg_ses_miksleme(
     return True
 
 
+# ============================================================
+# METİN NORMALIZE — TTS öncesi ön işleme
+# ============================================================
+
+# İnternet kısaltmaları → okunabilir metin (dile göre)
+KISALTMA_SOZLUK = {
+    "tr": {
+        # Genel Türkçe kısaltmalar
+        "dk": "dakika", "sn": "saniye", "saat": "saat",
+        "vb": "ve benzeri", "vb.": "ve benzeri",
+        "vs": "ve saire", "vs.": "ve saire",
+        "örn": "örneğin", "örn.": "örneğin",
+        "yani": "yani", "falan": "falan",
+        "Türkiye": "Türkiye", "İstanbul": "İstanbul",
+        # Sosyal medya / sokak jargonu TR
+        "kanka": "kanka", "aga": "ağa", "ya": "ya",
+        "amk": "いや", "lan": "lan",
+    },
+    "en": {
+        # İnternet kısaltmaları → açık metin (TTS'in doğru okuyacağı hale)
+        "lol": "laughing out loud",
+        "lmao": "laughing my ass off",
+        "lmfao": "laughing my freaking ass off",
+        "rofl": "rolling on the floor laughing",
+        "omg": "oh my god",
+        "omfg": "oh my freaking god",
+        "wtf": "what the f",
+        "wth": "what the heck",
+        "brb": "be right back",
+        "afk": "away from keyboard",
+        "ngl": "not gonna lie",
+        "fr": "for real",
+        "frfr": "for real for real",
+        "ong": "on god",
+        "nvm": "never mind",
+        "idk": "I don't know",
+        "idc": "I don't care",
+        "imo": "in my opinion",
+        "imho": "in my humble opinion",
+        "tbh": "to be honest",
+        "tbf": "to be fair",
+        "fyi": "for your information",
+        "asap": "as soon as possible",
+        "eta": "estimated time of arrival",
+        "tl;dr": "too long didn't read",
+        "tldr": "too long didn't read",
+        "smh": "shaking my head",
+        "smdh": "shaking my damn head",
+        "irl": "in real life",
+        "dm": "direct message",
+        "dms": "direct messages",
+        "hmu": "hit me up",
+        "fomo": "fear of missing out",
+        "yolo": "you only live once",
+        "goat": "greatest of all time",
+        "w": "win",
+        "l": "loss",
+        "npc": "non-playable character",
+        "pov": "point of view",
+        "iykyk": "if you know you know",
+        "istg": "I swear to god",
+        "rn": "right now",
+        "imo": "in my opinion",
+        "lowkey": "low key",
+        "highkey": "high key",
+        "cap": "lie",
+        "no cap": "no lie",
+        "bussin": "really good",
+        "sus": "suspicious",
+        "slay": "slay",
+        "bet": "bet",
+        "vibe": "vibe",
+        "based": "based",
+        "ratio": "ratio",
+        "mid": "mediocre",
+        "fire": "fire",
+        "lit": "lit",
+        "flex": "flex",
+        "sic": "sick",
+        "w/": "with",
+        "w/o": "without",
+        "b4": "before",
+        "u": "you",
+        "r": "are",
+        "ur": "your",
+        "thx": "thanks",
+        "ty": "thank you",
+        "np": "no problem",
+        "yw": "you're welcome",
+        "bc": "because",
+        "cuz": "because",
+        "gonna": "going to",
+        "wanna": "want to",
+        "gotta": "got to",
+        "kinda": "kind of",
+        "sorta": "sort of",
+        "dunno": "don't know",
+    },
+    "de": {
+        "bzw": "beziehungsweise",
+        "usw": "und so weiter",
+        "z.b": "zum Beispiel",
+        "zb": "zum Beispiel",
+        "ggf": "gegebenenfalls",
+        "mfg": "mit freundlichen Grüßen",
+        "lg": "liebe Grüße",
+        "lol": "lachend",
+        "omg": "oh mein Gott",
+        "ngl": "ehrlich gesagt",
+        "nvm": "vergiss es",
+    },
+    "fr": {
+        "svp": "s'il vous plaît",
+        "stp": "s'il te plaît",
+        "lol": "mort de rire",
+        "mdr": "mort de rire",
+        "jsais": "je sais",
+        "jsuis": "je suis",
+        "ct": "c'était",
+        "pk": "pourquoi",
+        "pcq": "parce que",
+    },
+}
+
+# Yaygın yanlış telaffuz düzeltmeleri (alias yaklaşımı)
+TELAFFUZ_DUZELT = {
+    "en": {
+        # Teknik terimler
+        "GIF": "jif",
+        "API": "A P I",
+        "URL": "U R L",
+        "SQL": "sequel",
+        "nginx": "engine x",
+        "Linux": "linnux",
+        "data": "dayta",
+        "cache": "cash",
+        "queue": "cue",
+        "meme": "meem",
+        "niche": "neesh",
+        "GIF": "jif",
+        # Para birimleri
+        "$": "dollars",
+        "€": "euros",
+        "£": "pounds",
+        "¥": "yen",
+        # Yaygın yanlışlar
+        "etc": "et cetera",
+        "etc.": "et cetera",
+        "i.e.": "that is",
+        "e.g.": "for example",
+    },
+    "tr": {
+        # Türkçe teknik terimler
+        "AI": "yapay zeka",
+        "ML": "makine öğrenimi",
+        "API": "A P İ",
+        "URL": "U R L",
+        "Wi-Fi": "vay fay",
+        "PDF": "P D F",
+        "SMS": "S M S",
+        "$": "dolar",
+        "€": "euro",
+        "£": "sterlin",
+        "%": "yüzde",
+        "km": "kilometre",
+        "kg": "kilogram",
+        "m²": "metrekare",
+    },
+}
+
+
+def metin_normalize(metin: str, dil: str = "en") -> str:
+    """
+    TTS'e göndermeden önce metni normalize et:
+    1. İnternet kısaltmalarını açık metne çevir
+    2. Yaygın telaffuz hatalarını düzelt
+    3. Sembol/sayı normalizasyonu
+    4. Gereksiz boşlukları temizle
+    """
+    if not metin:
+        return metin
+
+    # Temel temizlik
+    metin = metin.strip()
+
+    # Dile özgü kısaltma sözlüğü
+    kisaltmalar = KISALTMA_SOZLUK.get(dil, KISALTMA_SOZLUK.get("en", {}))
+    duzeltmeler = TELAFFUZ_DUZELT.get(dil, {})
+
+    # Kısaltmaları değiştir (büyük/küçük harf duyarsız, kelime sınırıyla)
+    for kisaltma, acilim in kisaltmalar.items():
+        pattern = r'\b' + re.escape(kisaltma) + r'\b'
+        metin = re.sub(pattern, acilim, metin, flags=re.IGNORECASE)
+
+    # Telaffuz düzeltmeleri (büyük/küçük duyarlı olanlar için)
+    for yanlis, dogru in duzeltmeler.items():
+        metin = metin.replace(yanlis, dogru)
+
+    # Sayı + birim normalizasyonu
+    metin = re.sub(r'(\d+)%', r'\1 percent', metin) if dil == 'en' else re.sub(r'(\d+)%', r'\1 yüzde', metin)
+    metin = re.sub(r'\$(\d+)', r'\1 dollars', metin) if dil == 'en' else metin
+    metin = re.sub(r'€(\d+)', r'\1 euros', metin) if dil in ('en','de') else metin
+
+    # Gereksiz tekrar boşlukları temizle
+    metin = re.sub(r'\s+', ' ', metin).strip()
+
+    return metin
+
+
 async def elevenlabs_segment_uret(
     metin: str,
     ses_id: str,
     output_path: str,
     hedef_sure: float,
     retry: int = 2,
+    dil: str = "en",
 ) -> bool:
     """
-    Segment metni sese çevirir. Rate limit ve hatalarda retry uygular.
-    Ses sadece hedef süreden %50+ uzunsa hafifçe sıkıştırılır.
+    Segment metni sese çevirir.
+    - TTS öncesi metin normalizasyonu uygular (kısaltmalar, jargon)
+    - Rate limit ve hatalarda retry
+    - Ses hedef süreden uzunsa akıllı sıkıştırma
     """
+    # Metin normalize et
+    metin_temiz = metin_normalize(metin, dil)
+    if metin_temiz != metin:
+        log.debug(f"[Normalize] '{metin[:50]}' → '{metin_temiz[:50]}'")
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}"
     headers = {
         "Accept": "audio/mpeg",
@@ -464,7 +724,7 @@ async def elevenlabs_segment_uret(
         "xi-api-key": ELEVENLABS_API_KEY,
     }
     data = {
-        "text": metin,
+        "text": metin_temiz,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.55,
@@ -806,7 +1066,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         sure = max(1.0, seg["bitis"] - seg["baslangic"])
 
                     ses_yol = os.path.join(ses_klasor, f"seg_{idx:04d}.mp3")
-                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure)
+                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en")
                     tamamlanan[0] += 1
                     pct = 20 + int((tamamlanan[0] / toplam) * 55)
                     islem_durumlari[out_file] = {
@@ -1458,9 +1718,47 @@ async def words_al(dosya_adi: str):
         return JSONResponse({"words": json.load(f)})
 
 
+@app.post("/api/normalize_test/")
+async def normalize_test_endpoint(
+    metin: str = Form(...),
+    dil: str   = Form("en"),
+):
+    """Metnin TTS öncesi nasıl normalize edileceğini gösterir."""
+    normalize_edilmis = metin_normalize(metin, dil)
+    farklar = []
+    # Hangi kelimeler değişti?
+    orijinal_kelimeler = metin.split()
+    yeni_kelimeler     = normalize_edilmis.split()
+    for i, (o, y) in enumerate(zip(orijinal_kelimeler, yeni_kelimeler)):
+        if o.lower() != y.lower():
+            farklar.append({"orijinal": o, "normalize": y})
+    return JSONResponse({
+        "orijinal":         metin,
+        "normalize_edilmis": normalize_edilmis,
+        "degisen_kelimeler": farklar,
+        "dil": dil,
+    })
+
+
 @app.post("/api/url_yukle/")
-async def url_yukle(url: str = Form(...)):
-    """URL üzerinden video indirir (YouTube, Drive, Dropbox, direkt link)."""
+async def url_yukle(
+    url: str = Form(...),
+    kalite: str = Form("best"),  # best | 1080 | 720 | 480 | 360 | audio_only
+):
+    """
+    URL üzerinden video indirir (YouTube, Drive, Dropbox, direkt link).
+    kalite: best | 1080 | 720 | 480 | 360 | audio_only
+    """
+    # Kalite → yt-dlp format string
+    kalite_fmt = {
+        "best":       "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "1080":       "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]",
+        "720":        "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
+        "480":        "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]",
+        "360":        "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360]",
+        "audio_only": "bestaudio[ext=m4a]/bestaudio/best",
+    }.get(kalite, "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best")
+
     try:
         import yt_dlp
     except ImportError:
@@ -1492,7 +1790,7 @@ async def url_yukle(url: str = Form(...)):
     cikti_sablonu = os.path.join(TEMP_DIR, f"url_{b_id}.%(ext)s")
     ydl_opts = {
         'outtmpl': cikti_sablonu,
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': kalite_fmt,
         'noplaylist': True,
         'quiet': True,
         'max_filesize': MAX_DOSYA_MB * 1024 * 1024,
@@ -1563,45 +1861,186 @@ async def speaker_map_al(dosya_adi: str):
 async def kelime_oneri(
     kelime: str = Form(...),
     baglam: str = Form(""),
+    dil: str    = Form("tr"),
 ):
     """
-    Düşük güvenli kelime için ElevenLabs'ın okuyabileceği
-    alternatif yazımlar önerir (basit fonetik dönüşüm).
+    Düşük güvenli kelime için:
+    1. Önce influencer / sokak jargonu sözlüğüne bak
+    2. Fonetik alternatifler üret
+    3. Baglam varsa Claude API ile akıllı öneri al
     """
-    oneriler = []
+    temiz = kelime.lower().strip('.,?!;:\'"-')
 
-    # Türkçe fonetik alternatifler — yaygın yanlış okunan kalıplar
-    fonetik_map = {
-        "hemşerim": ["hem-şe-rim", "hemşerim", "HEM-şerim"],
-        "hemşerilik": ["hem-şe-ri-lik"],
-        "hayırdır": ["ha-yır-dır", "hayır dır", "hayirdir"],
-        "büşra": ["bü-şra", "Büşra", "Bushrah"],
-        "kardeş": ["kar-deş", "kardesh"],
-        "abi": ["a-bi", "abee"],
-        "hoca": ["ho-ca", "hodja"],
-        "çay": ["chay", "chai"],
+    # ── İNFLUENCER / SOKAK JARGONU SÖZLÜĞÜ ──
+    jargon_map = {
+        # Türkçe sokak / influencer
+        "naber": ["ne haber", "nasılsın", "ne var ne yok"],
+        "nbr": ["ne haber", "nasılsın"],
+        "kpk": ["kafayı patlattım", "çıldırdım"],
+        "ya": ["ya", "yani", "anlıyor musun"],
+        "aga": ["ağabey", "arkadaş", "bro"],
+        "agam": ["ağabeyim", "dostum"],
+        "kanka": ["arkadaş", "dostum", "kardeşim"],
+        "knk": ["kanka", "arkadaş"],
+        "bro": ["bro", "kardeş", "arkadaş"],
+        "reis": ["reis", "patron", "abi"],
+        "çakmak": ["çakmak", "yakalamak"],
+        "saçmalamak": ["saçmalamak", "abartmak"],
+        "efsane": ["efsane", "harika", "muhteşem"],
+        "leş": ["berbat", "rezil", "korkunç"],
+        "süper": ["süper", "harika", "mükemmel"],
+        "acayip": ["acayip", "çok", "inanılmaz"],
+        "bi": ["bir", "biraz"],
+        "şey": ["şey", "yani", "hmm"],
+        "işte": ["işte", "yani"],
+        "hani": ["hani", "yani", "bilirsin"],
+        "tamam mı": ["tamam mı", "anladın mı", "değil mi"],
+        "falan": ["falan", "gibi şeyler", "ve benzeri"],
+        "filan": ["filan", "gibi şeyler"],
+        "mk": ["mükemmel", "muhteşem"],
+        "mq": ["mucize", "harika"],
+        "amk": ["ya", "vay be"],
+        "aq": ["ah ya", "vay be"],
+        "len": ["lan", "hey"],
+        "deli": ["deli", "çılgın", "inanılmaz"],
+        "çıldırtıcı": ["çıldırtıcı", "inanılmaz derecede güzel"],
+        "yok artık": ["inanılmaz", "olmaz böyle şey"],
+        "tabi": ["tabii", "elbette", "kesinlikle"],
+        "bi ara": ["bir ara", "yakında", "zaman zaman"],
+        "sıkıcı": ["sıkıcı", "sıradan", "monoton"],
+        "cool": ["havalı", "cool", "şık"],
+        "vibe": ["atmosfer", "hava", "enerji"],
+        # İngilizce sokak / influencer
+        "lowkey": ["low key", "biraz", "gizlice"],
+        "highkey": ["high key", "açıkçası", "gerçekten"],
+        "ngl": ["not gonna lie", "yalan olmaz"],
+        "fr": ["for real", "gerçekten"],
+        "frfr": ["for real for real", "gerçekten"],
+        "ong": ["on god", "yemin ederim"],
+        "cap": ["lie", "yalan"],
+        "no cap": ["no lie", "yalan değil"],
+        "bussin": ["really good", "çok iyi"],
+        "slay": ["slay", "harika görünüyor"],
+        "bet": ["okay", "tamam"],
+        "fam": ["family", "arkadaş"],
+        "bro": ["brother", "arkadaş"],
+        "bruh": ["bro", "ya", "yok artık"],
+        "goat": ["greatest of all time", "en iyi"],
+        "w": ["win", "kazanç"],
+        "l": ["loss", "kayıp"],
+        "fire": ["amazing", "harika"],
+        "lit": ["amazing", "harika"],
+        "sus": ["suspicious", "şüpheli"],
+        "ratio": ["got ratioed", "beğeni az yorum çok"],
+        "mid": ["mediocre", "sıradan"],
+        "based": ["based", "gerçekçi"],
+        "rent free": ["always on my mind", "aklımdan çıkmıyor"],
+        "understood the assignment": ["did great", "işini bildi"],
+        "it's giving": ["it seems like", "sanki"],
+        "no shot": ["no way", "imkansız"],
+        "send it": ["go for it", "yap"],
+        "rizz": ["charisma", "karizmatik"],
+        "delulu": ["delusional", "hayalperest"],
+        "touch grass": ["go outside", "dışarı çık"],
+        "main character": ["main character energy", "baş karakter"],
+        "era": ["phase", "dönem"],
+        "iykyk": ["if you know you know", "bilenler bilir"],
+        "istg": ["i swear to god", "yemin ederim"],
+        "omg": ["oh my god", "tanrım"],
+        "omfg": ["oh my god", "tanrım"],
+        "lmao": ["laughing", "güldüm"],
+        "lol": ["laughing out loud", "haha"],
+        "tbh": ["to be honest", "dürüst olmak gerekirse"],
+        "imo": ["in my opinion", "bence"],
+        "nvm": ["never mind", "boşver"],
+        "idk": ["i don't know", "bilmiyorum"],
+        "idc": ["i don't care", "umurumda değil"],
+        "smh": ["shaking my head", "hayal kırıklığı"],
+        "rn": ["right now", "şu an"],
+        "asap": ["as soon as possible", "en kısa sürede"],
+        # Ses/müzik/içerik üretici jargonu
+        "content": ["içerik", "video"],
+        "vlog": ["vlog", "günlük video"],
+        "collab": ["iş birliği", "ortak çalışma"],
+        "drop": ["yayınla", "çıkar"],
+        "trending": ["gündemde", "popüler"],
+        "viral": ["viral", "yayıldı"],
+        "algorithm": ["algoritma"],
+        "engagement": ["etkileşim"],
+        "repost": ["paylaş", "yeniden paylaş"],
     }
 
-    temiz = kelime.lower().strip('.,?!;:')
-    if temiz in fonetik_map:
-        oneriler = fonetik_map[temiz]
+    # Fonetik dönüşüm (Türkçe için)
+    def fonetik_tr(k):
+        return (k.replace('ş','sh').replace('ç','ch')
+                 .replace('ğ','').replace('ı','i')
+                 .replace('ö','oe').replace('ü','ue')
+                 .replace('İ','i').replace('Ş','Sh'))
+
+    oneriler = []
+
+    # 1. Jargon sözlüğünde bul
+    if temiz in jargon_map:
+        oneriler = jargon_map[temiz]
     else:
-        # Genel: hece bazlı bölme ve vurgu
-        oneriler = [
-            kelime,
-            kelime.replace('ş', 'sh').replace('ç', 'ch').replace('ğ', '').replace('ı', 'i').replace('ö', 'o').replace('ü', 'u'),
-            " ".join(kelime[i:i+2] for i in range(0, len(kelime), 2)),
-        ]
+        # 2. Kısmi eşleşme — başlangıç
+        eslesme = [(k,v) for k,v in jargon_map.items() if temiz.startswith(k) or k.startswith(temiz)]
+        if eslesme:
+            oneriler = eslesme[0][1]
+
+    # 3. Fonetik alternatifler ekle
+    fonetik = fonetik_tr(kelime)
+    if fonetik != kelime and fonetik not in oneriler:
+        oneriler.append(fonetik)
+
+    # 4. Hece bölme alternatifi
+    if len(kelime) > 4:
+        heceli = "-".join(kelime[i:i+3] for i in range(0, len(kelime), 3)).strip("-")
+        if heceli not in oneriler:
+            oneriler.append(heceli)
+
+    # 5. Baglam varsa Claude API ile akıllı öneri
+    if baglam and len(baglam) > 5 and ELEVENLABS_API_KEY:
+        try:
+            ai_prompt = f"""Sen bir transkript düzeltme asistanısın.
+Vidyoda geçen "{kelime}" kelimesi yanlış tanınmış olabilir.
+Bağlam: "{baglam}"
+Bu bağlamda "{kelime}" yerine gelebilecek 3 Türkçe kelime öner.
+Sadece JSON liste döndür, açıklama yapma: ["öneri1", "öneri2", "öneri3"]"""
+
+            async with httpx.AsyncClient() as client:
+                r = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": os.getenv("ANTHROPIC_API_KEY",""),
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": "claude-haiku-4-5-20251001",
+                        "max_tokens": 100,
+                        "messages": [{"role":"user","content": ai_prompt}]
+                    },
+                    timeout=8.0,
+                )
+                if r.status_code == 200:
+                    text = r.json()["content"][0]["text"].strip()
+                    import json as _json
+                    ai_oneriler = _json.loads(text)
+                    for ao in ai_oneriler:
+                        if ao not in oneriler:
+                            oneriler.insert(0, ao)  # AI önerilerini başa koy
+        except Exception as ex:
+            log.debug(f"[AI Öneri] {ex}")
+
+    if not oneriler:
+        oneriler = [kelime, kelime.capitalize(), kelime.upper()]
 
     return JSONResponse({
         "kelime": kelime,
-        "oneriler": list(dict.fromkeys(oneriler)),  # unique
+        "oneriler": list(dict.fromkeys(oneriler))[:6],  # max 6 öneri, unique
+        "jargon": temiz in jargon_map,
     })
-    yol = os.path.join(OUTPUT_DIR, dosya_adi)
-    if not os.path.exists(yol):
-        return JSONResponse({"hata": "Bulunamadı"}, status_code=404)
-    with open(yol, encoding="utf-8") as f:
-        return JSONResponse({"icerik": f.read()})
 
 
 @app.get("/api/segmentler/{dosya_adi}")

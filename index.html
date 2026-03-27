@@ -2,7 +2,9 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>VoiceFlow Studio — AI Dublaj & Altyazı</title>
+<title>VoiceFlow Studio — AI Dublaj & Altyazı Editörü</title>
+<meta name="description" content="AI ile videolarınızı 60+ dile dublajlayın. Timeline editör, TikTok modu, ses klonlama.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>V</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -255,6 +257,8 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 .w-low:hover{background:rgba(245,158,11,.15);}
 .w-bad{border-bottom:2px solid var(--red2);color:var(--red2);cursor:pointer;border-radius:2px;padding:0 1px;transition:background .12s;}
 .w-bad:hover{background:rgba(239,68,68,.15);}
+.w-jargon{border-bottom:2px dashed var(--yellow2);cursor:pointer;border-radius:2px;padding:0 1px;transition:background .12s;opacity:.85;}
+.w-jargon:hover{background:rgba(245,158,11,.12);opacity:1;}
 
 /* Kelime öneri popup */
 .word-popup{position:fixed;background:var(--s1);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:8px;z-index:9999;min-width:180px;box-shadow:0 8px 22px rgba(0,0,0,.7);}
@@ -292,6 +296,16 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 .live-sub-overlay{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;font-size:16px;font-weight:700;padding:6px 16px;border-radius:6px;text-align:center;max-width:90%;pointer-events:none;z-index:12;display:none;text-shadow:1px 1px 2px #000;line-height:1.4;}
 
 .hidden{display:none!important;}
+
+/* ══ VIDEO ARAÇ ÇUBUĞU ══ */
+.vtool-btn{background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s;font-family:inherit;white-space:nowrap;}
+.vtool-btn:hover{border-color:var(--accent2);color:var(--accent3);}
+.vtool-btn.vtool-play{background:var(--accent);border-color:var(--accent);color:#fff;padding:4px 12px;}
+.vtool-btn.vtool-play:hover{background:#1d4ed8;}
+.vtool-btn.active{background:rgba(59,130,246,.15);border-color:var(--accent2);color:var(--accent3);}
+.vtool-sep{width:1px;height:20px;background:var(--border2);flex-shrink:0;}
+kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px;font-family:'DM Mono',monospace;color:var(--txt);}
+
 </style>
 </head>
 <body>
@@ -543,6 +557,87 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
       <button class="cloud-pill" onclick="cloudUpload('url')"><i class="fa-solid fa-link"></i> URL</button>
     </div>
 
+    <!-- VIDEO ARAÇ ÇUBUĞU -->
+    <div id="vid_toolbar" style="display:none;background:var(--s2);border-top:1px solid var(--border);padding:6px 10px;display:none;align-items:center;gap:6px;flex-wrap:wrap;">
+
+      <!-- Oynatma kontrolleri -->
+      <div style="display:flex;align-items:center;gap:4px;">
+        <button class="vtool-btn" onclick="vidSeek(-10)" title="10s geri [J]"><i class="fa-solid fa-backward-step"></i></button>
+        <button class="vtool-btn" onclick="vidSeek(-5)" title="5s geri [←]"><i class="fa-solid fa-backward"></i> 5s</button>
+        <button class="vtool-btn vtool-play" id="play_pause_btn" onclick="togglePlay()" title="Oynat/Duraklat [Space]"><i class="fa-solid fa-play" id="play_icon"></i></button>
+        <button class="vtool-btn" onclick="vidSeek(5)" title="5s ileri [→]">5s <i class="fa-solid fa-forward"></i></button>
+        <button class="vtool-btn" onclick="vidSeek(10)" title="10s ileri [L]"><i class="fa-solid fa-forward-step"></i></button>
+      </div>
+
+      <div class="vtool-sep"></div>
+
+      <!-- Hız -->
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-size:10px;color:var(--muted2);">Hız</span>
+        <select id="vid_speed" onchange="setSpeed(this.value)" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:3px 6px;border-radius:4px;font-size:11px;cursor:pointer;">
+          <option value="0.5">0.5×</option>
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+
+      <div class="vtool-sep"></div>
+
+      <!-- Ses -->
+      <div style="display:flex;align-items:center;gap:5px;">
+        <button class="vtool-btn" onclick="toggleMute()" id="mute_btn" title="Sessiz [M]"><i class="fa-solid fa-volume-high" id="mute_icon"></i></button>
+        <input type="range" id="vid_vol_slider" min="0" max="100" value="100" oninput="setVidVol(this.value)" style="width:60px;height:3px;accent-color:var(--accent2);" title="Ses seviyesi">
+        <span id="vid_vol_label" style="font-size:10px;color:var(--muted2);min-width:28px;">100%</span>
+      </div>
+
+      <div class="vtool-sep"></div>
+
+      <!-- Zaman -->
+      <span id="vid_time_display" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--accent3);">00:00 / 00:00</span>
+
+      <div class="vtool-sep"></div>
+
+      <!-- Marker ekle -->
+      <button class="vtool-btn" onclick="markerEkle()" title="Bu noktaya marker ekle [M]"><i class="fa-solid fa-bookmark"></i> Marker</button>
+
+      <!-- Loop bölge -->
+      <button class="vtool-btn" id="loop_btn" onclick="toggleLoop()" title="Seçili bölgeyi döngüye al"><i class="fa-solid fa-repeat"></i> Loop</button>
+
+      <!-- Klavye kısayolları -->
+      <button class="vtool-btn" onclick="toggleShortcutPanel()" title="Klavye kısayolları" style="margin-left:auto;"><i class="fa-solid fa-keyboard"></i></button>
+
+      <!-- Tam ekran -->
+      <button class="vtool-btn" onclick="document.getElementById('vid').requestFullscreen()" title="Tam ekran [F]"><i class="fa-solid fa-expand"></i></button>
+    </div>
+
+    <!-- KLAVYE KISAYOLLARI PANELİ -->
+    <div id="shortcut_panel" style="display:none;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r2);padding:14px;margin:6px 10px;position:absolute;right:10px;bottom:60px;z-index:100;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+      <div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        ⌨ Klavye Kısayolları
+        <button onclick="toggleShortcutPanel()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:11px;">
+        <kbd>Space</kbd><span style="color:var(--muted2);">Oynat / Duraklat</span>
+        <kbd>←</kbd><span style="color:var(--muted2);">5 saniye geri</span>
+        <kbd>→</kbd><span style="color:var(--muted2);">5 saniye ileri</span>
+        <kbd>J</kbd><span style="color:var(--muted2);">10 saniye geri</span>
+        <kbd>L</kbd><span style="color:var(--muted2);">10 saniye ileri</span>
+        <kbd>M</kbd><span style="color:var(--muted2);">Sessiz / Sesli</span>
+        <kbd>F</kbd><span style="color:var(--muted2);">Tam ekran</span>
+        <kbd>Ctrl+Z</kbd><span style="color:var(--muted2);">Geri al</span>
+        <kbd>Ctrl+Y</kbd><span style="color:var(--muted2);">İleri al</span>
+        <kbd>Ctrl+S</kbd><span style="color:var(--muted2);">Projeyi kaydet</span>
+        <kbd>Delete</kbd><span style="color:var(--muted2);">Segmenti sil</span>
+        <kbd>Enter</kbd><span style="color:var(--muted2);">Segmenti böl</span>
+      </div>
+    </div>
+
+    <!-- MARKER LISTESI -->
+    <div id="marker_list" style="display:none;background:var(--s2);border-top:1px solid var(--border);padding:4px 10px;max-height:60px;overflow-y:auto;"></div>
+
     <div class="mixer" id="mixer">
       <div class="mix-title"><i class="fa-solid fa-sliders"></i> Stüdyo Mikseri</div>
       <div class="mix-row">
@@ -699,7 +794,22 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
               <option value="E7GwUhgj9sbeAZgubRba">Bahadır — Derin, Belgesel</option>
               <option value="xFsOR54lR471QiCvQ5re">İlknur — Net, Sıcak</option>
             </optgroup>
-            <optgroup label="🇺🇸🇬🇧 English (22 ses)">
+            <optgroup label="🇩🇪 Almanca">
+              <option value="dFA3XRddYScy6ylAYTIO">Helmut — Warm, Gentle</option>
+              <option value="60UU378MZ8YbeLyaF7TI">Jonas — Confident, Trustworthy</option>
+              <option value="kAzI34nYjizE0zON6rXv">Sami — Energetic, Expressive</option>
+              <option value="KSyQzmsYhFbuOhqj1Xxv">Lea — UGC Creator</option>
+            </optgroup>
+            <optgroup label="🇫🇷 Fransızca">
+              <option value="8qnuneLiGjGrT4A62CCe">Jules — Conversational</option>
+              <option value="p2Wol3C7j3rHbfOrbL18">Lisa — Lovely and Emotional</option>
+            </optgroup>
+            <optgroup label="🇮🇹 İtalyanca">
+              <option value="RXoaSpLaWTEckJgPUBG3">Tiziana — Smart, Balanced</option>
+              <option value="7WZPc0ZjFzsx74E5qoQV">Andrea — Mature, Rich</option>
+              <option value="f8NAZK1ciwrVujah7clz">Valerio — Warm Storyteller</option>
+            </optgroup>
+            <optgroup label="🇺🇸🇬🇧 English">
               <option value="nPczCjzI2devNBz1zQrb">Brian — Deep, Resonant</option>
               <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Mature, Confident</option>
               <option value="pNInz6obpgDQGcFmaJgB">Adam — Dominant, Firm</option>
@@ -722,6 +832,11 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
               <option value="IKne3meq5aSn9XLyUdCD">Charlie 🇦🇺 — Deep, Energetic</option>
               <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Husky</option>
               <option value="pqHfZKP75CvOlQylNhV4">Bill — Wise, Mature</option>
+              <option value="cCwaxHZZF7rVaQK2aOys">Mark — Confident, Striking</option>
+              <option value="jdKpAe6rxAe99tFGbsAc">Daniel Pro — Corporate</option>
+              <option value="vmVmHDKBkkCgbLVIOJRb">Charlie C. — Real & Casual</option>
+              <option value="EmZGlxI7QPvCEMOkFhB9">Liam Pro — Sharp, Professional</option>
+              <option value="TGAegA0zNRi8I6nUdq3i">Adam Pro — Instructor</option>
             </optgroup>
           </select>
         </div>
@@ -842,7 +957,7 @@ async function _applyUndoRedo(state) {
     fd.append('yeni_metin', state.metin);
     await fetch(`${B}/api/metin_guncelle/`, { method:'POST', body:fd });
     const el = document.getElementById(`t_${state.no}`);
-    if (el) el.innerHTML = state.metin.split(' ').map(k=>kelimeHtml(k)).join(' ');
+    if (el) el.innerHTML = state.metin.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
   } else if (state.type === 'zaman') {
     const fd = new FormData();
     fd.append('dosya_adi', aSrt);
@@ -958,18 +1073,19 @@ function cloudConnect(svc){
 }
 async function cloudUpload(svc){
   if(svc==='url'){
-    const url=prompt('Video URL girin:\n\n• YouTube: https://youtube.com/watch?v=...\n• Dropbox: Paylaş linkini yapıştırın\n• Google Drive: Herkese açık linki yapıştırın\n• Direkt video: .mp4 uzantılı link');
+    const url=prompt('Video URL girin:\n\n• YouTube: https://youtube.com/watch?v=...\n• Dropbox: Paylaşım linkini yapıştırın\n• Google Drive: Herkese açık linki yapıştırın\n• Direkt video: .mp4 uzantılı link');
     if(!url||!url.trim())return;
 
-    toast(`<i class="fa-solid fa-spinner fa-spin"></i> İndiriliyor...`,'tok',30000);
+    const kaliteSecim = await kaliteSecimGoster();
+    if(!kaliteSecim) return;
 
-    // Drive linkleri için dl=1 parametresi ekle
+    toast(`<i class="fa-solid fa-spinner fa-spin"></i> İndiriliyor (${kaliteSecim})...`,'tok',30000);
+
     let indirUrl = url.trim();
     if(indirUrl.includes('drive.google.com/file/d/')){
       const id = indirUrl.match(/\/d\/([^\/]+)/)?.[1];
       if(id) indirUrl = `https://drive.google.com/uc?export=download&id=${id}`;
     }
-    // Dropbox için dl=1 ekle
     if(indirUrl.includes('dropbox.com')){
       indirUrl = indirUrl.replace('dl=0','dl=1').replace('?dl=0','?dl=1');
       if(!indirUrl.includes('dl=1')) indirUrl += (indirUrl.includes('?')?'&':'?')+'dl=1';
@@ -978,14 +1094,13 @@ async function cloudUpload(svc){
     try{
       const fd=new FormData();
       fd.append('url', indirUrl);
+      fd.append('kalite', kaliteSecim);
       const r=await fetch(`${B}/api/url_yukle/`,{method:'POST',body:fd});
       const d=await r.json();
       if(d.basari){
-        // Dosya sunucuya indi, şimdi modal'ı aç
         pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
         pURL = `${B}/indir/${d.dosya_adi}`;
-        toast(`✓ "${d.baslik}" indirildi (${d.boyut_mb}MB)`);
-        // Modal'ı aç
+        toast(`✓ "${d.baslik}" — ${d.boyut_mb}MB (${kaliteSecim})`);
         document.getElementById('modal').classList.remove('hidden');
         modalStep(1);
         updateModalBtn();
@@ -996,16 +1111,62 @@ async function cloudUpload(svc){
       toast('Bağlantı hatası','terr');
     }
   }else if(svc==='gdrive'){
-    const url=prompt('Google Drive paylaşım linkini yapıştırın:\n(Dosyanın "Herkesle paylaşıldığından" emin olun)');
-    if(url) cloudUpload_process(url, 'gdrive');
+    const url=prompt('Google Drive paylaşım linkini yapıştırın:\n(Herkesle paylaşıldığından emin olun)');
+    if(url){ window._pendingUrl=url; cloudUpload('url'); }
   }else if(svc==='dropbox'){
     const url=prompt('Dropbox paylaşım linkini yapıştırın:');
-    if(url) cloudUpload_process(url, 'dropbox');
+    if(url){ window._pendingUrl=url; cloudUpload('url'); }
   }
 }
 
+function kaliteSecimGoster() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:290px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt);">📥 İndirme Kalitesi Seç</div>
+        <div style="display:flex;flex-direction:column;gap:5px;" id="_kl_list">
+          ${[
+            ['best','En Yüksek (4K/1080p+)','En iyi kalite, büyük dosya','🔥'],
+            ['1080','1080p Full HD','Standart yüksek kalite','📺'],
+            ['720','720p HD','Dengeli kalite / boyut','⚡'],
+            ['480','480p','Küçük dosya','📱'],
+            ['360','360p','En küçük dosya','💾'],
+            ['audio_only','Yalnızca Ses','Sadece ses, video yok','🎵'],
+          ].map(([v,l,d,ic]) => `
+            <button data-val="${v}" class="_klbtn"
+              onclick="document.querySelectorAll('._klbtn').forEach(b=>b.style.borderColor='var(--border2)');this.style.borderColor='var(--accent2)';window._kalite='${v}'"
+              style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--txt);display:flex;align-items:center;gap:8px;transition:border .12s;">
+              <span style="font-size:16px;">${ic}</span>
+              <div><div style="font-size:12px;font-weight:600;">${l}</div><div style="font-size:10px;color:var(--muted2);">${d}</div></div>
+            </button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(window._kalite||'best')"
+            style="flex:1;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">
+            İndir
+          </button>
+          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(null)"
+            style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">
+            İptal
+          </button>
+        </div>
+      </div>`;
+    overlay.id = '_kl_overlay';
+    window._kalite = 'best';
+    window._kaliteResolve = resolve;
+    document.body.appendChild(overlay);
+    // Varsayılan seçili göster
+    setTimeout(()=>{
+      const first = document.querySelector('._klbtn');
+      if(first) first.style.borderColor='var(--accent2)';
+    },50);
+  });
+}
+
 async function cloudUpload_process(url, svc){
-  cloudUpload('url'); // URL fonksiyonunu çağır, URL'i işleyecek
+  cloudUpload('url');
 }
 
 /* ═══ EXPORT ═══ */
@@ -1133,75 +1294,181 @@ function finishSetup(){
 let _confidence = {};
 const SP_COLORS = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#8b5cf6','#06b6d4'];
 
+// İnfluencer / sokak jargonu — frontend'de de tanı (sarı vurgula)
+const JARGON_LIST = new Set([
+  'ngl','fr','frfr','ong','cap','bussin','slay','bet','goat','lowkey','highkey',
+  'bruh','bro','fam','w','l','fire','lit','sus','ratio','mid','based','rizz',
+  'delulu','iykyk','istg','omg','lmao','tbh','imo','nvm','idk','idc','smh',
+  'kanka','knk','aga','agam','nbr','naber','bi','mk','len','ya','hani','işte',
+  'falan','filan','efsane','deli','acayip','leş','vibe','content','collab',
+  'viral','trending','drop','era','rent free','no cap','no shot','send it',
+]);
+
 async function confidenceYukle(srtAdi) {
   try {
     const r = await fetch(`${B}/api/confidence/${srtAdi}`);
-    if (r.ok) _confidence = await r.json();
+    if (r.ok) {
+      const d = await r.json();
+      _confidence = d.words || d || {};
+    }
   } catch(e) { _confidence = {}; }
 }
 
-function kelimeHtml(kelime) {
-  // Noktalama temizle, confidence bul
-  const temiz = kelime.toLowerCase().replace(/[.,?!;:]/g,'');
+function kelimeHtml(kelime, segNo) {
+  const temiz = kelime.toLowerCase().replace(/[.,?!;:'"]/g,'');
   const conf  = _confidence[temiz];
+  const isJargon = JARGON_LIST.has(temiz);
+
+  // Jargon kelime — sarı ama farklı stil (normal confidence olabilir ama dikkat çek)
+  if (isJargon) {
+    const uid = `w_${segNo}_${Math.random().toString(36).substr(2,5)}`;
+    return `<span class="w-jargon" id="${uid}" data-word="${kelime}" data-conf="${conf||1}" data-jargon="1"
+      onclick="kelimeOneriAc(event,this)" title="Jargon/kısaltma — doğru okunuyor mu?">${kelime}<sup style="font-size:7px;opacity:.6">🔤</sup></span>`;
+  }
+
   if (conf === undefined || conf >= 0.85) return kelime;
-  if (conf >= 0.70) return `<span class="w-low" data-word="${kelime}" data-conf="${conf}" onclick="kelimeOneriAc(event,this)">${kelime}<sup style="font-size:8px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
-  return `<span class="w-bad" data-word="${kelime}" data-conf="${conf}" onclick="kelimeOneriAc(event,this)">${kelime}<sup style="font-size:8px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+
+  const uid = `w_${segNo}_${Math.random().toString(36).substr(2,5)}`;
+  if (conf >= 0.70) {
+    return `<span class="w-low" id="${uid}" data-word="${kelime}" data-conf="${conf}"
+      onclick="kelimeOneriAc(event,this)" title="Düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+  }
+  return `<span class="w-bad" id="${uid}" data-word="${kelime}" data-conf="${conf}"
+    onclick="kelimeOneriAc(event,this)" title="Çok düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
 }
 
 async function kelimeOneriAc(e, el) {
   e.stopPropagation();
   document.getElementById('word_popup')?.remove();
 
-  const kelime = el.dataset.word;
-  const conf   = parseFloat(el.dataset.conf);
+  const kelime  = el.dataset.word;
+  const conf    = parseFloat(el.dataset.conf||'1');
+  const jargon  = el.dataset.jargon === '1';
+
+  // Bağlamı al — span'ın parent segmentinin metnini bul
+  const segCard = el.closest('.sc');
+  const baglam  = segCard ? segCard.querySelector('.sc-txt')?.textContent?.trim().slice(0,120) || '' : '';
 
   const popup = document.createElement('div');
   popup.id = 'word_popup';
-  popup.className = 'word-popup';
-  popup.style.left = Math.min(e.clientX, window.innerWidth-200) + 'px';
-  popup.style.top  = (e.clientY + 12) + 'px';
+  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
+    border-radius:var(--r2);padding:0;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.left = Math.min(e.clientX, window.innerWidth-290) + 'px';
+  popup.style.top  = Math.min(e.clientY + 10, window.innerHeight-200) + 'px';
+
+  const renk = jargon ? 'var(--yellow2)' : conf>=0.7 ? 'var(--yellow2)' : 'var(--red2)';
+  const baslik = jargon
+    ? `<i class="fa-solid fa-hashtag" style="color:var(--yellow2)"></i> Jargon / Kısaltma`
+    : `<i class="fa-solid fa-triangle-exclamation" style="color:${renk}"></i> Düşük Güven: ${Math.round(conf*100)}%`;
+
   popup.innerHTML = `
-    <div class="word-popup-title">
-      <i class="fa-solid fa-triangle-exclamation" style="color:${conf>=0.7?'var(--yellow2)':'var(--red2)'}"></i>
-      Düşük Güven: ${Math.round(conf*100)}%
+    <div style="padding:10px 12px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);">${baslik}</div>
+      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
     </div>
-    <div id="popup_items"><div style="padding:8px;font-size:11px;color:var(--muted2);"><i class="fa-solid fa-spinner fa-spin"></i> Öneriler yükleniyor...</div></div>`;
+    <div style="padding:6px 8px;background:var(--s3);font-size:12px;color:var(--txt);">
+      <span style="opacity:.6;">Kelime: </span><b>"${kelime}"</b>
+      ${jargon ? '<span style="margin-left:6px;font-size:10px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 6px;border-radius:3px;">Jargon</span>' : ''}
+    </div>
+    <div id="popup_items" style="padding:4px 0;">
+      <div style="padding:10px 12px;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-spinner fa-spin"></i> AI öneri yükleniyor...
+      </div>
+    </div>
+    <div style="padding:6px 8px;border-top:1px solid var(--border);">
+      <div onclick="manuelDuzelt(event,'${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-pen" style="color:var(--accent2)"></i> Manuel Düzenle
+      </div>
+      <div onclick="kelimeAtla('${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-check" style="color:var(--green2)"></i> Doğru, geç
+      </div>
+    </div>`;
   document.body.appendChild(popup);
 
-  // AI önerilerini al
+  // Önerileri yükle
   try {
     const fd = new FormData();
     fd.append('kelime', kelime);
+    fd.append('baglam', baglam);
+    fd.append('dil', document.getElementById('src_lang')?.value || 'tr');
     const r = await fetch(`${B}/api/kelime_oneri/`, { method:'POST', body:fd });
     const d = await r.json();
     const items = document.getElementById('popup_items');
-    items.innerHTML = d.oneriler.map(o => `
-      <div class="word-popup-item" onclick="kelimeUygula('${el.id||''}','${o}',this)">
-        <i class="fa-solid fa-arrow-right"></i> ${o}
-      </div>`).join('') +
-      `<div class="word-popup-item" style="border-top:1px solid var(--border);margin-top:4px;" onclick="manuelDuzelt('${kelime}')">
-        <i class="fa-solid fa-pen"></i> Manuel Düzenle
-      </div>`;
-  } catch(e) {
-    document.getElementById('popup_items').innerHTML = '<div style="padding:8px;font-size:11px;color:var(--red2);">Öneri alınamadı</div>';
+    if (!items) return;
+
+    if (!d.oneriler?.length) {
+      items.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--muted2);">Öneri bulunamadı</div>';
+      return;
+    }
+
+    items.innerHTML = d.oneriler.map((o,i) => `
+      <div onclick="kelimeUygula('${el.id}','${o.replace(/'/g,"\\'")}',this)"
+        style="padding:7px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-radius:var(--r);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);min-width:16px;">${i===0&&d.jargon?'🤖':'→'}</span>
+        <span style="color:var(--txt);">${o}</span>
+        ${i===0&&d.jargon?'<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;margin-left:auto;">AI</span>':''}
+      </div>`).join('');
+  } catch(err) {
+    const items = document.getElementById('popup_items');
+    if (items) items.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--red2);">Öneri alınamadı</div>';
   }
 
   setTimeout(() => {
     document.addEventListener('click', function closeP(ev) {
-      if (!popup.contains(ev.target)) { popup.remove(); document.removeEventListener('click', closeP); }
+      const p = document.getElementById('word_popup');
+      if (p && !p.contains(ev.target)) { p.remove(); document.removeEventListener('click', closeP); }
     });
-  }, 10);
+  }, 50);
 }
 
 function kelimeUygula(elId, yeniKelime, item) {
   document.getElementById('word_popup')?.remove();
-  toast(`✓ "${yeniKelime}" uygulandı — segment düzenlemeden değiştirin`, 'tok', 3000);
+  const el = document.getElementById(elId);
+  if (!el) {
+    toast(`Öneri: "${yeniKelime}" — segmentte manuel uygulayın`, 'tok', 3000);
+    return;
+  }
+  // Gerçekten değiştir
+  const eskiKelime = el.dataset.word;
+  el.outerHTML = yeniKelime;  // span'ı düz metinle değiştir
+
+  // İlgili segmentin metnini güncelle (undo stack için)
+  const segCard = el.closest?.('.sc') || document.querySelector('.sc');
+  if (segCard) {
+    const no = parseInt(segCard.id.replace('c_',''));
+    const seg = segs.find(s => s.no === no);
+    if (seg) {
+      undoPush();
+      const eski = new RegExp('\\b' + eskiKelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b');
+      seg.text = seg.text.replace(eski, yeniKelime);
+    }
+  }
+  toast(`✓ "${eskiKelime}" → "${yeniKelime}" uygulandı`, 'tok', 2000);
 }
 
-function manuelDuzelt(kelime) {
+function manuelDuzelt(e, elId) {
   document.getElementById('word_popup')?.remove();
-  toast(`"${kelime}" için ilgili kartta çift tıklayarak düzenleyin`, 'tok', 3000);
+  const el = document.getElementById(elId);
+  const segCard = el?.closest('.sc');
+  if (segCard) {
+    const txt = segCard.querySelector('.sc-txt');
+    if (txt) {
+      txt.focus();
+      toast('Düzenlemek için karttaki metne tıklayın', 'tok', 2000);
+    }
+  }
+}
+
+function kelimeAtla(elId) {
+  document.getElementById('word_popup')?.remove();
+  const el = document.getElementById(elId);
+  if (el) {
+    // Vurguyu kaldır — doğru olarak işaretle
+    el.outerHTML = el.dataset.word;
+  }
 }
 
 /* ═══ SPEAKER VOICE MAP ═══ */
@@ -1268,114 +1535,48 @@ const VOICES = [
   // ── Türkçe ──
   { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır 🇹🇷',   desc:'Derin, Hikayesel, Belgesel',        color:'#f97316', lang:'tr' },
   { id:'xFsOR54lR471QiCvQ5re', name:'İlknur 🇹🇷',    desc:'Net, Sıcak ve Genç',                color:'#a855f7', lang:'tr' },
+  // ── Almanca ──
+  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut 🇩🇪',    desc:'Warm, Gentle and Soothing',         color:'#dc2626', lang:'de' },
+  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas 🇩🇪',     desc:'Confident and Trustworthy',         color:'#b91c1c', lang:'de' },
+  { id:'kAzI34nYjizE0zON6rXv', name:'Sami 🇩🇪',      desc:'Energetic, Expressive and Smiley',  color:'#ef4444', lang:'de' },
+  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea 🇩🇪',       desc:'UGC Creator',                       color:'#f87171', lang:'de' },
+  // ── Fransızca ──
+  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules 🇫🇷',     desc:'Conversational',                    color:'#3b82f6', lang:'fr' },
+  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa 🇫🇷',      desc:'Lovely and Emotional',              color:'#60a5fa', lang:'fr' },
+  // ── İtalyanca ──
+  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana 🇮🇹',   desc:'Smart, Balanced and Credible',      color:'#22c55e', lang:'it' },
+  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea 🇮🇹',    desc:'Mature, Rich and Empathetic',       color:'#4ade80', lang:'it' },
+  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio 🇮🇹',   desc:'Warm Italian Storyteller',          color:'#86efac', lang:'it' },
   // ── İngilizce ──
-  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',          desc:'Deep, Resonant & Comforting',       color:'#3b82f6', lang:'en' },
+  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',          desc:'Deep, Resonant & Comforting',       color:'#6366f1', lang:'en' },
   { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',          desc:'Mature, Reassuring, Confident',     color:'#8b5cf6', lang:'en' },
-  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',           desc:'Dominant, Firm',                    color:'#ef4444', lang:'en' },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',           desc:'Dominant, Firm',                    color:'#a78bfa', lang:'en' },
   { id:'JBFqnCBsd6RMkjVDRZzb', name:'George 🇬🇧',    desc:'Warm, Captivating Storyteller',     color:'#f59e0b', lang:'en' },
   { id:'iP95p4xoKVk53GoZ742B', name:'Chris',          desc:'Charming, Down-to-Earth',           color:'#10b981', lang:'en' },
   { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica',        desc:'Playful, Bright, Warm',             color:'#ec4899', lang:'en' },
   { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',          desc:'Enthusiast, Quirky Attitude',       color:'#06b6d4', lang:'en' },
   { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',           desc:'Energetic, Social Media Creator',   color:'#84cc16', lang:'en' },
-  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel 🇬🇧',    desc:'Steady Broadcaster',                color:'#6366f1', lang:'en' },
+  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel 🇬🇧',    desc:'Steady Broadcaster',                color:'#0ea5e9', lang:'en' },
   { id:'SAz9YHcvj6GT2YYXdXww', name:'River',          desc:'Relaxed, Neutral, Informative',     color:'#14b8a6', lang:'en' },
   { id:'Xb7hH8MSUJpSbSDYk0k2', name:'Alice 🇬🇧',     desc:'Clear, Engaging Educator',          color:'#0891b2', lang:'en' },
   { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily 🇬🇧',      desc:'Velvety Actress',                   color:'#7c3aed', lang:'en' },
   { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda',        desc:'Knowledgeable, Professional',       color:'#9333ea', lang:'en' },
-  { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',          desc:'Laid-Back, Casual, Resonant',       color:'#64748b', lang:'en' },
   { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher 🇬🇧',     desc:'Confident, Charismatic & Playful',  color:'#0f766e', lang:'en' },
+  { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',          desc:'Laid-Back, Casual, Resonant',       color:'#64748b', lang:'en' },
   { id:'bIHbv24MWmeRgasZH58o', name:'Will',           desc:'Relaxed Optimist',                  color:'#475569', lang:'en' },
   { id:'cjVigY5qzO86Huf0OWal', name:'Eric',           desc:'Smooth, Trustworthy',               color:'#1d4ed8', lang:'en' },
   { id:'hpp4J3VqNfWAUOO0d1Us', name:'Bella',          desc:'Professional, Bright, Warm',        color:'#be185d', lang:'en' },
   { id:'SOYHLrjzK2X1ezoPC6cr', name:'Harry',          desc:'Fierce Warrior',                    color:'#991b1b', lang:'en' },
-  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie 🇦🇺',   desc:'Deep, Confident, Energetic',        color:'#dc2626', lang:'en' },
-  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',         desc:'Husky Trickster',                   color:'#b91c1c', lang:'en' },
+  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie 🇦🇺',   desc:'Deep, Confident, Energetic',        color:'#b45309', lang:'en' },
+  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',         desc:'Husky Trickster',                   color:'#92400e', lang:'en' },
   { id:'pqHfZKP75CvOlQylNhV4', name:'Bill',           desc:'Wise, Mature, Balanced',            color:'#374151', lang:'en' },
+  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',           desc:'Confident and Striking',            color:'#1e3a5f', lang:'en' },
+  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',     desc:'Corporate Narration',               color:'#1e40af', lang:'en' },
+  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',     desc:'Real & Casual',                     color:'#78350f', lang:'en' },
+  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro',       desc:'Sharp, Professional and Energetic', color:'#166534', lang:'en' },
+  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro',       desc:'Instructor',                        color:'#1e3a5f', lang:'en' },
 ];
 
-function buildVoiceList() {
-  const el = document.getElementById('voice_list');
-  if (!el) return;
-
-  const srcLang = document.getElementById('m_src')?.value || 'tr';
-  const tgtLang = document.getElementById('m_tgt')?.value || 'en';
-  const oncelikDil = tgtLang !== 'tr' ? tgtLang : srcLang;
-
-  const sirali = [...VOICES].sort((a,b) => {
-    const aOnce = a.lang === oncelikDil ? -2 : a.lang === 'en' ? -1 : 0;
-    const bOnce = b.lang === oncelikDil ? -2 : b.lang === 'en' ? -1 : 0;
-    return aOnce - bOnce;
-  });
-
-  el.innerHTML = sirali.map(v => `
-    <div onclick="selVoiceById('${v.id}')" id="vli_${v.id}"
-      style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1.5px solid transparent;"
-      onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}')this.style.background='';this.style.borderColor=voice==='${v.id}'?'var(--accent2)':'transparent'">
-      <span style="width:10px;height:10px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
-      <div style="flex:1;">
-        <span style="font-size:13px;font-weight:600;">${v.name}</span>
-        <span style="font-size:11px;color:var(--muted2);margin-left:8px;">${v.desc}</span>
-      </div>
-      <button onclick="event.stopPropagation();sesOnizle('${v.id}',this)" 
-        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"
-        title="Önizle" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-        <i class="fa-solid fa-play" style="font-size:9px;"></i>
-      </button>
-    </div>
-  `).join('');
-  selVoiceById(voice);
-}
-
-/* ═══ SES ÖNİZLEME ═══ */
-let _onizlemeAudio = null;
-
-async function sesOnizle(sesId, btn) {
-  // Çalan varsa durdur
-  if (_onizlemeAudio && !_onizlemeAudio.paused) {
-    _onizlemeAudio.pause();
-    document.querySelectorAll('[data-playing="1"]').forEach(b => {
-      b.innerHTML='<i class="fa-solid fa-play" style="font-size:9px;"></i>';
-      b.removeAttribute('data-playing');
-    });
-    if (btn.dataset.playing) return;
-  }
-
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:9px;"></i>';
-  btn.dataset.playing = '1';
-
-  try {
-    const fd = new FormData();
-    fd.append('ses_id', sesId);
-    // Dile göre önizleme metni
-    const onizlemeler = {
-      tr: 'Merhaba, ben VoiceFlow Studio. Bu benim sesim.',
-      en: 'Hello, I am VoiceFlow Studio. This is my voice.',
-      de: 'Hallo, ich bin VoiceFlow Studio. Das ist meine Stimme.',
-      fr: 'Bonjour, je suis VoiceFlow Studio. Voici ma voix.',
-      es: 'Hola, soy VoiceFlow Studio. Esta es mi voz.',
-    };
-    const ses = VOICES.find(v=>v.id===sesId);
-    fd.append('metin', onizlemeler[ses?.lang||'en'] || onizlemeler.en);
-
-    const r = await fetch(`${B}/api/ses_onizle/`, {method:'POST', body:fd});
-    if (!r.ok) throw new Error(await r.text());
-
-    const blob = await r.blob();
-    const url  = URL.createObjectURL(blob);
-    _onizlemeAudio = new Audio(url);
-    _onizlemeAudio.play();
-    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:9px;color:var(--accent3);"></i>';
-    _onizlemeAudio.onended = () => {
-      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i>';
-      btn.removeAttribute('data-playing');
-      URL.revokeObjectURL(url);
-    };
-  } catch(e) {
-    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i>';
-    btn.removeAttribute('data-playing');
-    toast('Önizleme yüklenemedi — ElevenLabs API key gerekli','twarn', 3000);
-  }
-}
 
 function selVoiceById(id) {
   voice = id;
@@ -1681,6 +1882,9 @@ function loadMedia(){
     document.getElementById('tl_dur').textContent=`${p2(m)}:${p2(s)}`;
     document.getElementById('tl_track').innerHTML='<div id="ph" class="ph"></div>';
     setupTU(media);
+    // Araç çubuğunu göster
+    showVidToolbar();
+    _bindVidEvents(media);
   };
 }
 
@@ -1884,7 +2088,7 @@ function renderSegs(srt,fn,tr=false){
     if(Object.keys(_confidence).length>0){
       segs.forEach(seg=>{
         const el=document.getElementById(`t_${seg.no}`);
-        if(el)el.innerHTML=seg.text.split(' ').map(k=>kelimeHtml(k)).join(' ');
+        if(el)el.innerHTML=seg.text.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
       });
     }
   },1800);
@@ -1899,7 +2103,282 @@ function cClick(no,st){
   const b=document.getElementById(`b_${no}`);if(b){b.style.borderColor='var(--accent3)';setTimeout(()=>b.style.borderColor='',700);}
 }
 
-/* ═══ MAGIC CUT ═══ */
+/* ═══ VIDEO ARAÇ ÇUBUĞU ═══ */
+let _loopActive = false;
+let _markers = [];
+let _shortcutPanelOpen = false;
+
+function showVidToolbar() {
+  const tb = document.getElementById('vid_toolbar');
+  if (tb) tb.style.display = 'flex';
+}
+
+function vidSeek(sn) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (el) el.currentTime = Math.max(0, el.currentTime + sn);
+}
+
+function togglePlay() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : (a.style.display !== 'none' ? a : null);
+  if (!el) return;
+  if (el.paused) { el.play(); } else { el.pause(); }
+}
+
+function setSpeed(val) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  [v, a].forEach(el => { if (el) el.playbackRate = parseFloat(val); });
+}
+
+function toggleMute() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (!el) return;
+  el.muted = !el.muted;
+  document.getElementById('mute_icon').className = el.muted
+    ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+}
+
+function setVidVol(val) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  [v, a].forEach(el => { if (el) el.volume = val / 100; });
+  document.getElementById('vid_vol_label').textContent = val + '%';
+}
+
+function toggleLoop() {
+  _loopActive = !_loopActive;
+  const btn = document.getElementById('loop_btn');
+  if (btn) btn.classList.toggle('active', _loopActive);
+  const v = document.getElementById('vid');
+  if (v) v.loop = _loopActive;
+}
+
+function markerEkle() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (!el || !el.duration) return;
+  const t = el.currentTime;
+  _markers.push(t);
+  _markers.sort((a, b) => a - b);
+  renderMarkers();
+  toast(`Marker eklendi: ${fmtTime(t)}`);
+}
+
+function renderMarkers() {
+  const ml = document.getElementById('marker_list');
+  if (!ml) return;
+  if (_markers.length === 0) { ml.style.display = 'none'; return; }
+  ml.style.display = 'block';
+  ml.innerHTML = '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+    '<span style="font-size:10px;color:var(--muted2);font-weight:700;">MARKER:</span>' +
+    _markers.map((t, i) => `
+      <button onclick="jumpMarker(${t})" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;">
+        ${fmtTime(t)} <span onclick="event.stopPropagation();removeMarker(${i})" style="color:var(--muted2);margin-left:4px;">×</span>
+      </button>`).join('') +
+    '</div>';
+}
+
+function jumpMarker(t) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (el) el.currentTime = t;
+}
+
+function removeMarker(i) {
+  _markers.splice(i, 1);
+  renderMarkers();
+}
+
+function toggleShortcutPanel() {
+  _shortcutPanelOpen = !_shortcutPanelOpen;
+  const p = document.getElementById('shortcut_panel');
+  if (p) p.style.display = _shortcutPanelOpen ? 'block' : 'none';
+}
+
+// Video zaman güncelleme
+function _bindVidEvents(el) {
+  if (!el || el._vfBound) return;
+  el._vfBound = true;
+  el.addEventListener('timeupdate', () => {
+    const disp = document.getElementById('vid_time_display');
+    if (disp) disp.textContent = `${fmtTime(el.currentTime)} / ${fmtTime(el.duration || 0)}`;
+    const icon = document.getElementById('play_icon');
+    if (icon) icon.className = el.paused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
+  });
+  el.addEventListener('play',  () => { const i = document.getElementById('play_icon'); if(i) i.className='fa-solid fa-pause'; });
+  el.addEventListener('pause', () => { const i = document.getElementById('play_icon'); if(i) i.className='fa-solid fa-play'; });
+}
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '00:00';
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// Klavye kısayolları genişletilmiş
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); vidSeek(-5); }
+  if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); vidSeek(5); }
+  if (e.key === 'j' || e.key === 'J') vidSeek(-10);
+  if (e.key === 'l' || e.key === 'L') vidSeek(10);
+  if (e.key === 'm' || e.key === 'M') toggleMute();
+  if (e.key === 'f' || e.key === 'F') { const v = document.getElementById('vid'); if(v) v.requestFullscreen?.(); }
+});
+
+/* ═══ SES DEMOsu — ÜCRETSİZ vs PRO ═══ */
+
+// Ücretsiz kullanıcılar için hazır demo klipleri (ElevenLabs örnek URL'leri)
+// Gerçekte bunlar sunucudan pre-generated MP3 olabilir
+// Şimdilik önizleme API'si kullanıyoruz, plan kontrolü sonra Supabase ile gelecek
+const VOICE_TIERS = {
+  // Ücretsiz planda dinlenebilir (2 TR + temel EN sesler)
+  free: [
+    'E7GwUhgj9sbeAZgubRba', // Bahadır
+    'xFsOR54lR471QiCvQ5re', // İlknur
+    'nPczCjzI2devNBz1zQrb', // Brian
+    'EXAVITQu4vr4xnSDxMaL', // Sarah
+    'cgSgspJ2msm6clMCkdW9', // Jessica
+    'TX3LPaxmHKxFdv7VOQHJ', // Liam
+  ],
+  // Pro plan gerekli (Avrupa sesleri + premium EN)
+  pro: [
+    'dFA3XRddYScy6ylAYTIO', // Helmut DE
+    '60UU378MZ8YbeLyaF7TI', // Jonas DE
+    'kAzI34nYjizE0zON6rXv', // Sami DE
+    'KSyQzmsYhFbuOhqj1Xxv', // Lea DE
+    '8qnuneLiGjGrT4A62CCe', // Jules FR
+    'p2Wol3C7j3rHbfOrbL18', // Lisa FR
+    'RXoaSpLaWTEckJgPUBG3', // Tiziana IT
+    '7WZPc0ZjFzsx74E5qoQV', // Andrea IT
+    'f8NAZK1ciwrVujah7clz', // Valerio IT
+    'JBFqnCBsd6RMkjVDRZzb', // George
+    'onwK4e9ZLuTAKqWW03F9', // Daniel
+    'Xb7hH8MSUJpSbSDYk0k2', // Alice
+    'pFZP5JQG7iQjIQuC4Bku', // Lily
+    'UaYTS0wayjmO9KD1LR4R', // Asher
+  ],
+};
+
+// Şimdilik herkes dinleyebilir (Supabase gelince plan kontrolü eklenecek)
+const userPlan = 'free'; // 'free' | 'creator' | 'studio' | 'business'
+
+function isVoiceFree(sesId) {
+  return VOICE_TIERS.free.includes(sesId);
+}
+
+// buildVoiceList'i güncelle — ücretsiz/pro badge göster
+function buildVoiceList() {
+  const el = document.getElementById('voice_list');
+  if (!el) return;
+
+  const srcLang = document.getElementById('m_src')?.value || 'tr';
+  const tgtLang = document.getElementById('m_tgt')?.value || 'en';
+  const oncelikDil = tgtLang !== 'tr' ? tgtLang : srcLang;
+
+  const sirali = [...VOICES].sort((a, b) => {
+    const aOnce = a.lang === oncelikDil ? -2 : a.lang === 'en' ? -1 : 0;
+    const bOnce = b.lang === oncelikDil ? -2 : b.lang === 'en' ? -1 : 0;
+    return aOnce - bOnce;
+  });
+
+  el.innerHTML = sirali.map(v => {
+    const isFree = isVoiceFree(v.id);
+    const badge = isFree
+      ? `<span style="font-size:9px;font-weight:700;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;">ÜCRETSİZ</span>`
+      : `<span style="font-size:9px;font-weight:700;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;">PRO</span>`;
+    return `
+    <div onclick="selVoiceById('${v.id}')" id="vli_${v.id}"
+      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1.5px solid transparent;"
+      onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}')this.style.background='';this.style.borderColor=voice==='${v.id}'?'var(--accent2)':'transparent'">
+      <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:12px;font-weight:600;">${v.name}</span>
+          ${badge}
+        </div>
+        <span style="font-size:10px;color:var(--muted2);">${v.desc}</span>
+      </div>
+      <button onclick="event.stopPropagation();sesOnizle('${v.id}',this,'${v.lang}')"
+        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"
+        title="${isFree ? 'Demo dinle' : 'Pro - Demo dinle'}"
+        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <i class="fa-solid fa-play" style="font-size:8px;"></i>
+      </button>
+    </div>`;
+  }).join('');
+  selVoiceById(voice);
+}
+
+/* ═══ SES ÖNİZLEME (ücretsiz + pro ayrımı ile) ═══ */
+let _onizlemeAudio = null;
+
+async function sesOnizle(sesId, btn, lang) {
+  if (_onizlemeAudio && !_onizlemeAudio.paused) {
+    _onizlemeAudio.pause();
+    document.querySelectorAll('[data-playing="1"]').forEach(b => {
+      b.innerHTML='<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      b.removeAttribute('data-playing');
+    });
+    if (btn.dataset.playing) return;
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i>';
+  btn.dataset.playing = '1';
+
+  const isFree = isVoiceFree(sesId);
+
+  // Dile göre demo metni
+  const demoMetinler = {
+    tr: 'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
+    de: 'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
+    fr: 'Bonjour, je double votre vidéo avec VoiceFlow Studio.',
+    it: 'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
+    en: 'Hello, I am dubbing your video with VoiceFlow Studio.',
+    es: 'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
+  };
+  const metin = demoMetinler[lang || 'en'] || demoMetinler.en;
+
+  try {
+    const fd = new FormData();
+    fd.append('ses_id', sesId);
+    fd.append('metin', metin);
+
+    const r = await fetch(`${B}/api/ses_onizle/`, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    _onizlemeAudio = new Audio(url);
+    _onizlemeAudio.play();
+
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i>';
+
+    _onizlemeAudio.onended = () => {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+      URL.revokeObjectURL(url);
+    };
+  } catch(e) {
+    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+    btn.removeAttribute('data-playing');
+    if (!isFree) {
+      toast('Bu ses Pro plana özel. Yakında aktif olacak.', 'twarn', 3000);
+    } else {
+      toast('Demo yüklenemedi', 'twarn', 2000);
+    }
+  }
+}
 async function magicCut(){
   if(!aSrt)return toast('Önce transkript tamamlayın','twarn');
   const dil = document.getElementById('src_lang')?.value||'tr';
@@ -1984,7 +2463,7 @@ async function iEdit(no,old){
       const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_metin',nw);
       const r=await fetch(`${B}/api/metin_guncelle/`,{method:'POST',body:fd});
       if(r.ok){
-        tx.innerHTML=nw.split(' ').map(k=>kelimeHtml(k)).join(' ');
+        tx.innerHTML=nw.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
         const c=document.getElementById(`c_${no}`);if(c){c.style.borderColor='var(--green2)';setTimeout(()=>c.style.borderColor='',900);}
         const s=segs.find(x=>x.no==no);if(s){s.text=nw;s.rawText=nw;}
         toast('✓ Kaydedildi');
@@ -2245,10 +2724,16 @@ async function sunucuKontrol(){
     const d=await r.json();
 
     const uyarilar=[];
-    if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY eksik');
-    if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY eksik');
-    if(!d.ffmpeg)uyarilar.push('FFmpeg yüklü değil — altyazı/dublaj çalışmaz');
-    if(uyarilar.length>0) toast(`⚠ Yapılandırma uyarısı: ${uyarilar.join(' · ')}`, 'twarn', 8000);
+    if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY');
+    if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY');
+    if(!d.ffmpeg)uyarilar.push('FFmpeg');
+    if(uyarilar.length>0){
+      // Kalıcı banner — Railway'de env var eksikse göster
+      const banner = document.createElement('div');
+      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fed7aa;padding:8px 16px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+      banner.innerHTML=`<span>⚠ Railway'de eksik env variable: ${uyarilar.join(', ')} — Variables sekmesinden ekleyin</span><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:#fed7aa;cursor:pointer;font-size:16px;line-height:1;">×</button>`;
+      document.body.prepend(banner);
+    }
 
     // ElevenLabs kota kontrolü
     if(d.elevenlabs_key){
