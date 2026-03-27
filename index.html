@@ -137,6 +137,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .sca.cut{color:var(--red2);}
 .sca.merge{color:var(--yellow2);}
 .sc-txt{font-size:13px;color:var(--txt);line-height:1.55;padding:0 2px;}
+.sc-kelime{cursor:pointer;border-radius:3px;padding:1px 1px;transition:background .1s;}
+.sc-kelime:hover{background:rgba(99,102,241,.2);color:var(--accent3);}
+
+/* Altyazı şablon galerisi */
+.sub-template-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
+.sub-tmpl{background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 6px;cursor:pointer;text-align:center;transition:all .15s;font-size:10px;}
+.sub-tmpl:hover,.sub-tmpl.active{border-color:var(--accent2);background:rgba(99,102,241,.08);}
+.sub-tmpl-preview{height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;border-radius:4px;font-weight:700;font-size:11px;}
 .ita{width:100%;background:rgba(37,99,235,.07);border:1.5px solid var(--accent2);border-radius:var(--r);color:#fff;font-size:13px;font-family:inherit;resize:vertical;outline:none;padding:6px 8px;min-height:46px;line-height:1.5;}
 
 /* Speaker colors */
@@ -1872,6 +1880,7 @@ function sw(m){
     title.innerHTML='<i class="fa-solid fa-pen-to-square"></i> Transkript & Metin Dökümü';
   }else if(m==='altyazi'){
     ['sec_sub_design','sec_audio','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    subSablonGalerisiOlustur();
     btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
     title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
   }else if(m==='seslendirme'){
@@ -2292,7 +2301,7 @@ function renderSegs(srt,fn,tr=false){
           ${mod==='seslendirme'&&aDosya?`<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub('${seg.no}')"><i class="fa-solid fa-rotate"></i></button>`:''}
         </div>
       </div>
-      <div class="sc-txt" id="t_${seg.no}">${seg.text}</div>
+      <div class="sc-txt" id="t_${seg.no}" onclick="scTxtKelimeTikla(event,${seg.no})">${seg.text.split(' ').map((k,wi)=>`<span class="sc-kelime" data-segno="${seg.no}" data-wi="${wi}">${k}</span>`).join(' ')}</div>
     </div>`;
   });
   html+=`</div>`;
@@ -2620,7 +2629,223 @@ async function sesOnizle(sesId, btn, lang) {
   }
 }
 
-/* ═══ TOPLU VİDEO İŞLEME ═══ */
+/* ═══ KELİME TIKLA — 3 SEÇENEKLİ POPUP ═══ */
+function scTxtKelimeTikla(e, segNo) {
+  const el = e.target;
+  if (!el.classList.contains('sc-kelime')) return;
+  e.stopPropagation();
+
+  const kelime = el.textContent.replace(/[.,?!;:'"]/g,'').trim();
+  if (!kelime) return;
+
+  document.getElementById('word_popup')?.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'word_popup';
+  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
+    border-radius:var(--r2);min-width:200px;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.left = Math.min(e.clientX, window.innerWidth - 270) + 'px';
+  popup.style.top  = Math.min(e.clientY + 8, window.innerHeight - 180) + 'px';
+
+  popup.innerHTML = `
+    <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s3);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:12px;font-weight:700;color:var(--txt);">"${kelime}"</span>
+      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
+    </div>
+    <div>
+      <!-- 1. Anlam bak -->
+      <div onclick="kelimeAnlamBak('${kelime}')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-book-open" style="color:var(--accent2);width:14px;"></i>
+        <span>Anlam / Tanım</span>
+      </div>
+      <!-- 2. AI ile yeniden yaz -->
+      <div onclick="kelimeAIOneri('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;width:14px;"></i>
+        <span>AI Öneri / Yeniden Yaz</span>
+      </div>
+      <!-- 3. Sil -->
+      <div onclick="kelimeSilSegmentten('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-trash" style="color:var(--red2);width:14px;"></i>
+        <span style="color:var(--red2);">Kelimeyi Sil</span>
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+
+  setTimeout(() => {
+    document.addEventListener('click', function closeP(ev) {
+      const p = document.getElementById('word_popup');
+      if (p && !p.contains(ev.target)) { p.remove(); document.removeEventListener('click', closeP); }
+    });
+  }, 50);
+}
+
+async function kelimeAnlamBak(kelime) {
+  document.getElementById('word_popup')?.remove();
+  // Free Dictionary API (ücretsiz, no key)
+  const dil = document.getElementById('src_lang')?.value || 'tr';
+  const apiDil = dil === 'tr' ? 'tr' : dil === 'en' ? 'en' : 'en';
+
+  const overlay = document.createElement('div');
+  overlay.id = '_anlam_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:380px;max-height:60vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;color:var(--txt);">"${kelime}"</div>
+        <button onclick="document.getElementById('_anlam_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div id="anlam_icerik" style="font-size:12px;color:var(--muted2);">
+        <i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(kelime)}`);
+    const d = await r.json();
+    const ic = document.getElementById('anlam_icerik');
+    if (!ic) return;
+    if (Array.isArray(d) && d.length) {
+      const entry = d[0];
+      let html = '';
+      entry.meanings?.slice(0,3).forEach(m => {
+        html += `<div style="margin-bottom:8px;">
+          <span style="background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 7px;border-radius:100px;font-size:10px;font-weight:600;">${m.partOfSpeech}</span>
+          ${m.definitions?.slice(0,2).map(def => `
+            <div style="margin-top:5px;color:var(--txt);">${def.definition}</div>
+            ${def.example ? `<div style="color:var(--muted2);font-style:italic;margin-top:2px;">"${def.example}"</div>` : ''}
+          `).join('')}
+        </div>`;
+      });
+      if (entry.phonetic) html = `<div style="color:var(--muted2);margin-bottom:8px;">${entry.phonetic}</div>` + html;
+      ic.innerHTML = html || '<div style="color:var(--red2);">Anlam bulunamadı</div>';
+    } else {
+      ic.innerHTML = `<div style="color:var(--muted2);">İngilizce sözlükte bulunamadı. <br><a href="https://sozluk.gov.tr/?ara=${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">TDK'da ara →</a></div>`;
+    }
+  } catch(e) {
+    const ic = document.getElementById('anlam_icerik');
+    if (ic) ic.innerHTML = `<div style="color:var(--muted2);">
+      <a href="https://translate.google.com/?text=${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Google Translate'de aç →</a><br>
+      <a href="https://tureng.com/tr/turkce-ingilizce/${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Tureng'de ara →</a>
+    </div>`;
+  }
+}
+
+async function kelimeAIOneri(kelime, segNo) {
+  document.getElementById('word_popup')?.remove();
+  const seg = segs.find(s => s.no == segNo);
+  const baglam = seg ? seg.text.slice(0,120) : '';
+  const dil = document.getElementById('src_lang')?.value || 'tr';
+
+  // kelimeOneriAc gibi davran
+  const fakeEl = { dataset:{ word:kelime, conf:'0.5' }, id:`ai_${segNo}`, closest:()=>null };
+  const fd = new FormData();
+  fd.append('kelime', kelime); fd.append('baglam', baglam); fd.append('dil', dil);
+  const r = await fetch(`${B}/api/kelime_oneri/`, {method:'POST', body:fd});
+  const d = await r.json();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:320px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;">🤖 AI Öneri: "${kelime}"</div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${(d.oneriler||[]).map(o=>`
+          <button onclick="kelimeSayfadaDegistir('${kelime}',${segNo},'${o.replace(/'/g,"\\'")}');this.closest('[style*=fixed]').remove()"
+            style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 12px;border-radius:var(--r);cursor:pointer;text-align:left;font-size:12px;font-family:inherit;transition:border .12s;"
+            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            → ${o}
+          </button>`).join('')}
+        ${!d.oneriler?.length ? '<div style="color:var(--muted2);font-size:12px;">Öneri bulunamadı</div>' : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function kelimeSilSegmentten(kelime, segNo) {
+  document.getElementById('word_popup')?.remove();
+  const seg = segs.find(s => s.no == segNo);
+  if (!seg) return;
+  undoPush();
+  const regex = new RegExp('\\b' + kelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i');
+  seg.text = seg.text.replace(regex, '').replace(/\s+/g,' ').trim();
+  seg.rawText = seg.text;
+  const el = document.getElementById(`t_${seg.no}`);
+  if (el) el.innerHTML = seg.text.split(' ').map((k,wi)=>`<span class="sc-kelime" data-segno="${seg.no}" data-wi="${wi}">${k}</span>`).join(' ');
+  toast(`"${kelime}" silindi`);
+}
+
+function kelimeSayfadaDegistir(eskiKelime, segNo, yeniKelime) {
+  const seg = segs.find(s => s.no == segNo);
+  if (!seg) return;
+  undoPush();
+  const regex = new RegExp('\\b' + eskiKelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i');
+  seg.text = seg.text.replace(regex, yeniKelime);
+  seg.rawText = seg.text;
+  const el = document.getElementById(`t_${seg.no}`);
+  if (el) el.innerHTML = seg.text.split(' ').map((k,wi)=>`<span class="sc-kelime" data-segno="${seg.no}" data-wi="${wi}">${k}</span>`).join(' ');
+  toast(`✓ "${eskiKelime}" → "${yeniKelime}"`);
+}
+
+/* ═══ ALTYAZI ŞABLON GALERİSİ ═══ */
+const SUB_TEMPLATES = [
+  { id:'tiktok_bold', name:'TikTok Bold', font:'Impact,sans-serif', size:'28', color:'#ffffff', bold:true, shadow:true, bg:'#000000', pos:'bottom', preview:'YAŞASINN' },
+  { id:'youtube', name:'YouTube', font:'Arial', size:'20', color:'#ffffff', bold:false, shadow:true, bg:'rgba(0,0,0,.7)', pos:'bottom', preview:'Örnek' },
+  { id:'netflix', name:'Netflix', font:'Arial', size:'22', color:'#ffff00', bold:false, shadow:true, bg:'transparent', pos:'bottom', preview:'Netflix' },
+  { id:'minimal', name:'Minimal', font:'DM Sans', size:'18', color:'#ffffff', bold:false, shadow:false, bg:'transparent', pos:'bottom', preview:'Minimal' },
+  { id:'instagram', name:'Instagram', font:'Georgia,serif', size:'24', color:'#ffffff', bold:true, shadow:true, bg:'transparent', pos:'center', preview:'Reels' },
+  { id:'podcast', name:'Podcast', font:'Courier New,monospace', size:'16', color:'#00ff88', bold:false, shadow:false, bg:'rgba(0,0,0,.5)', pos:'bottom', preview:'Podcast' },
+];
+
+function subSablonGalerisiOlustur() {
+  const sec = document.getElementById('sec_sub_design');
+  if (!sec || document.getElementById('sub_tmpl_gallery')) return;
+  const galDiv = document.createElement('div');
+  galDiv.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Hazır Şablonlar</div>
+    <div class="sub-template-grid">
+      ${SUB_TEMPLATES.map(t => `
+        <div class="sub-tmpl" id="tmpl_${t.id}" onclick="subSablonUygula('${t.id}')" title="${t.name}">
+          <div class="sub-tmpl-preview" style="background:${t.bg==='transparent'?'#1a1a2e':t.bg};color:${t.color};font-family:${t.font};font-size:${Math.min(parseInt(t.size),14)}px;font-weight:${t.bold?'700':'400'};">
+            ${t.preview}
+          </div>
+          <div style="font-size:9px;color:var(--muted2);">${t.name}</div>
+        </div>`).join('')}
+    </div>
+    <div style="height:0.5px;background:var(--border);margin:8px 0;"></div>`;
+  galDiv.id = 'sub_tmpl_gallery';
+  sec.insertBefore(galDiv, sec.querySelector('.frow'));
+}
+
+function subSablonUygula(tmplId) {
+  const t = SUB_TEMPLATES.find(x => x.id === tmplId);
+  if (!t) return;
+  document.querySelectorAll('.sub-tmpl').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tmpl_${tmplId}`)?.classList.add('active');
+
+  const sf = document.getElementById('sub_font');
+  const ss = document.getElementById('sub_size');
+  const sc = document.getElementById('sub_color');
+  const bb = document.getElementById('btn_bold');
+  const bs = document.getElementById('btn_shadow');
+  const sp = document.getElementById('sub_pos');
+
+  if (sf) sf.value = t.font;
+  if (ss) ss.value = t.size;
+  if (sc) sc.value = t.color;
+  if (bb) t.bold ? bb.classList.add('on') : bb.classList.remove('on');
+  if (bs) t.shadow ? bs.classList.add('on') : bs.classList.remove('on');
+  if (sp) sp.value = t.pos;
+
+  updateSub();
+  toast(`✓ "${t.name}" şablonu uygulandı`);
+}
 let _batchQueue = [];
 let _batchRunning = false;
 
