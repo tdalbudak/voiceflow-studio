@@ -695,18 +695,34 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
           <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Ses</div>
           <select id="voice_select" onchange="voiceSecildi(this)" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
             <option value="">Seç...</option>
-            <option value="nPczCjzI2devNBz1zQrb">Brian — Derin, Rezonant</option>
-            <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Olgun, Güvenilir</option>
-            <option value="pNInz6obpgDQGcFmaJgB">Adam — Güçlü, Kararlı</option>
-            <option value="JBFqnCBsd6RMkjVDRZzb">George — Sıcak, Hikayeci</option>
-            <option value="iP95p4xoKVk53GoZ742B">Chris — Karizmatik</option>
-            <option value="cgSgspJ2msm6clMCkdW9">Jessica — Neşeli, Sıcak</option>
-            <option value="FGY2WhTYpPnrIDTdsKH5">Laura — Enerjik, Özgün</option>
-            <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — Dinamik, Genç</option>
-            <option value="onwK4e9ZLuTAKqWW03F9">Daniel — Radyo Spikerı</option>
-            <option value="SAz9YHcvj6GT2YYXdXww">River — Sakin, Nötr</option>
-            <option value="E7GwUhgj9sbeAZgubRba">Bahadır 🇹🇷 — Derin Belgesel</option>
-            <option value="xFsOR54lR471QiCvQ5re">İlknur 🇹🇷 — Net, Sıcak</option>
+            <optgroup label="🇹🇷 Türkçe">
+              <option value="E7GwUhgj9sbeAZgubRba">Bahadır — Derin, Belgesel</option>
+              <option value="xFsOR54lR471QiCvQ5re">İlknur — Net, Sıcak</option>
+            </optgroup>
+            <optgroup label="🇺🇸 English">
+              <option value="nPczCjzI2devNBz1zQrb">Brian — Deep, Resonant</option>
+              <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Mature, Confident</option>
+              <option value="pNInz6obpgDQGcFmaJgB">Adam — Dominant, Firm</option>
+              <option value="JBFqnCBsd6RMkjVDRZzb">George — Warm Storyteller</option>
+              <option value="iP95p4xoKVk53GoZ742B">Chris — Charming</option>
+              <option value="cgSgspJ2msm6clMCkdW9">Jessica — Playful, Warm</option>
+              <option value="FGY2WhTYpPnrIDTdsKH5">Laura — Energetic</option>
+              <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — Dynamic</option>
+              <option value="onwK4e9ZLuTAKqWW03F9">Daniel — Broadcaster</option>
+              <option value="SAz9YHcvj6GT2YYXdXww">River — Relaxed, Neutral</option>
+            </optgroup>
+            <optgroup label="🇩🇪 Deutsch">
+              <option value="pqHfZKP75CvOlQylNhV4">Bill — Wise, Mature</option>
+              <option value="bIHbv24MWmeRgasZH58o">Will — Relaxed Optimist</option>
+            </optgroup>
+            <optgroup label="🇫🇷 Français">
+              <option value="pFZP5JQG7iQjIQuC4Bku">Lily — Velvety Actress</option>
+              <option value="XrExE9yKIg1WjnnlVkGX">Matilda — Professional</option>
+            </optgroup>
+            <optgroup label="🇪🇸 Español">
+              <option value="IKne3meq5aSn9XLyUdCD">Charlie — Deep, Energetic</option>
+              <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Husky</option>
+            </optgroup>
           </select>
         </div>
       </div>
@@ -1246,24 +1262,47 @@ function _ttsHL(){
 }
 
 const VOICES = [
-  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',   desc:'Derin, Rezonant ve Rahatlatıcı',    color:'#3b82f6' },
-  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',   desc:'Olgun, Güven Verici, Kararlı',       color:'#8b5cf6' },
-  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',    desc:'Dominant, Güçlü',                    color:'#ef4444' },
-  { id:'JBFqnCBsd6RMkjVDRZzb', name:'George',  desc:'Sıcak, Büyüleyici Hikayeci',         color:'#f59e0b' },
-  { id:'iP95p4xoKVk53GoZ742B', name:'Chris',   desc:'Karizmatik, Samimi',                 color:'#10b981' },
-  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica', desc:'Neşeli, Parlak, Sıcak',              color:'#ec4899' },
-  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',   desc:'Enerjik, Özgün Tavır',               color:'#06b6d4' },
-  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',    desc:'Dinamik, Sosyal Medya İçerik',       color:'#84cc16' },
-  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',  desc:'İstikrarlı Radyo Spikerı',           color:'#6366f1' },
-  { id:'SAz9YHcvj6GT2YYXdXww', name:'River',   desc:'Rahat, Nötr, Bilgilendirici',        color:'#14b8a6' },
-  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır 🇹🇷', desc:'Derin, Hikayesel, Belgesel',    color:'#f97316' },
-  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur 🇹🇷', desc:'Net, Sıcak ve Genç',             color:'#a855f7' },
+  // ── Türkçe ──
+  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır 🇹🇷',   desc:'Derin, Hikayesel, Belgesel',        color:'#f97316', lang:'tr' },
+  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur 🇹🇷',    desc:'Net, Sıcak ve Genç',                color:'#a855f7', lang:'tr' },
+  // ── İngilizce ──
+  { id:'nPczCjzI2devNBz1zQrb', name:'Brian 🇺🇸',     desc:'Deep, Resonant & Comforting',       color:'#3b82f6', lang:'en' },
+  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah 🇺🇸',     desc:'Mature, Reassuring, Confident',     color:'#8b5cf6', lang:'en' },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam 🇺🇸',      desc:'Dominant, Firm',                    color:'#ef4444', lang:'en' },
+  { id:'JBFqnCBsd6RMkjVDRZzb', name:'George 🇬🇧',    desc:'Warm, Captivating Storyteller',     color:'#f59e0b', lang:'en' },
+  { id:'iP95p4xoKVk53GoZ742B', name:'Chris 🇺🇸',     desc:'Charming, Down-to-Earth',           color:'#10b981', lang:'en' },
+  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica 🇺🇸',   desc:'Playful, Bright, Warm',             color:'#ec4899', lang:'en' },
+  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura 🇺🇸',     desc:'Enthusiast, Quirky Attitude',       color:'#06b6d4', lang:'en' },
+  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam 🇺🇸',      desc:'Energetic, Social Media Creator',   color:'#84cc16', lang:'en' },
+  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel 🇬🇧',    desc:'Steady Broadcaster',                color:'#6366f1', lang:'en' },
+  { id:'SAz9YHcvj6GT2YYXdXww', name:'River 🇺🇸',     desc:'Relaxed, Neutral, Informative',     color:'#14b8a6', lang:'en' },
+  // ── Almanca ──
+  { id:'pqHfZKP75CvOlQylNhV4', name:'Bill 🇩🇪',      desc:'Wise, Mature, Balanced — DE',       color:'#64748b', lang:'de' },
+  { id:'bIHbv24MWmeRgasZH58o', name:'Will 🇩🇪',      desc:'Relaxed Optimist — DE',             color:'#475569', lang:'de' },
+  // ── Fransızca ──
+  { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily 🇫🇷',      desc:'Velvety Actress — FR',              color:'#7c3aed', lang:'fr' },
+  { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda 🇫🇷',   desc:'Knowledgeable, Professional — FR',  color:'#9333ea', lang:'fr' },
+  // ── İspanyolca / Diğer ──
+  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie 🇪🇸',   desc:'Deep, Confident, Energetic',        color:'#dc2626', lang:'es' },
+  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum 🇪🇸',    desc:'Husky Trickster',                   color:'#b91c1c', lang:'es' },
 ];
 
 function buildVoiceList() {
   const el = document.getElementById('voice_list');
   if (!el) return;
-  el.innerHTML = VOICES.map(v => `
+
+  // Aktif dile göre sırala — o dilin sesleri önce
+  const srcLang = document.getElementById('m_src')?.value || 'tr';
+  const tgtLang = document.getElementById('m_tgt')?.value || 'en';
+  const oncelikDil = tgtLang !== 'tr' ? tgtLang : srcLang;
+
+  const sirali = [...VOICES].sort((a,b) => {
+    const aOnce = a.lang === oncelikDil ? -2 : a.lang === 'en' ? -1 : 0;
+    const bOnce = b.lang === oncelikDil ? -2 : b.lang === 'en' ? -1 : 0;
+    return aOnce - bOnce;
+  });
+
+  el.innerHTML = sirali.map(v => `
     <div onclick="selVoiceById('${v.id}')" id="vli_${v.id}"
       style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1.5px solid transparent;"
       onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}')this.style.background='';this.style.borderColor=voice==='${v.id}'?'var(--accent2)':'transparent'">

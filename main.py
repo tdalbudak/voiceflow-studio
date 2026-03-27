@@ -494,24 +494,34 @@ async def elevenlabs_segment_uret(
             with open(output_path, "wb") as f:
                 f.write(r.content)
 
-            # Süre kontrolü — sadece çok uzunsa sıkıştır, max 1.8x
+            # Süre kontrolü — akıllı hız ayarı
             gercek = ses_sure_olc(output_path)
             if gercek > 0 and hedef_sure > 0:
                 oran = gercek / hedef_sure
-                print(f"[TTS] Segment: üretilen={gercek:.2f}s hedef={hedef_sure:.2f}s oran={oran:.2f}")
-                if oran > 1.5:
-                    oran = min(oran, 1.8)  # max 1.8x — üstü robotik
+                print(f"[TTS] üretilen={gercek:.2f}s hedef={hedef_sure:.2f}s oran={oran:.2f}x")
+
+                if oran > 1.25:
+                    # atempo max 2.0x — üstünü chain'le (1.5x * 1.5x = 2.25x)
+                    oran_sinir = min(oran, 2.0)
+                    if oran_sinir > 2.0:
+                        # İki aşamalı: oran1 * oran2 = hedef
+                        oran1 = min(oran_sinir ** 0.5, 2.0)
+                        oran2 = min(oran_sinir / oran1, 2.0)
+                        filtre = f"atempo={oran1:.4f},atempo={oran2:.4f}"
+                    else:
+                        filtre = f"atempo={oran_sinir:.4f}"
+
                     adj = output_path + "_adj.mp3"
                     r2  = subprocess.run(
                         ["ffmpeg", "-y", "-i", output_path,
-                         "-filter:a", f"atempo={oran:.4f}",
-                         "-c:a", "libmp3lame", "-q:a", "3", adj],
+                         "-filter:a", filtre,
+                         "-c:a", "libmp3lame", "-q:a", "2", adj],
                         capture_output=True, text=True, timeout=60
                     )
                     if r2.returncode == 0:
                         os.replace(adj, output_path)
-                        print(f"[TTS] Sıkıştırıldı: {oran:.2f}x")
-                # oran < 1 → ses kısa, boşluk doğal — dokunma
+                        print(f"[TTS] Sıkıştırıldı: {oran_sinir:.2f}x")
+                # oran < 1 → kısa üretildi, boşluk olsun — doğal
 
             return True
 
@@ -768,7 +778,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             semaphore  = asyncio.Semaphore(4)
             tamamlanan = [0]
 
-            async def seg_uret_task(seg, idx):
+            async def seg_uret_task(seg, idx, tum_segmentler):
                 async with semaphore:
                     metin = re.sub(r"\[Konuşmacı \d+\]:\s*", "", seg["metin"]).strip()
                     temiz = re.sub(r"[^\w\s]", "", metin).strip()
@@ -783,7 +793,18 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         sp_key = speaker_no.group(1)
                         kullanilacak_ses = speaker_ses_map.get(sp_key, ses_id)
 
-                    sure    = max(0.5, seg["bitis"] - seg["baslangic"])
+                    # Hedef süre: bir sonraki segmentin başına kadar olan süre
+                    # Bu sayede doğal boşluklar korunur
+                    sonraki = next((s for s in tum_segmentler if s["no"] > seg["no"]), None)
+                    if sonraki:
+                        # Mevcut segmentin bitişinden sonraki segmentin başına kadar olan toplam
+                        kullanilabilir = sonraki["baslangic"] - seg["baslangic"]
+                        # En az kendi süresi, en fazla kullanılabilir alan
+                        sure = max(seg["bitis"] - seg["baslangic"],
+                                   min(kullanilabilir * 0.85, seg["bitis"] - seg["baslangic"] * 1.3))
+                    else:
+                        sure = max(1.0, seg["bitis"] - seg["baslangic"])
+
                     ses_yol = os.path.join(ses_klasor, f"seg_{idx:04d}.mp3")
                     ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure)
                     tamamlanan[0] += 1
@@ -796,7 +817,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         return {"dosya": ses_yol, "baslangic": seg["baslangic"]}
                     return None
 
-            gorevler  = [seg_uret_task(seg, i) for i, seg in enumerate(segmentler)]
+            gorevler  = [seg_uret_task(seg, i, segmentler) for i, seg in enumerate(segmentler)]
             sonuclar  = await asyncio.gather(*gorevler)
             ses_liste = [s for s in sonuclar if s is not None]
 
@@ -960,39 +981,54 @@ def _srt_parse(icerik: str) -> list:
         })
     return bloklar
 
-def _kisa_seg_birlestir(segmentler: list, min_sure: float = 0.8) -> list:
+def _kisa_seg_birlestir(segmentler: list, min_sure: float = 1.2) -> list:
     """
-    Süresi min_sure'den kısa segmentleri bir sonrakiyle birleştirir.
-    Aynı konuşmacının ardışık kısa cümlelerini tek segmente indirerek
-    hem ElevenLabs karakter israfını azaltır hem timing'i düzeltir.
+    Ardışık kısa segmentleri birleştirir.
+    - min_sure: bu süreden kısa segmentler bir sonrakiyle birleşir
+    - Aynı konuşmacı kontrolü: prefix farklıysa birleştirme
+    - Max 20 kelime sınırı — çok uzun segment oluşmasın
     """
     if not segmentler:
         return segmentler
+
+    def _speaker(metin):
+        m = re.search(r"\[Konuşmacı (\d+)\]", metin)
+        return m.group(1) if m else "0"
 
     sonuc = []
     i = 0
     while i < len(segmentler):
         seg = dict(segmentler[i])
         sure = seg["bitis"] - seg["baslangic"]
+        sp   = _speaker(seg["metin"])
 
-        # Kısa segment + sonraki var + aynı konuşmacı (prefix kontrolü)
         while (sure < min_sure and
                i + 1 < len(segmentler) and
-               len(seg["metin"].split()) < 15):  # çok uzun olmasın
-            sonraki = segmentler[i + 1]
-            seg["metin"]  = seg["metin"].rstrip() + " " + sonraki["metin"].lstrip()
-            seg["bitis"]  = sonraki["bitis"]
+               len(seg["metin"].split()) < 20):
+            sonraki  = segmentler[i + 1]
+            sp_sonra = _speaker(sonraki["metin"])
+
+            # Farklı konuşmacıysa birleştirme — her biri ayrı seslendirme alacak
+            if sp_sonra != sp:
+                break
+
+            # Aralarındaki boşluk 2s'den fazlaysa birleştirme
+            bosluk = sonraki["baslangic"] - seg["bitis"]
+            if bosluk > 2.0:
+                break
+
+            seg["metin"] = seg["metin"].rstrip() + " " + re.sub(r"\[Konuşmacı \d+\]:\s*", "", sonraki["metin"]).lstrip()
+            seg["bitis"] = sonraki["bitis"]
             sure = seg["bitis"] - seg["baslangic"]
             i += 1
 
         sonuc.append(seg)
         i += 1
 
-    # Numaraları yeniden ver
     for idx, s in enumerate(sonuc, start=1):
         s["no"] = idx
 
-    print(f"[Seg Birleştir] {len(segmentler)} → {len(sonuc)} segment")
+    print(f"[Seg Birleştir] {len(segmentler)} → {len(sonuc)} segment (min_sure={min_sure}s)")
     return sonuc
 
 
