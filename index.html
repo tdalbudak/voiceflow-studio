@@ -1922,9 +1922,30 @@ async function startProcess(){
 
   // Ses seçimi kontrolü
   if(!voice || voice === ''){
-    // Varsayılan ses ata
     voice = VOICES[0]?.id || 'nPczCjzI2devNBz1zQrb';
     toast('Ses seçilmedi — varsayılan ses kullanılıyor', 'twarn', 2000);
+  }
+
+  // Dil-ses uyumu kontrolü
+  const hedefDil = document.getElementById('tgt_lang')?.value || '';
+  const secilenSes = VOICES.find(v => v.id === voice);
+  if(secilenSes && hedefDil) {
+    const dilUyumsuz = (
+      (secilenSes.lang === 'tr' && hedefDil !== 'tr') ||
+      (secilenSes.lang === 'de' && !['de','DE'].includes(hedefDil)) ||
+      (secilenSes.lang === 'fr' && !['fr','FR'].includes(hedefDil)) ||
+      (secilenSes.lang === 'it' && !['it','IT'].includes(hedefDil))
+    );
+    if(dilUyumsuz) {
+      // Hedef dile uygun ses bul
+      const dilKodlari = {'en':'en','de':'de','fr':'fr','it':'it','tr':'tr','es':'es'};
+      const aradigiDil = dilKodlari[hedefDil.toLowerCase()] || 'en';
+      const uygunSes = VOICES.find(v => v.lang === aradigiDil) || VOICES.find(v => v.lang === 'en');
+      if(uygunSes) {
+        toast(`⚠ ${secilenSes.name} bu dili desteklemiyor — ${uygunSes.name} kullanılıyor`, 'twarn', 4000);
+        voice = uygunSes.id;
+      }
+    }
   }
 
   const fd=new FormData();
@@ -2319,15 +2340,23 @@ function buildVoiceList() {
     const badge = isFree
       ? `<span style="font-size:9px;font-weight:700;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;">ÜCRETSİZ</span>`
       : `<span style="font-size:9px;font-weight:700;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;">PRO</span>`;
+    const dilBadge = {
+      'tr': '<span style="font-size:9px;background:rgba(249,115,22,.15);color:#f97316;padding:1px 5px;border-radius:3px;flex-shrink:0;">🇹🇷 TR</span>',
+      'de': '<span style="font-size:9px;background:rgba(220,38,38,.15);color:#dc2626;padding:1px 5px;border-radius:3px;flex-shrink:0;">🇩🇪 DE</span>',
+      'fr': '<span style="font-size:9px;background:rgba(59,130,246,.15);color:#3b82f6;padding:1px 5px;border-radius:3px;flex-shrink:0;">🇫🇷 FR</span>',
+      'it': '<span style="font-size:9px;background:rgba(34,197,94,.15);color:#16a34a;padding:1px 5px;border-radius:3px;flex-shrink:0;">🇮🇹 IT</span>',
+      'en': '',
+    };
     return `
     <div onclick="selVoiceById('${v.id}')" id="vli_${v.id}"
       style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1.5px solid transparent;"
       onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}')this.style.background='';this.style.borderColor=voice==='${v.id}'?'var(--accent2)':'transparent'">
       <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:5px;">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
           <span style="font-size:12px;font-weight:600;">${v.name}</span>
           ${badge}
+          ${dilBadge[v.lang]||''}
         </div>
         <span style="font-size:10px;color:var(--muted2);">${v.desc}</span>
       </div>
