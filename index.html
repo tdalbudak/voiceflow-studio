@@ -325,8 +325,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <div class="nav-tab" id="tab_metinden_sese" onclick="sw('metinden_sese')">✍ Metin→Ses</div>
   </div>
   <div class="nav-right">
-    <button class="cloud-btn" onclick="cloudConnect('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive</button>
-    <button class="cloud-btn" onclick="cloudConnect('dropbox')"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
+    <button class="cloud-btn" onclick="topluIslemAc()" title="Toplu video işle"><i class="fa-solid fa-layer-group"></i> Toplu</button>
+    <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Sürüm geçmişi A/B karşılaştır" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
     <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Başlat</button>
     <div class="xwrap hidden" id="xwrap">
       <button class="btn-dl"><i class="fa-solid fa-download"></i> İndir ▾</button>
@@ -337,6 +337,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <div class="xitem" onclick="xport('ass')"><i class="fa-solid fa-closed-captioning" style="color:var(--purple2)"></i>ASS (Gelişmiş)</div>
         <div class="xitem" onclick="xport('txt')"><i class="fa-solid fa-file-lines" style="color:var(--muted2)"></i>TXT (Zaman Damgalı)</div>
         <div class="xitem" onclick="xport('txt_clean')"><i class="fa-solid fa-align-left" style="color:var(--muted2)"></i>TXT (Düz Metin)</div>
+        <div class="xitem" onclick="xport('burn_sub')" id="xitem_burn" style="display:none;"><i class="fa-solid fa-closed-captioning" style="color:var(--accent3)"></i>Altyazı Gömülü MP4</div>
       </div>
     </div>
   </div>
@@ -768,6 +769,24 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </div>
       </div>
 
+      <!-- Hızlı mod seçenekleri -->
+      <div id="modal_mode_opts" style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px;">
+        <!-- TikTok modu -->
+        <div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="document.getElementById('modal_tiktok').click()" id="tiktok_modal_row">
+          <span style="font-size:18px;">🎵</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;">TikTok Kelime Modu</div>
+            <div style="font-size:11px;color:var(--muted2);">Kelimeler tek tek parlar — karaoke stili</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;" onclick="event.stopPropagation()">
+            <input type="checkbox" id="modal_tiktok" style="opacity:0;width:0;height:0;" onchange="tiktokModalToggle(this)">
+            <span id="modal_tiktok_track" style="position:absolute;inset:0;background:var(--border2);border-radius:10px;transition:.2s;">
+              <span style="position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;transform:translateX(0);display:block;" id="modal_tiktok_thumb"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
       <!-- Transcript yükle seçeneği -->
       <div id="transcript_upload_row" style="display:none;margin-bottom:4px;">
         <div style="font-size:12px;font-weight:700;color:var(--muted2);margin-bottom:7px;">Transkript Dosyası (İsteğe Bağlı)</div>
@@ -1007,7 +1026,37 @@ async function _applyUndoRedo(state) {
 let _tiktokOn   = false;
 let _tiktokWords = [];
 
+function tiktokModalToggle(cb) {
+  const track = document.getElementById('modal_tiktok_track');
+  const thumb  = document.getElementById('modal_tiktok_thumb');
+  const row    = document.getElementById('tiktok_modal_row');
+  if (cb.checked) {
+    track.style.background = '#a855f7';
+    thumb.style.transform  = 'translateX(16px)';
+    row.style.borderColor  = '#a855f7';
+  } else {
+    track.style.background = 'var(--border2)';
+    thumb.style.transform  = 'translateX(0)';
+    row.style.borderColor  = 'var(--border2)';
+  }
+}
+
 function toggleTikTok() {
+  _tiktokOn = !_tiktokOn;
+  const btn     = document.getElementById('tiktok_btn');
+  const overlay = document.getElementById('tiktok_overlay');
+  const liveSub = document.getElementById('live_sub_overlay');
+  btn?.classList.toggle('on', _tiktokOn);
+  if (_tiktokOn) {
+    if (liveSub) liveSub.style.display = 'none';
+    _loadTikTokWords();
+    toast('🎵 TikTok modu açık — kelimeler video ile yanıp söner');
+  } else {
+    if (overlay) overlay.innerHTML = '';
+    if (liveSub) liveSub.style.display = '';
+    toast('TikTok modu kapatıldı');
+  }
+}
   _tiktokOn = !_tiktokOn;
   const btn = document.getElementById('tiktok_btn');
   const overlay = document.getElementById('tiktok_overlay');
@@ -1037,8 +1086,20 @@ async function _loadTikTokWords() {
 function _buildTikTokOverlay() {
   const overlay = document.getElementById('tiktok_overlay');
   if (!overlay) return;
+
+  const size  = document.getElementById('sub_size')?.value  || '22';
+  const color = document.getElementById('sub_color')?.value || '#ffffff';
+  const bold  = document.getElementById('btn_bold')?.classList.contains('on');
+  const pos   = document.getElementById('sub_pos')?.value   || 'bottom';
+
+  // Pozisyon
+  overlay.style.bottom = pos === 'top' ? 'auto' : pos === 'center' ? '40%' : '12%';
+  overlay.style.top    = pos === 'top' ? '12%' : 'auto';
+
   overlay.innerHTML = _tiktokWords.map((w, i) =>
-    `<span class="tiktok-word" id="tw_${i}">${w.word}</span>`
+    `<span class="tiktok-word" id="tw_${i}"
+      style="font-size:${Math.max(18, parseInt(size)+4)}px;font-weight:${bold?'900':'700'};color:${color};"
+    >${w.word}</span>`
   ).join('');
 }
 
@@ -1843,7 +1904,36 @@ function sw(m){
 
 /* ═══ ALTYAZI STİL (sol panelden) ═══ */
 function updateSub(){
-  // Artık draggable subtitle yok — sadece ffmpeg parametreleri güncellenir
+  // Canlı altyazı overlay'i anında güncelle
+  const overlay = document.getElementById('live_sub_overlay');
+  if (!overlay) return;
+  const font   = document.getElementById('sub_font')?.value  || 'Arial';
+  const size   = document.getElementById('sub_size')?.value  || '22';
+  const color  = document.getElementById('sub_color')?.value || '#ffffff';
+  const bold   = document.getElementById('btn_bold')?.classList.contains('on');
+  const shadow = document.getElementById('btn_shadow')?.classList.contains('on');
+  const pos    = document.getElementById('sub_pos')?.value   || 'bottom';
+
+  overlay.style.fontFamily  = font;
+  overlay.style.fontSize    = size + 'px';
+  overlay.style.color       = color;
+  overlay.style.fontWeight  = bold ? '700' : '400';
+  overlay.style.textShadow  = shadow ? '2px 2px 4px #000,0 0 8px #000' : 'none';
+  overlay.style.bottom      = pos === 'top' ? 'auto' : pos === 'center' ? '50%' : '8%';
+  overlay.style.top         = pos === 'top' ? '8%'  : pos === 'center' ? '50%' : 'auto';
+  overlay.style.transform   = pos === 'center' ? 'translateX(-50%) translateY(-50%)' : 'translateX(-50%)';
+
+  // TikTok overlay stilini de güncelle
+  const tiktokOverlay = document.getElementById('tiktok_overlay');
+  if (tiktokOverlay && _tiktokOn) {
+    tiktokOverlay.style.bottom = pos === 'top' ? 'auto' : pos === 'center' ? '40%' : '12%';
+    tiktokOverlay.style.top    = pos === 'top' ? '12%' : 'auto';
+  }
+  // Aktif kelimeler yeniden render
+  document.querySelectorAll('.tiktok-word').forEach(el => {
+    el.style.fontSize = Math.max(18, parseInt(size) + 4) + 'px';
+    el.style.color    = el.classList.contains('tw-active') ? '#facc15' : color;
+  });
 }
 
 /* ═══ SES KLONLAMA ═══ */
@@ -2118,6 +2208,13 @@ function showResult(fn){
     fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
     setTimeout(()=>waveform(fn),1800);
   }
+
+  // TikTok modu modal'da seçildiyse otomatik aktifleştir
+  if (document.getElementById('modal_tiktok')?.checked && (mod === 'desifre' || mod === 'altyazi')) {
+    setTimeout(() => {
+      if (!_tiktokOn) toggleTikTok();
+    }, 2000); // Kelime verisi yüklensin bekle
+  }
 }
 
 /* ═══ RENDER SEGMENTS ═══ */
@@ -2157,6 +2254,12 @@ function renderSegs(srt,fn,tr=false){
     <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>
     <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>
     <div style="margin-left:auto;display:flex;gap:5px;">
+      <button class="dbtn" onclick="viralKlipCikar()" title="En iyi anları bul ve klip çıkar" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
+        <i class="fa-solid fa-bolt"></i> Viral
+      </button>
+      <button class="dbtn" onclick="versiyonKaydet()" title="Bu anı kaydet (A/B karşılaştırma)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">
+        <i class="fa-solid fa-bookmark"></i> Kaydet
+      </button>
       <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
         <i class="fa-solid fa-scissors"></i> Magic Cut
       </button>
@@ -2512,6 +2615,280 @@ async function sesOnizle(sesId, btn, lang) {
     }
   }
 }
+      toast('Demo yüklenemedi', 'twarn', 2000);
+    }
+  }
+}
+
+/* ═══ TOPLU VİDEO İŞLEME ═══ */
+let _batchQueue = [];
+let _batchRunning = false;
+
+function topluIslemAc() {
+  const overlay = document.createElement('div');
+  overlay.id = '_batch_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:480px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--txt);">📦 Toplu Video İşleme</div>
+        <button onclick="document.getElementById('_batch_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--s3);border:2px dashed var(--border2);border-radius:var(--r2);padding:20px;cursor:pointer;margin-bottom:12px;font-size:13px;color:var(--muted2);"
+        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <i class="fa-solid fa-folder-open" style="font-size:20px;color:var(--accent2);"></i>
+        Dosyaları Seç (çoklu seçim)
+        <input type="file" multiple accept="video/*,audio/*" hidden onchange="batchDosyaEkle(this)">
+      </label>
+      <div id="batch_list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">İşlem</div>
+          <select id="batch_modul" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            <option value="desifre">Deşifre</option>
+            <option value="altyazi">Altyazı Gömme</option>
+            <option value="seslendirme">AI Dublaj</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Hedef Dil</div>
+          <select id="batch_lang" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            <option value="EN">İngilizce</option><option value="DE">Almanca</option>
+            <option value="FR">Fransızca</option><option value="TR">Türkçe</option>
+          </select>
+        </div>
+      </div>
+      <div id="batch_progress" style="display:none;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="batch_status">Hazırlanıyor...</div>
+        <div style="background:var(--s3);border-radius:100px;height:5px;overflow:hidden;">
+          <div id="batch_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
+      <button onclick="batchBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:11px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
+        <i class="fa-solid fa-play"></i> Hepsini İşle
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function batchDosyaEkle(inp) {
+  const list = document.getElementById('batch_list');
+  if (!list) return;
+  Array.from(inp.files).forEach(f => {
+    _batchQueue.push(f);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--s3);padding:7px 10px;border-radius:var(--r);font-size:12px;';
+    row.innerHTML = `<i class="fa-solid fa-file-video" style="color:var(--accent2);"></i>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+      <span style="color:var(--muted2);">${(f.size/1024/1024).toFixed(1)}MB</span>
+      <span id="bs_${_batchQueue.length-1}" style="font-size:10px;color:var(--muted2);">Bekliyor</span>`;
+    list.appendChild(row);
+  });
+}
+
+async function batchBaslat() {
+  if (!_batchQueue.length) { toast('Dosya eklenmedi','twarn'); return; }
+  if (_batchRunning) { toast('Zaten çalışıyor','twarn'); return; }
+  _batchRunning = true;
+  const modul  = document.getElementById('batch_modul')?.value || 'desifre';
+  const lang   = document.getElementById('batch_lang')?.value  || 'EN';
+  const prog   = document.getElementById('batch_progress');
+  const bar    = document.getElementById('batch_bar');
+  const status = document.getElementById('batch_status');
+  if (prog) prog.style.display = 'block';
+  let tamamlanan = 0;
+  for (let i = 0; i < _batchQueue.length; i++) {
+    const dosya = _batchQueue[i];
+    const statusEl = document.getElementById(`bs_${i}`);
+    if (statusEl) { statusEl.textContent = '⏳'; statusEl.style.color = 'var(--yellow2)'; }
+    if (status) status.textContent = `${dosya.name} (${i+1}/${_batchQueue.length})`;
+    try {
+      const fd = new FormData();
+      fd.append('modul', modul); fd.append('hedef_dil', lang);
+      fd.append('kaynak_dil', 'auto'); fd.append('ses_id', voice || 'nPczCjzI2devNBz1zQrb');
+      fd.append('dosya', dosya);
+      const r = await fetch(`${B}/api/islem/`, { method:'POST', body:fd });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      await new Promise((resolve, reject) => {
+        const iv = setInterval(async () => {
+          try {
+            const sr = await fetch(`${B}/durum/${d.beklenen_dosya_adi}`);
+            const sd = await sr.json();
+            if (sd.yuzde === 100) { clearInterval(iv); resolve(); }
+            else if (sd.yuzde === 0 && sd.durum?.startsWith('Hata')) { clearInterval(iv); reject(sd.durum); }
+          } catch(e) { clearInterval(iv); reject(e); }
+        }, 2000);
+      });
+      tamamlanan++;
+      if (statusEl) { statusEl.textContent = '✓'; statusEl.style.color = 'var(--green2)'; }
+    } catch(e) {
+      if (statusEl) { statusEl.textContent = '✗'; statusEl.style.color = 'var(--red2)'; }
+    }
+    if (bar) bar.style.width = ((i+1) / _batchQueue.length * 100) + '%';
+  }
+  _batchRunning = false;
+  if (status) status.textContent = `✓ Tamamlandı: ${tamamlanan}/${_batchQueue.length}`;
+  toast(`Toplu işlem: ${tamamlanan}/${_batchQueue.length} tamamlandı`);
+}
+
+/* ═══ SÜRÜM GEÇMİŞİ / A/B KARŞILAŞTIRMA ═══ */
+let _versiyonlar = [];
+
+function versiyonKaydet(etiket) {
+  if (!segs.length) { toast('Kaydedilecek segment yok','twarn'); return; }
+  const v = {
+    etiket: etiket || `Versiyon ${_versiyonlar.length + 1}`,
+    zaman: new Date().toLocaleTimeString('tr-TR'),
+    segmentler: JSON.parse(JSON.stringify(segs)),
+  };
+  _versiyonlar.push(v);
+  const btn = document.getElementById('versiyon_btn');
+  if (btn) { btn.style.display = 'flex'; btn.innerHTML = `<i class="fa-solid fa-code-compare"></i> A/B (${_versiyonlar.length})`; }
+  toast(`✓ "${v.etiket}" kaydedildi`);
+}
+
+function versiyonPaneliAc() {
+  if (!_versiyonlar.length) { toast('Henüz kaydedilmiş versiyon yok','twarn',4000); return; }
+  const overlay = document.createElement('div');
+  overlay.id = '_versiyon_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:520px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">🔀 Sürüm Geçmişi & A/B</div>
+        <button onclick="document.getElementById('_versiyon_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">A Versiyonu</div>
+          <select id="ver_a" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            ${_versiyonlar.map((v,i)=>`<option value="${i}">${v.etiket} (${v.zaman})</option>`).join('')}
+          </select></div>
+        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">B Versiyonu</div>
+          <select id="ver_b" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            ${_versiyonlar.map((v,i)=>`<option value="${i}" ${i===_versiyonlar.length-1?'selected':''}>${v.etiket} (${v.zaman})</option>`).join('')}
+          </select></div>
+      </div>
+      <button onclick="abKarsilastir()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:8px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;margin-bottom:10px;">
+        <i class="fa-solid fa-arrows-left-right"></i> Karşılaştır
+      </button>
+      <div id="ab_result"></div>
+      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">
+        ${_versiyonlar.map((v,i) => `
+          <div style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);margin-bottom:5px;">
+            <span style="font-size:12px;flex:1;">${v.etiket} <span style="color:var(--muted2);font-size:10px;">${v.zaman}</span></span>
+            <button onclick="versiyonaGeriDon(${i})" style="background:var(--accent);border:none;color:#fff;padding:3px 9px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Geri Dön</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function abKarsilastir() {
+  const iA = parseInt(document.getElementById('ver_a')?.value);
+  const iB = parseInt(document.getElementById('ver_b')?.value);
+  if (isNaN(iA)||isNaN(iB)||iA===iB) { toast('İki farklı versiyon seçin','twarn'); return; }
+  const vA = _versiyonlar[iA], vB = _versiyonlar[iB];
+  const tA = vA.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
+  const tB = vB.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
+  const res = document.getElementById('ab_result');
+  if (res) res.innerHTML = `
+    <div style="background:var(--s3);border-radius:var(--r);padding:10px;font-size:12px;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+        <div style="background:rgba(99,102,241,.1);padding:7px;border-radius:5px;">
+          <div style="font-weight:700;color:var(--accent3);">A: ${vA.etiket}</div>
+          <div style="color:var(--muted2);">${vA.segmentler.length} segment · ${tA.toFixed(1)}s</div>
+        </div>
+        <div style="background:rgba(234,179,8,.1);padding:7px;border-radius:5px;">
+          <div style="font-weight:700;color:#eab308;">B: ${vB.etiket}</div>
+          <div style="color:var(--muted2);">${vB.segmentler.length} segment · ${tB.toFixed(1)}s</div>
+        </div>
+      </div>
+      <div style="color:var(--muted2);">Δ Segment: <b style="color:var(--txt);">${vB.segmentler.length-vA.segmentler.length>0?'+':''}${vB.segmentler.length-vA.segmentler.length}</b>
+        &nbsp; Δ Süre: <b style="color:var(--txt);">${(tB-tA)>=0?'+':''}${(tB-tA).toFixed(1)}s</b></div>
+    </div>`;
+}
+
+function versiyonaGeriDon(i) {
+  if (!confirm(`"${_versiyonlar[i].etiket}" versiyonuna dönülsün mü?`)) return;
+  undoPush();
+  segs = JSON.parse(JSON.stringify(_versiyonlar[i].segmentler));
+  const srt = segs.map(s=>`${s.no}\n${s.tStr||'00:00:00,000 --> 00:00:01,000'}\n${s.rawText||s.text}`).join('\n\n');
+  renderSegs(srt, aSrt);
+  document.getElementById('_versiyon_overlay')?.remove();
+  toast(`"${_versiyonlar[i].etiket}" versiyonuna dönüldü`);
+}
+
+function autoVersiyonKaydet() {
+  if (segs.length > 0 && _versiyonlar.length < 20) versiyonKaydet(`Otomatik ${new Date().toLocaleTimeString('tr-TR')}`);
+}
+
+/* ═══ VİRAL KLİP ÇIKARMA ═══ */
+async function viralKlipCikar() {
+  if (!segs.length) { toast('Önce transkript oluşturun','twarn'); return; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> En iyi anlar analiz ediliyor...','tok',8000);
+  const skorlar = segs.map(s => {
+    const metin = s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
+    const sure  = s.end - s.start;
+    const cps   = sure > 0 ? metin.split(/\s+/).length / sure : 0;
+    let skor = cps * 10;
+    if (/[!?]/.test(metin)) skor += 15;
+    if (/\b(inanılmaz|harika|incredible|amazing|wow|omg|ngl|fr|no cap)\b/i.test(metin)) skor += 20;
+    if (sure >= 3 && sure <= 30) skor += 10;
+    return { seg:s, skor, metin, sure };
+  });
+  const enIyi = [...skorlar].sort((a,b)=>b.skor-a.skor).slice(0,5);
+  const overlay = document.createElement('div');
+  overlay.id = '_viral_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">⚡ En İyi Anlar</div>
+        <button onclick="document.getElementById('_viral_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      ${enIyi.map((item,i)=>`
+        <div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="background:rgba(234,179,8,.2);color:#eab308;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;">#${i+1}</span>
+            <span style="font-size:11px;color:var(--muted2);">${fmt(item.seg.start)} → ${fmt(item.seg.end)} · ${item.sure.toFixed(1)}s</span>
+            <span style="margin-left:auto;font-size:10px;background:rgba(99,102,241,.15);color:var(--accent3);padding:2px 7px;border-radius:100px;">⭐ ${Math.round(item.skor)}</span>
+          </div>
+          <div style="font-size:12px;margin-bottom:8px;">"${item.metin.slice(0,100)}${item.metin.length>100?'...':''}"</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="vidAtla(${item.seg.start})" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-play"></i> Oynat</button>
+            <button onclick="klipIndir('${aDosya||''}',${item.seg.start},${item.seg.end})" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-scissors"></i> Klip İndir</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function klipIndir(dosyaAdi, baslangic, bitis) {
+  if (!dosyaAdi) { toast('Video dosyası yok','twarn'); return; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Klip kesiliyor...','tok',10000);
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', dosyaAdi);
+    fd.append('baslangic', baslangic.toFixed(2));
+    fd.append('bitis', bitis.toFixed(2));
+    const r = await fetch(`${B}/api/klip_kes/`, {method:'POST', body:fd});
+    const d = await r.json();
+    if (d.cikti) { window.open(`${B}/indir/${d.cikti}`,'_blank'); toast('✓ Klip hazır!'); }
+    else toast(d.hata||'Klip kesilemedi','terr');
+  } catch(e) { toast('Bağlantı hatası','terr'); }
+}
+
+function vidAtla(sure) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v?.style.display!=='none' ? v : a;
+  if (el) { el.currentTime = sure; el.play(); }
+  document.getElementById('_viral_overlay')?.remove();
+}
+
+let aktifSeg = null;
+
 async function magicCut(){
   if(!aSrt)return toast('Önce transkript tamamlayın','twarn');
   const dil = document.getElementById('src_lang')?.value||'tr';

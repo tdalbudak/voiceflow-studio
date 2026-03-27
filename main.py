@@ -2236,6 +2236,42 @@ DOLGU_KELIMELER = {
     "fr": ["euh", "eh", "hm", "hmm", "ben", "voilà", "bah"],
 }
 
+@app.post("/api/klip_kes/")
+async def klip_kes(
+    dosya_adi: str    = Form(...),
+    baslangic: float  = Form(...),
+    bitis: float      = Form(...),
+):
+    """FFmpeg ile videodan belirli bir bölümü keser."""
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": "FFmpeg yüklü değil"}, status_code=500)
+
+    giris = os.path.join(OUTPUT_DIR, dosya_adi)
+    if not os.path.exists(giris):
+        return JSONResponse({"hata": "Dosya bulunamadı"}, status_code=404)
+
+    b_id  = uuid.uuid4().hex[:8]
+    ext   = os.path.splitext(dosya_adi)[1] or ".mp4"
+    cikti = f"klip_{b_id}{ext}"
+    cikti_yol = os.path.join(OUTPUT_DIR, cikti)
+
+    sure = max(0.5, bitis - baslangic)
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", str(baslangic),
+        "-i", giris,
+        "-t", str(sure),
+        "-c:v", "copy", "-c:a", "aac",
+        cikti_yol
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    if result.returncode == 0:
+        log.info(f"[Klip Kes] {dosya_adi} {baslangic:.1f}s-{bitis:.1f}s → {cikti}")
+        return JSONResponse({"cikti": cikti, "sure": sure})
+    log.error(f"[Klip Kes Hata] {result.stderr[-300:]}")
+    return JSONResponse({"hata": "Klip kesilemedi"}, status_code=500)
+
+
 @app.post("/api/magic_cut/")
 async def magic_cut(
     srt_dosya_adi: str = Form(...),
