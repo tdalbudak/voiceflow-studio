@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceFlow Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg: #09090b; --bg2: #111113; --bg3: #1c1c1f;
+  --txt: #fafafa; --muted: #71717a; --muted2: #a1a1aa;
+  --accent: #6366f1; --accent2: #818cf8; --accent3: #a5b4fc;
+  --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --r: 14px; --r2: 22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px;}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
+.pro-link{font-size:13px;color:var(--muted2);display:flex;align-items:center;gap:6px;text-decoration:none;transition:color .2s;}
+.pro-link:hover{color:var(--accent3);}
+
+/* STEPS */
+.steps-bar{display:flex;align-items:center;justify-content:center;gap:0;padding:28px 24px 0;}
+.step-item{display:flex;align-items:center;gap:10px;}
+.step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:1.5px solid var(--border2);color:var(--muted);background:transparent;transition:all .3s;flex-shrink:0;}
+.step-num.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 16px rgba(99,102,241,.4);}
+.step-num.done{background:var(--green);border-color:var(--green);color:#fff;}
+.step-label{font-size:13px;color:var(--muted);font-weight:500;transition:color .3s;white-space:nowrap;}
+.step-label.active{color:var(--txt);}
+.step-connector{width:48px;height:1.5px;background:var(--border2);margin:0 6px;flex-shrink:0;transition:background .3s;}
+.step-connector.done{background:var(--green);}
+
+/* MAIN */
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 20px;}
+.wizard-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:540px;overflow:hidden;}
+
+/* STEP PANELS */
+.panel{display:none;padding:36px;}
+.panel.active{display:block;}
+.panel-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px;line-height:1.1;}
+.panel-sub{font-size:14px;color:var(--muted2);margin-bottom:28px;line-height:1.6;}
+
+/* STEP 1 — UPLOAD */
+.dropzone{border:2px dashed var(--border2);border-radius:var(--r);padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(99,102,241,.05);}
+.dz-icon{font-size:40px;margin-bottom:14px;opacity:.5;}
+.dz-txt{font-size:15px;font-weight:500;margin-bottom:6px;}
+.dz-sub{font-size:12px;color:var(--muted);}
+.dz-formats{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+.fmt{background:var(--bg3);border:1px solid var(--border2);padding:3px 10px;border-radius:6px;font-size:11px;color:var(--muted2);}
+#file_inp{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+.file-selected{background:var(--bg3);border:1px solid var(--green);border-radius:var(--r);padding:14px 18px;display:none;align-items:center;gap:12px;margin-top:12px;}
+.file-selected.show{display:flex;}
+.file-icon{width:38px;height:38px;background:rgba(34,197,94,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:16px;flex-shrink:0;}
+.file-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-size{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* STEP 2 — SETTINGS */
+.setting-group{margin-bottom:20px;}
+.setting-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:8px;}
+.lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.lang-opt{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s;font-size:13px;}
+.lang-opt:hover{border-color:var(--accent2);}
+.lang-opt.sel{border-color:var(--accent);background:rgba(99,102,241,.1);color:var(--accent3);}
+.lang-flag{font-size:20px;display:block;margin-bottom:3px;}
+.lang-name{font-size:11px;color:var(--muted2);}
+.lang-opt.sel .lang-name{color:var(--accent3);}
+
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mode-opt{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .15s;}
+.mode-opt:hover{border-color:var(--border2);background:var(--bg3);}
+.mode-opt.sel{border-color:var(--accent);background:rgba(99,102,241,.08);}
+.mode-icon{font-size:22px;margin-bottom:8px;}
+.mode-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.mode-desc{font-size:11px;color:var(--muted);}
+.mode-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;margin-top:6px;display:inline-block;}
+.badge-free{background:rgba(34,197,94,.15);color:#4ade80;}
+.badge-pro{background:rgba(99,102,241,.15);color:var(--accent3);}
+
+/* STEP 3 — PROCESSING */
+.processing-box{text-align:center;padding:8px 0 16px;}
+.proc-icon{font-size:48px;margin-bottom:16px;}
+.proc-title{font-size:20px;font-weight:700;margin-bottom:8px;}
+.proc-sub{font-size:13px;color:var(--muted2);margin-bottom:24px;}
+.progress-wrap{background:var(--bg3);border-radius:100px;height:6px;overflow:hidden;margin-bottom:8px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px;transition:width .4s ease;width:0%;}
+.progress-label{font-size:11px;color:var(--muted);text-align:left;}
+.steps-list{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:8px;}
+.proc-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+.proc-step.done{color:var(--txt);}
+.proc-step.active{color:var(--accent3);}
+.proc-step-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;background:var(--bg3);border:1px solid var(--border2);}
+.proc-step.done .proc-step-dot{background:var(--green);border-color:var(--green);color:#fff;}
+.proc-step.active .proc-step-dot{background:var(--accent);border-color:var(--accent);color:#fff;animation:pulse2 1.2s infinite;}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.4);}50%{box-shadow:0 0 0 6px rgba(99,102,241,0);}}
+
+/* RESULT */
+.result-box{display:none;text-align:center;padding:8px 0 8px;}
+.result-box.show{display:block;}
+.result-icon{font-size:52px;margin-bottom:14px;}
+.result-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+.result-sub{font-size:13px;color:var(--muted2);margin-bottom:20px;}
+.download-btns{display:flex;flex-direction:column;gap:8px;}
+.dl-btn{display:flex;align-items:center;gap:10px;padding:13px 18px;border-radius:var(--r);font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;width:100%;}
+.dl-btn-primary{background:var(--accent);color:#fff;}
+.dl-btn-primary:hover{background:#4f46e5;}
+.dl-btn-secondary{background:var(--bg3);color:var(--txt);border:1px solid var(--border2);}
+.dl-btn-secondary:hover{border-color:var(--accent2);}
+.dl-btn i{font-size:16px;}
+.restart-btn{margin-top:14px;background:transparent;border:none;color:var(--muted2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.restart-btn:hover{color:var(--txt);}
+
+/* NAV BUTTONS */
+.panel-nav{display:flex;gap:10px;margin-top:24px;}
+.btn-back{background:transparent;border:1px solid var(--border2);color:var(--muted2);padding:12px 22px;border-radius:var(--r);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;flex:0 0 auto;}
+.btn-back:hover{border-color:var(--border2);color:var(--txt);}
+.btn-next{background:var(--accent);color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-next:hover{background:#4f46e5;}
+.btn-next:disabled{opacity:.4;cursor:not-allowed;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px;animation:toastIn .3s ease;max-width:300px;}
+.toast.tok{border-color:var(--green);color:var(--green);}
+.toast.terr{border-color:var(--red);color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div> VoiceFlow <span style="color:var(--accent3);margin-left:4px;">Creator</span></div>
+  <a href="/app" class="pro-link"><i class="fa-solid fa-sliders"></i> Gelişmiş Editör</a>
+</div>
+
+<!-- STEPS BAR -->
+<div class="steps-bar">
+  <div class="step-item">
+    <div class="step-num active" id="sn1">1</div>
+    <div class="step-label active" id="sl1">Video Yükle</div>
+  </div>
+  <div class="step-connector" id="sc1"></div>
+  <div class="step-item">
+    <div class="step-num" id="sn2">2</div>
+    <div class="step-label" id="sl2">Ayarlar</div>
+  </div>
+  <div class="step-connector" id="sc2"></div>
+  <div class="step-item">
+    <div class="step-num" id="sn3">3</div>
+    <div class="step-label" id="sl3">İşlem & İndir</div>
+  </div>
+</div>
+
+<main>
+  <div class="wizard-card">
+
+    <!-- PANEL 1 — UPLOAD -->
+    <div class="panel active" id="p1">
+      <div class="panel-title">Videonuzu yükleyin</div>
+      <div class="panel-sub">TikTok, YouTube, Reels — her formattan desteklenir</div>
+
+      <div class="dropzone" id="dz" onclick="document.getElementById('file_inp').click()">
+        <input type="file" id="file_inp" accept="video/*,audio/*" onchange="dosyaSec(this)">
+        <div class="dz-icon">☁️</div>
+        <div class="dz-txt">Sürükle & bırak veya tıkla</div>
+        <div class="dz-sub">Maksimum 500MB · MP4, MOV, AVI, MP3, WAV</div>
+        <div class="dz-formats">
+          <span class="fmt">MP4</span><span class="fmt">MOV</span><span class="fmt">AVI</span>
+          <span class="fmt">MP3</span><span class="fmt">WAV</span>
+        </div>
+      </div>
+
+      <div class="file-selected" id="file_selected">
+        <div class="file-icon"><i class="fa-solid fa-file-video"></i></div>
+        <div style="min-width:0;">
+          <div class="file-name" id="file_name">—</div>
+          <div class="file-size" id="file_size">—</div>
+        </div>
+        <i class="fa-solid fa-circle-check" style="color:var(--green);margin-left:auto;font-size:18px;"></i>
+      </div>
+
+      <div class="panel-nav">
+        <button class="btn-next" id="btn1" onclick="goStep(2)" disabled>
+          Devam Et <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL 2 — SETTINGS -->
+    <div class="panel" id="p2">
+      <div class="panel-title">Ne yapmak istiyorsunuz?</div>
+      <div class="panel-sub">İşlem türünü ve dili seçin</div>
+
+      <div class="setting-group">
+        <div class="setting-label">İşlem Türü</div>
+        <div class="mode-grid">
+          <div class="mode-opt sel" id="mode_altyazi" onclick="modSec('altyazi')">
+            <div class="mode-icon">📝</div>
+            <div class="mode-title">Altyazı Ekle</div>
+            <div class="mode-desc">Otomatik transkript + altyazı gömme</div>
+            <span class="mode-badge badge-free">Ücretsiz</span>
+          </div>
+          <div class="mode-opt" id="mode_tiktok" onclick="modSec('tiktok')">
+            <div class="mode-icon">🎵</div>
+            <div class="mode-title">TikTok Modu</div>
+            <div class="mode-desc">Kelime kelime parlayan altyazı</div>
+            <span class="mode-badge badge-free">Ücretsiz</span>
+          </div>
+          <div class="mode-opt" id="mode_ceviri" onclick="modSec('ceviri')">
+            <div class="mode-icon">🌍</div>
+            <div class="mode-title">Çeviri + Altyazı</div>
+            <div class="mode-desc">60+ dile çevir ve göm</div>
+            <span class="mode-badge badge-free">Ücretsiz</span>
+          </div>
+          <div class="mode-opt" id="mode_dublaj" onclick="modSec('dublaj')">
+            <div class="mode-icon">🎙️</div>
+            <div class="mode-title">AI Dublaj</div>
+            <div class="mode-desc">Sesi başka dilde yeniden seslendir</div>
+            <span class="mode-badge badge-pro">Pro</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group" id="src_lang_group">
+        <div class="setting-label">Video Dili</div>
+        <div class="lang-grid" id="src_lang_grid">
+          <div class="lang-opt sel" onclick="langSec('src','tr',this)"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></div>
+          <div class="lang-opt" onclick="langSec('src','en',this)"><span class="lang-flag">🇺🇸</span><span class="lang-name">English</span></div>
+          <div class="lang-opt" onclick="langSec('src','de',this)"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></div>
+          <div class="lang-opt" onclick="langSec('src','fr',this)"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></div>
+          <div class="lang-opt" onclick="langSec('src','es',this)"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></div>
+          <div class="lang-opt" onclick="langSec('src','ru',this)"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span></div>
+        </div>
+      </div>
+
+      <div class="setting-group" id="tgt_lang_group" style="display:none;">
+        <div class="setting-label">Hedef Dil</div>
+        <div class="lang-grid" id="tgt_lang_grid">
+          <div class="lang-opt" onclick="langSec('tgt','tr',this)"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span></div>
+          <div class="lang-opt sel" onclick="langSec('tgt','en',this)"><span class="lang-flag">🇺🇸</span><span class="lang-name">English</span></div>
+          <div class="lang-opt" onclick="langSec('tgt','de',this)"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span></div>
+          <div class="lang-opt" onclick="langSec('tgt','fr',this)"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span></div>
+          <div class="lang-opt" onclick="langSec('tgt','es',this)"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span></div>
+          <div class="lang-opt" onclick="langSec('tgt','ar',this)"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span></div>
+        </div>
+      </div>
+
+      <div class="panel-nav">
+        <button class="btn-back" onclick="goStep(1)"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="btn-next" onclick="basla()">
+          <i class="fa-solid fa-bolt"></i> Başlat
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL 3 — PROCESSING + RESULT -->
+    <div class="panel" id="p3">
+      <div class="processing-box" id="proc_box">
+        <div class="proc-icon">⚡</div>
+        <div class="proc-title">İşleniyor...</div>
+        <div class="proc-sub" id="proc_sub">Videonuz hazırlanıyor</div>
+        <div class="progress-wrap"><div class="progress-fill" id="pfill"></div></div>
+        <div class="progress-label" id="plabel">Başlatılıyor...</div>
+        <div class="steps-list" id="steps_list"></div>
+      </div>
+
+      <div class="result-box" id="result_box">
+        <div class="result-icon">✅</div>
+        <div class="result-title">Hazır!</div>
+        <div class="result-sub" id="result_sub">Videonuz işlendi. İndirmeye hazır.</div>
+        <div class="download-btns">
+          <button class="dl-btn dl-btn-primary" id="dl_video" onclick="indir('video')">
+            <i class="fa-solid fa-video"></i> Videoyu İndir
+          </button>
+          <button class="dl-btn dl-btn-secondary" id="dl_srt" onclick="indir('srt')">
+            <i class="fa-solid fa-closed-captioning"></i> SRT Dosyasını İndir
+          </button>
+          <button class="dl-btn dl-btn-secondary" onclick="indir('tiktok')" id="dl_tiktok" style="display:none;">
+            <i class="fa-brands fa-tiktok"></i> TikTok için İndir
+          </button>
+        </div>
+        <button class="restart-btn" onclick="yenidenBasla()">
+          <i class="fa-solid fa-rotate-left"></i> Yeni Video İşle
+        </button>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <a href="/app" style="font-size:12px;color:var(--muted2);display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
+            <i class="fa-solid fa-sliders"></i> Gelişmiş editörde aç (timeline, düzenleme, export seçenekleri)
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast-wrap" id="toast_wrap"></div>
+
+<script>
+const B = 'http://127.0.0.1:8000';
+// Railway deploy'da çalışması için
+if(window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'){
+  // Aynı origin'i kullan
+  window.B_API = '';
+} else {
+  window.B_API = B;
+}
+const API = window.B_API || '';
+
+let curStep = 1;
+let pFile = null;
+let selMod = 'altyazi';
+let srcLang = 'tr';
+let tgtLang = 'en';
+let outFile = null;
+let srtFile = null;
+let pollIv  = null;
+
+// DRAG & DROP
+const dz = document.getElementById('dz');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) secilenDosyaGoster(f);
+});
+
+function dosyaSec(inp){
+  if(inp.files[0]) secilenDosyaGoster(inp.files[0]);
+}
+
+function secilenDosyaGoster(f){
+  pFile = f;
+  document.getElementById('file_name').textContent = f.name;
+  document.getElementById('file_size').textContent = (f.size/1024/1024).toFixed(1) + ' MB';
+  document.getElementById('file_selected').classList.add('show');
+  document.getElementById('btn1').disabled = false;
+}
+
+function goStep(n){
+  curStep = n;
+  // Panels
+  document.querySelectorAll('.panel').forEach((p,i)=>{
+    p.classList.toggle('active', i+1===n);
+  });
+  // Steps bar
+  for(let i=1;i<=3;i++){
+    const num = document.getElementById('sn'+i);
+    const lbl = document.getElementById('sl'+i);
+    const con = document.getElementById('sc'+i);
+    if(i < n){ num.className='step-num done'; num.innerHTML='<i class="fa-solid fa-check" style="font-size:11px;"></i>'; lbl.className='step-label done'; if(con)con.className='step-connector done'; }
+    else if(i===n){ num.className='step-num active'; num.textContent=i; lbl.className='step-label active'; }
+    else{ num.className='step-num'; num.textContent=i; lbl.className='step-label'; if(con)con.className='step-connector'; }
+  }
+}
+
+function modSec(mod){
+  selMod = mod;
+  document.querySelectorAll('.mode-opt').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('mode_'+mod).classList.add('sel');
+  // Hedef dil sadece ceviri ve dublaj'da göster
+  const showTgt = mod==='ceviri'||mod==='dublaj';
+  document.getElementById('tgt_lang_group').style.display = showTgt?'block':'none';
+}
+
+function langSec(type, code, el){
+  if(type==='src') srcLang=code;
+  else tgtLang=code;
+  const grid = document.getElementById(type+'_lang_grid');
+  grid.querySelectorAll('.lang-opt').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function basla(){
+  if(!pFile){ toast('Dosya seçin','terr'); return; }
+  goStep(3);
+
+  // İşlem adımlarını göster
+  const adimlar = [
+    'Dosya yükleniyor',
+    'Konuşmalar analiz ediliyor',
+    selMod==='ceviri'||selMod==='dublaj' ? 'Çevriliyor' : 'Transkript oluşturuluyor',
+    selMod==='altyazi'||selMod==='tiktok'||selMod==='ceviri' ? 'Altyazı gömülüyor' : 'Ses üretiliyor',
+    'Hazırlanıyor'
+  ];
+  const list = document.getElementById('steps_list');
+  list.innerHTML = adimlar.map((a,i)=>`
+    <div class="proc-step" id="ps${i}">
+      <div class="proc-step-dot" id="pd${i}">${i+1}</div>
+      <span>${a}</span>
+    </div>`).join('');
+
+  // Backend'e istek at
+  const fd = new FormData();
+  let modul, hedef_dil='', kaynak_dil=srcLang;
+
+  if(selMod==='altyazi'||selMod==='tiktok'){
+    modul='altyazi'; hedef_dil='';
+  } else if(selMod==='ceviri'){
+    modul='altyazi'; hedef_dil=tgtLang;
+  } else {
+    modul='seslendirme'; hedef_dil=tgtLang;
+  }
+
+  fd.append('modul', modul);
+  fd.append('kaynak_dil', kaynak_dil);
+  fd.append('hedef_dil', hedef_dil);
+  fd.append('ses_id', 'nPczCjzI2devNBz1zQrb');
+  fd.append('dosya', pFile);
+  fd.append('f_name','Arial');fd.append('f_size','24');
+  fd.append('f_color','#ffffff');fd.append('is_bold','true');
+  fd.append('is_shadow','true');fd.append('m_v','20');
+
+  try{
+    const r = await fetch(`${API}/api/islem/`, {method:'POST', body:fd});
+    const d = await r.json();
+    if(!d.beklenen_dosya_adi){ toast('Hata: '+JSON.stringify(d),'terr'); return; }
+    outFile = d.beklenen_dosya_adi;
+    srtFile = outFile.replace(/\.(mp4|mp3)$/,'.srt');
+    pollProgress(outFile, adimlar.length);
+  }catch(e){
+    toast('Bağlantı hatası — backend çalışıyor mu?','terr');
+  }
+}
+
+function pollProgress(fn, totalSteps){
+  let lastPct = 0;
+  pollIv = setInterval(async()=>{
+    try{
+      const r = await fetch(`${API}/durum/${fn}`);
+      const d = await r.json();
+      const pct = d.yuzde||0;
+      const durum = d.durum||'';
+
+      document.getElementById('pfill').style.width = pct+'%';
+      document.getElementById('plabel').textContent = durum;
+
+      // Adım highlight
+      const stepIdx = Math.min(Math.floor(pct/20), totalSteps-1);
+      for(let i=0;i<totalSteps;i++){
+        const el = document.getElementById('ps'+i);
+        const dot = document.getElementById('pd'+i);
+        if(!el)continue;
+        if(i < stepIdx){ el.className='proc-step done'; dot.innerHTML='<i class="fa-solid fa-check" style="font-size:9px;"></i>'; }
+        else if(i===stepIdx){ el.className='proc-step active'; dot.innerHTML=(i+1); }
+        else{ el.className='proc-step'; dot.innerHTML=(i+1); }
+      }
+
+      if(pct===100){
+        clearInterval(pollIv);
+        showResult();
+      } else if(pct===0 && durum.startsWith('Hata')){
+        clearInterval(pollIv);
+        toast(durum,'terr',6000);
+      }
+    }catch(e){}
+  },1500);
+}
+
+function showResult(){
+  document.getElementById('proc_box').style.display='none';
+  const rb = document.getElementById('result_box');
+  rb.classList.add('show');
+
+  // TikTok butonu
+  if(selMod==='tiktok'){
+    document.getElementById('dl_tiktok').style.display='flex';
+  }
+
+  // Eğer sadece SRT (desifre) ise video butonu gizle
+  if(outFile.endsWith('.srt')){
+    document.getElementById('dl_video').style.display='none';
+  }
+}
+
+function indir(tip){
+  if(tip==='video'&&outFile) window.open(`${API}/indir/${outFile}`,'_blank');
+  else if(tip==='srt'&&srtFile) window.open(`${API}/indir/${srtFile}`,'_blank');
+  else if(tip==='tiktok'&&outFile) window.open(`${API}/indir/${outFile}`,'_blank');
+}
+
+function yenidenBasla(){
+  pFile=null; outFile=null; srtFile=null;
+  clearInterval(pollIv);
+  document.getElementById('file_selected').classList.remove('show');
+  document.getElementById('btn1').disabled=true;
+  document.getElementById('file_inp').value='';
+  document.getElementById('pfill').style.width='0%';
+  document.getElementById('proc_box').style.display='block';
+  document.getElementById('result_box').classList.remove('show');
+  goStep(1);
+}
+
+function toast(msg, type='tok', dur=4000){
+  const w=document.getElementById('toast_wrap');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="fa-solid fa-${type==='tok'?'circle-check':'circle-xmark'}"></i> ${msg}`;
+  w.appendChild(t);
+  setTimeout(()=>t.remove(),dur);
+}
+
+// Backend URL tespiti (Railway vs localhost)
+(async()=>{
+  // Health check
+  try{
+    await fetch(`${API}/health`,{signal:AbortSignal.timeout(2000)});
+  }catch(e){
+    // Belki relative URL dene
+    try{
+      const r2 = await fetch('/health',{signal:AbortSignal.timeout(2000)});
+      if(r2.ok){ window.B_API=''; }
+    }catch(e2){
+      document.body.insertAdjacentHTML('afterbegin','<div style="background:#dc2626;color:#fff;text-align:center;padding:10px;font-size:13px;font-weight:600;">⚠ Backend bağlantısı yok</div>');
+    }
+  }
+})();
+</script>
+</body>
+</html>

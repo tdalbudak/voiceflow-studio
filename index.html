@@ -937,11 +937,56 @@ function toggleAS(){
 function cloudConnect(svc){
   toast(`<i class="fa-solid fa-spinner fa-spin"></i> ${svc==='gdrive'?'Google Drive':'Dropbox'} bağlantısı yakında aktif olacak`,'twarn',3000);
 }
-function cloudUpload(svc){
+async function cloudUpload(svc){
   if(svc==='url'){
-    const url=prompt('Video URL girin (YouTube, Vimeo vb.):');
-    if(url)toast('URL desteği yakında aktif olacak','twarn',3000);
-  }else cloudConnect(svc);
+    const url=prompt('Video URL girin:\n\n• YouTube: https://youtube.com/watch?v=...\n• Dropbox: Paylaş linkini yapıştırın\n• Google Drive: Herkese açık linki yapıştırın\n• Direkt video: .mp4 uzantılı link');
+    if(!url||!url.trim())return;
+
+    toast(`<i class="fa-solid fa-spinner fa-spin"></i> İndiriliyor...`,'tok',30000);
+
+    // Drive linkleri için dl=1 parametresi ekle
+    let indirUrl = url.trim();
+    if(indirUrl.includes('drive.google.com/file/d/')){
+      const id = indirUrl.match(/\/d\/([^\/]+)/)?.[1];
+      if(id) indirUrl = `https://drive.google.com/uc?export=download&id=${id}`;
+    }
+    // Dropbox için dl=1 ekle
+    if(indirUrl.includes('dropbox.com')){
+      indirUrl = indirUrl.replace('dl=0','dl=1').replace('?dl=0','?dl=1');
+      if(!indirUrl.includes('dl=1')) indirUrl += (indirUrl.includes('?')?'&':'?')+'dl=1';
+    }
+
+    try{
+      const fd=new FormData();
+      fd.append('url', indirUrl);
+      const r=await fetch(`${B}/api/url_yukle/`,{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.basari){
+        // Dosya sunucuya indi, şimdi modal'ı aç
+        pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
+        pURL = `${B}/indir/${d.dosya_adi}`;
+        toast(`✓ "${d.baslik}" indirildi (${d.boyut_mb}MB)`);
+        // Modal'ı aç
+        document.getElementById('modal').classList.remove('hidden');
+        modalStep(1);
+        updateModalBtn();
+      }else{
+        toast(d.hata||'İndirme başarısız','terr',5000);
+      }
+    }catch(e){
+      toast('Bağlantı hatası','terr');
+    }
+  }else if(svc==='gdrive'){
+    const url=prompt('Google Drive paylaşım linkini yapıştırın:\n(Dosyanın "Herkesle paylaşıldığından" emin olun)');
+    if(url) cloudUpload_process(url, 'gdrive');
+  }else if(svc==='dropbox'){
+    const url=prompt('Dropbox paylaşım linkini yapıştırın:');
+    if(url) cloudUpload_process(url, 'dropbox');
+  }
+}
+
+async function cloudUpload_process(url, svc){
+  cloudUpload('url'); // URL fonksiyonunu çağır, URL'i işleyecek
 }
 
 /* ═══ EXPORT ═══ */

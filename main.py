@@ -1422,6 +1422,70 @@ async def words_al(dosya_adi: str):
         return JSONResponse({"words": json.load(f)})
 
 
+@app.post("/api/url_yukle/")
+async def url_yukle(url: str = Form(...)):
+    """URL üzerinden video indirir (YouTube, Drive, Dropbox, direkt link)."""
+    try:
+        import yt_dlp
+    except ImportError:
+        # yt-dlp yoksa direkt HTTP indirmeyi dene
+        try:
+            async with httpx.AsyncClient(follow_redirects=True, timeout=120.0) as client:
+                r = await client.get(url)
+                if r.status_code != 200:
+                    return JSONResponse({"hata": f"İndirme başarısız: HTTP {r.status_code}"}, status_code=400)
+                ct = r.headers.get("content-type","")
+                ext = "mp4" if "video" in ct else "mp3" if "audio" in ct else "mp4"
+                b_id = uuid.uuid4().hex[:8]
+                dosya_yolu = os.path.join(TEMP_DIR, f"url_{b_id}.{ext}")
+                with open(dosya_yolu, "wb") as f:
+                    f.write(r.content)
+                boyut = os.path.getsize(dosya_yolu) / (1024*1024)
+                return JSONResponse({
+                    "basari": True,
+                    "dosya_yolu": dosya_yolu,
+                    "dosya_adi": os.path.basename(dosya_yolu),
+                    "baslik": url.split("/")[-1][:50],
+                    "boyut_mb": round(boyut, 1),
+                    "temp_id": b_id,
+                })
+        except Exception as e:
+            return JSONResponse({"hata": f"İndirme hatası: {str(e)[:200]}"}, status_code=500)
+
+    b_id = uuid.uuid4().hex[:8]
+    cikti_sablonu = os.path.join(TEMP_DIR, f"url_{b_id}.%(ext)s")
+    ydl_opts = {
+        'outtmpl': cikti_sablonu,
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'noplaylist': True,
+        'quiet': True,
+        'max_filesize': MAX_DOSYA_MB * 1024 * 1024,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = info.get('title', 'video')[:50]
+            ext   = info.get('ext', 'mp4')
+            dosya_yolu = os.path.join(TEMP_DIR, f"url_{b_id}.{ext}")
+            if not os.path.exists(dosya_yolu):
+                for f in os.listdir(TEMP_DIR):
+                    if f.startswith(f"url_{b_id}"):
+                        dosya_yolu = os.path.join(TEMP_DIR, f); break
+            if not os.path.exists(dosya_yolu):
+                return JSONResponse({"hata": "İndirme tamamlanamadı."}, status_code=500)
+            boyut_mb = os.path.getsize(dosya_yolu) / (1024*1024)
+            return JSONResponse({
+                "basari": True, "dosya_yolu": dosya_yolu,
+                "dosya_adi": os.path.basename(dosya_yolu),
+                "baslik": title, "boyut_mb": round(boyut_mb, 1), "temp_id": b_id,
+            })
+    except Exception as e:
+        err = str(e)
+        if "Private" in err or "unavailable" in err:
+            return JSONResponse({"hata": "Video özel veya erişilemiyor."}, status_code=403)
+        return JSONResponse({"hata": f"İndirme hatası: {err[:200]}"}, status_code=500)
+
+
 @app.get("/api/confidence/{dosya_adi}")
 async def confidence_al(dosya_adi: str):
     """SRT ile birlikte kaydedilen kelime güven skorlarını döndürür."""
@@ -1524,6 +1588,22 @@ async def segmentleri_listele(dosya_adi: str):
         })
     except Exception as e:
         return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.get("/docs-api", response_class=HTMLResponse)
+async def docs_page():
+    if os.path.exists("api-docs.html"):
+        with open("api-docs.html", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Dokümantasyon bulunamadı.</h1>")
+
+
+@app.get("/creator", response_class=HTMLResponse)
+async def creator_page():
+    if os.path.exists("creator.html"):
+        with open("creator.html", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Creator sayfası bulunamadı.</h1>")
 
 
 @app.get("/app", response_class=HTMLResponse)

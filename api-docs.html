@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceFlow Studio API Docs</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#09090b;--bg2:#111113;--bg3:#1a1a1d;--bg4:#222226;
+  --txt:#fafafa;--muted:#71717a;--muted2:#a1a1aa;
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --r:10px;--r2:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;display:flex;min-height:100vh;}
+code,pre{font-family:'JetBrains Mono',monospace;}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;bottom:0;overflow-y:auto;flex-shrink:0;}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;display:flex;align-items:center;gap:7px;}
+.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.sidebar-section{padding:6px 20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:12px;margin-bottom:4px;}
+.sidebar-link{display:block;padding:7px 20px;font-size:13px;color:var(--muted2);text-decoration:none;transition:all .15s;border-left:2px solid transparent;}
+.sidebar-link:hover{color:var(--txt);background:rgba(255,255,255,.03);}
+.sidebar-link.active{color:var(--accent3);border-left-color:var(--accent);background:rgba(99,102,241,.06);}
+.sidebar-badge{font-size:10px;font-weight:600;padding:1px 6px;border-radius:100px;margin-left:auto;float:right;}
+.badge-post{background:rgba(34,197,94,.15);color:#4ade80;}
+.badge-get{background:rgba(59,130,246,.15);color:#93c5fd;}
+.badge-del{background:rgba(239,68,68,.15);color:#fca5a5;}
+
+/* MAIN */
+.main{margin-left:240px;flex:1;padding:48px 48px;max-width:900px;}
+.page-title{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;margin-bottom:8px;}
+.page-sub{font-size:16px;color:var(--muted2);margin-bottom:36px;line-height:1.6;}
+
+/* SECTION */
+.doc-section{margin-bottom:56px;}
+h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;padding-top:16px;}
+h3{font-size:16px;font-weight:600;margin-bottom:8px;margin-top:24px;color:var(--txt);}
+p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:12px;}
+
+/* ENDPOINT */
+.endpoint{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:20px;}
+.endpoint-header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.endpoint-header:hover{background:var(--bg3);}
+.method{font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;}
+.method-post{background:rgba(34,197,94,.15);color:#4ade80;}
+.method-get{background:rgba(59,130,246,.15);color:#93c5fd;}
+.method-del{background:rgba(239,68,68,.15);color:#fca5a5;}
+.endpoint-path{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--txt);}
+.endpoint-desc{font-size:13px;color:var(--muted2);margin-left:auto;}
+.endpoint-body{padding:18px;display:none;}
+.endpoint-body.open{display:block;}
+
+/* PARAMS TABLE */
+.params-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;}
+.params-table th{text-align:left;padding:8px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);}
+.params-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.params-table tr:last-child td{border-bottom:none;}
+.param-name{font-family:'JetBrains Mono',monospace;color:var(--accent3);}
+.param-type{font-family:'JetBrains Mono',monospace;color:var(--muted2);font-size:12px;}
+.param-req{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;}
+.req{background:rgba(239,68,68,.15);color:#fca5a5;}
+.opt{background:rgba(99,102,241,.1);color:var(--accent3);}
+
+/* CODE BLOCK */
+.code-wrap{position:relative;margin:12px 0;}
+.code-block{background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:16px;overflow-x:auto;font-size:13px;line-height:1.7;color:#e2e8f0;}
+.code-block .kw{color:#93c5fd;}
+.code-block .str{color:#86efac;}
+.code-block .num{color:#fca5a5;}
+.code-block .cm{color:#6b7280;}
+.copy-btn{position:absolute;top:10px;right:10px;background:var(--bg3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.copy-btn:hover{color:var(--txt);border-color:var(--border2);}
+
+/* BASE URL */
+.base-url{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:14px;display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.base-url-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-family:'DM Sans',sans-serif;flex-shrink:0;}
+
+/* RESPONSE EXAMPLE */
+.response-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;margin-top:14px;}
+
+/* AUTH BOX */
+.auth-box{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--accent3);}
+.auth-box i{margin-right:8px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo"><div class="logo-dot"></div> VoiceFlow API</div>
+  </div>
+
+  <div class="sidebar-section">Başlangıç</div>
+  <a href="#intro" class="sidebar-link active">Giriş</a>
+  <a href="#auth" class="sidebar-link">Kimlik Doğrulama</a>
+  <a href="#errors" class="sidebar-link">Hata Kodları</a>
+
+  <div class="sidebar-section">İşlem</div>
+  <a href="#ep-islem" class="sidebar-link"><span class="sidebar-badge badge-post">POST</span>İşlem Başlat</a>
+  <a href="#ep-durum" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Durum Sorgula</a>
+  <a href="#ep-indir" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Dosya İndir</a>
+
+  <div class="sidebar-section">Transkript</div>
+  <a href="#ep-segmentler" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Segmentler</a>
+  <a href="#ep-metin" class="sidebar-link"><span class="sidebar-badge badge-post">POST</span>Metin Güncelle</a>
+  <a href="#ep-cevir" class="sidebar-link"><span class="sidebar-badge badge-post">POST</span>Çeviri</a>
+
+  <div class="sidebar-section">Ses</div>
+  <a href="#ep-klonla" class="sidebar-link"><span class="sidebar-badge badge-post">POST</span>Ses Klonla</a>
+  <a href="#ep-sesler" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Sesler Listele</a>
+  <a href="#ep-kota" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Kota Kontrol</a>
+
+  <div class="sidebar-section">Sistem</div>
+  <a href="#ep-health" class="sidebar-link"><span class="sidebar-badge badge-get">GET</span>Health Check</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div id="intro" class="doc-section">
+    <div class="page-title">API Dokümantasyonu</div>
+    <div class="page-sub">VoiceFlow Studio REST API — AI dublaj, altyazı ve ses işleme için tam entegrasyon</div>
+
+    <div class="base-url">
+      <span class="base-url-label">Base URL</span>
+      <span id="base_url">https://voiceflow-studio-production-395d.up.railway.app</span>
+    </div>
+
+    <p>Tüm endpoint'ler JSON veya multipart/form-data kabul eder. Yanıtlar her zaman JSON formatındadır. API, async işlem modeliyle çalışır — işlem başlatıldıktan sonra durum polling ile takip edilir.</p>
+  </div>
+
+  <!-- AUTH -->
+  <div id="auth" class="doc-section">
+    <h2>Kimlik Doğrulama</h2>
+    <p>Şu anki versiyonda API key gerektirmez — tüm endpoint'ler açıktır. Enterprise plan için header tabanlı auth eklenebilir.</p>
+    <div class="auth-box"><i class="fa-solid fa-circle-info"></i> Enterprise planında <code>X-API-Key</code> header'ı ile kimlik doğrulama eklenecek.</div>
+
+    <h3>İstek Formatı</h3>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="kopyala(this,'curl -X POST https://voiceflow-studio-production-395d.up.railway.app/api/islem/ \\\n  -F \"modul=altyazi\" \\\n  -F \"kaynak_dil=tr\" \\\n  -F \"dosya=@video.mp4\"')">Kopyala</button>
+      <pre class="code-block"><span class="kw">curl</span> -X POST https://voiceflow-studio-production-395d.up.railway.app/api/islem/ \
+  -F <span class="str">"modul=altyazi"</span> \
+  -F <span class="str">"kaynak_dil=tr"</span> \
+  -F <span class="str">"dosya=@video.mp4"</span></pre>
+    </div>
+  </div>
+
+  <!-- ERRORS -->
+  <div id="errors" class="doc-section">
+    <h2>Hata Kodları</h2>
+    <table class="params-table">
+      <thead><tr><th>Kod</th><th>Açıklama</th></tr></thead>
+      <tbody>
+        <tr><td class="param-type">200</td><td>Başarılı</td></tr>
+        <tr><td class="param-type">400</td><td>Geçersiz istek parametresi</td></tr>
+        <tr><td class="param-type">401</td><td>API key geçersiz</td></tr>
+        <tr><td class="param-type">402</td><td>Plan yetersiz (özellik için yükseltme gerekli)</td></tr>
+        <tr><td class="param-type">404</td><td>Dosya veya segment bulunamadı</td></tr>
+        <tr><td class="param-type">422</td><td>Ses dosyası kalite sorunu</td></tr>
+        <tr><td class="param-type">500</td><td>Sunucu hatası</td></tr>
+      </tbody>
+    </table>
+    <p>Hatalı yanıtlar <code>{"hata": "açıklama"}</code> formatındadır.</p>
+  </div>
+
+  <!-- İŞLEM BAŞLAT -->
+  <div id="ep-islem" class="doc-section">
+    <h2>İşlem Başlat</h2>
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method method-post">POST</span>
+        <span class="endpoint-path">/api/islem/</span>
+        <span class="endpoint-desc">Video/ses işleme başlatır</span>
+      </div>
+      <div class="endpoint-body open">
+        <p>Asenkron işlem başlatır. Dönen <code>beklenen_dosya_adi</code> ile durum sorgulanır.</p>
+        <h3>Parametreler (multipart/form-data)</h3>
+        <table class="params-table">
+          <thead><tr><th>Parametre</th><th>Tip</th><th>Zorunlu</th><th>Açıklama</th></tr></thead>
+          <tbody>
+            <tr><td class="param-name">modul</td><td class="param-type">string</td><td><span class="param-req req">zorunlu</span></td><td>desifre | altyazi | seslendirme | metinden_sese</td></tr>
+            <tr><td class="param-name">dosya</td><td class="param-type">file</td><td><span class="param-req req">zorunlu</span></td><td>Video/ses dosyası (max 500MB)</td></tr>
+            <tr><td class="param-name">kaynak_dil</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>tr, en, de, fr, es... (varsayılan: tr)</td></tr>
+            <tr><td class="param-name">hedef_dil</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>Çeviri için hedef dil kodu</td></tr>
+            <tr><td class="param-name">ses_id</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>ElevenLabs ses ID'si (dublaj için)</td></tr>
+            <tr><td class="param-name">f_name</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>Font adı (altyazı için, varsayılan: Arial)</td></tr>
+            <tr><td class="param-name">f_size</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>Font boyutu px (varsayılan: 22)</td></tr>
+            <tr><td class="param-name">f_color</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>HEX renk (varsayılan: #ffffff)</td></tr>
+          </tbody>
+        </table>
+        <div class="response-label">Örnek İstek (Python)</div>
+        <div class="code-wrap">
+          <button class="copy-btn" onclick="kopyala(this,`import requests\n\nwith open('video.mp4','rb') as f:\n    r = requests.post(\n        'https://voiceflow-studio-production-395d.up.railway.app/api/islem/',\n        data={\n            'modul': 'altyazi',\n            'kaynak_dil': 'tr',\n            'hedef_dil': 'en',\n        },\n        files={'dosya': f}\n    )\n\nprint(r.json())  # {'beklened_dosya_adi': 'sonuc_abc123.mp4'}`)">Kopyala</button>
+          <pre class="code-block"><span class="kw">import</span> requests
+
+<span class="kw">with</span> open(<span class="str">'video.mp4'</span>, <span class="str">'rb'</span>) <span class="kw">as</span> f:
+    r = requests.post(
+        <span class="str">'https://voiceflow-studio-production-395d.up.railway.app/api/islem/'</span>,
+        data={
+            <span class="str">'modul'</span>: <span class="str">'altyazi'</span>,
+            <span class="str">'kaynak_dil'</span>: <span class="str">'tr'</span>,
+            <span class="str">'hedef_dil'</span>: <span class="str">'en'</span>,
+        },
+        files={<span class="str">'dosya'</span>: f}
+    )
+
+print(r.json())  <span class="cm"># {'beklenen_dosya_adi': 'sonuc_abc123.mp4'}</span></pre>
+        </div>
+        <div class="response-label">Yanıt</div>
+        <div class="code-wrap"><pre class="code-block">{
+  <span class="str">"beklenen_dosya_adi"</span>: <span class="str">"sonuc_abc12345.mp4"</span>
+}</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DURUM -->
+  <div id="ep-durum" class="doc-section">
+    <h2>Durum Sorgula</h2>
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/durum/{dosya_adi}</span>
+        <span class="endpoint-desc">İşlem durumunu döner</span>
+      </div>
+      <div class="endpoint-body open">
+        <p>1-2 saniyede bir poll edin. <code>yuzde: 100</code> olunca tamamlandı, <code>yuzde: 0 + "Hata:"</code> ile başlıyorsa hata var.</p>
+        <div class="response-label">Örnek Polling (Python)</div>
+        <div class="code-wrap">
+          <pre class="code-block"><span class="kw">import</span> time, requests
+
+dosya_adi = <span class="str">"sonuc_abc12345.mp4"</span>
+base = <span class="str">"https://voiceflow-studio-production-395d.up.railway.app"</span>
+
+<span class="kw">while True</span>:
+    r = requests.get(f<span class="str">"{base}/durum/{dosya_adi}"</span>)
+    d = r.json()
+    print(d[<span class="str">'durum'</span>], d[<span class="str">'yuzde'</span>])
+    <span class="kw">if</span> d[<span class="str">'yuzde'</span>] == <span class="num">100</span>: <span class="kw">break</span>
+    <span class="kw">if</span> d[<span class="str">'yuzde'</span>] == <span class="num">0</span> <span class="kw">and</span> d[<span class="str">'durum'</span>].startswith(<span class="str">'Hata'</span>):
+        <span class="kw">raise</span> Exception(d[<span class="str">'durum'</span>])
+    time.sleep(<span class="num">2</span>)
+
+<span class="cm"># Tamamlandı — indir</span>
+r = requests.get(f<span class="str">"{base}/indir/{dosya_adi}"</span>)
+<span class="kw">with</span> open(<span class="str">"output.mp4"</span>, <span class="str">"wb"</span>) <span class="kw">as</span> f:
+    f.write(r.content)</pre>
+        </div>
+        <div class="response-label">Yanıt</div>
+        <div class="code-wrap"><pre class="code-block">{
+  <span class="str">"durum"</span>: <span class="str">"Sesler üretiliyor (8/12)..."</span>,
+  <span class="str">"yuzde"</span>: <span class="num">62</span>
+}</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SES KLONLAMA -->
+  <div id="ep-klonla" class="doc-section">
+    <h2>Ses Klonlama</h2>
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method method-post">POST</span>
+        <span class="endpoint-path">/api/ses_klonla/</span>
+        <span class="endpoint-desc">Instant voice cloning</span>
+      </div>
+      <div class="endpoint-body open">
+        <p>ElevenLabs Instant Voice Cloning ile ses klonlar. Creator+ plan gerektirir. Min 30s, max 25MB ses dosyası önerilir.</p>
+        <table class="params-table">
+          <thead><tr><th>Parametre</th><th>Tip</th><th>Zorunlu</th><th>Açıklama</th></tr></thead>
+          <tbody>
+            <tr><td class="param-name">ses_dosyasi</td><td class="param-type">file</td><td><span class="param-req req">zorunlu</span></td><td>MP3/WAV/OGG (max 25MB, min 30s önerilir)</td></tr>
+            <tr><td class="param-name">isim</td><td class="param-type">string</td><td><span class="param-req opt">opsiyonel</span></td><td>Klonun adı (varsayılan: "Klonlanan Ses")</td></tr>
+          </tbody>
+        </table>
+        <div class="response-label">Yanıt</div>
+        <div class="code-wrap"><pre class="code-block">{
+  <span class="str">"basari"</span>: <span class="kw">true</span>,
+  <span class="str">"voice_id"</span>: <span class="str">"abc123xyz"</span>,
+  <span class="str">"isim"</span>: <span class="str">"Benim Sesim"</span>,
+  <span class="str">"mesaj"</span>: <span class="str">"Ses başarıyla klonlandı."</span>
+}</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KOTA -->
+  <div id="ep-kota" class="doc-section">
+    <h2>Kota Kontrol</h2>
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/api/kota/</span>
+        <span class="endpoint-desc">ElevenLabs karakter kotası</span>
+      </div>
+      <div class="endpoint-body open">
+        <div class="response-label">Yanıt</div>
+        <div class="code-wrap"><pre class="code-block">{
+  <span class="str">"tier"</span>: <span class="str">"creator"</span>,
+  <span class="str">"kullanilan"</span>: <span class="num">45230</span>,
+  <span class="str">"limit"</span>: <span class="num">100000</span>,
+  <span class="str">"kalan"</span>: <span class="num">54770</span>,
+  <span class="str">"yuzde"</span>: <span class="num">45.2</span>,
+  <span class="str">"klonlama_destekli"</span>: <span class="kw">true</span>
+}</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEALTH -->
+  <div id="ep-health" class="doc-section">
+    <h2>Health Check</h2>
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/health</span>
+        <span class="endpoint-desc">Sistem durumu</span>
+      </div>
+      <div class="endpoint-body open">
+        <div class="response-label">Yanıt</div>
+        <div class="code-wrap"><pre class="code-block">{
+  <span class="str">"status"</span>: <span class="str">"ok"</span>,
+  <span class="str">"ffmpeg"</span>: <span class="kw">true</span>,
+  <span class="str">"deepgram_key"</span>: <span class="kw">true</span>,
+  <span class="str">"elevenlabs_key"</span>: <span class="kw">true</span>,
+  <span class="str">"deepl_key"</span>: <span class="kw">true</span>,
+  <span class="str">"max_dosya_mb"</span>: <span class="num">500</span>,
+  <span class="str">"max_sure_dakika"</span>: <span class="num">30</span>
+}</pre></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(header){
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+function kopyala(btn, text){
+  navigator.clipboard.writeText(text);
+  btn.textContent='Kopyalandı!';
+  setTimeout(()=>btn.textContent='Kopyala',2000);
+}
+// Sidebar aktif link
+document.querySelectorAll('.sidebar-link').forEach(link=>{
+  link.addEventListener('click',()=>{
+    document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+    link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
