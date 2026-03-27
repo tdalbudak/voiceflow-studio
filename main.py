@@ -916,19 +916,29 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             # Hedef dil varsa önce çevir
             metin_final = yazili_metin or ""
-            if hedef_dil and hedef_dil.upper() not in ("TR", "AUTO", "") and DEEPL_API_KEY:
+            hedef_dil_upper = hedef_dil.upper() if hedef_dil else ""
+            kaynak_dil_upper = kaynak_dil.upper() if kaynak_dil else "TR"
+
+            # Kaynak ve hedef dil farklıysa çevir
+            if hedef_dil_upper and hedef_dil_upper not in ("AUTO", "") and hedef_dil_upper != kaynak_dil_upper and DEEPL_API_KEY:
                 try:
-                    islem_durumlari[out_file] = {"durum": "DeepL ile çevriliyor...", "yuzde": 35}
+                    islem_durumlari[out_file] = {"durum": f"DeepL ile {hedef_dil_upper}'e çevriliyor...", "yuzde": 35}
+                    deepl_hedef = DEEPL_DILLER.get(hedef_dil_upper, hedef_dil_upper)
                     async with httpx.AsyncClient() as c:
                         dr = await c.post(
                             "https://api.deepl.com/v2/translate",
                             headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
-                            data={"text": metin_final, "target_lang": DEEPL_DILLER.get(hedef_dil.upper(), hedef_dil.upper())},
+                            params={
+                                "text": metin_final,
+                                "target_lang": deepl_hedef,
+                            },
                             timeout=30.0,
                         )
                         if dr.status_code == 200:
                             metin_final = dr.json()["translations"][0]["text"]
-                            log.info(f"[TTS] Metin çevrildi → {hedef_dil}: {metin_final[:60]}...")
+                            log.info(f"[TTS Çeviri] {kaynak_dil_upper}→{hedef_dil_upper}: {metin_final[:80]}")
+                        else:
+                            log.warning(f"[TTS Çeviri] DeepL {dr.status_code}: {dr.text[:100]}")
                 except Exception as e:
                     log.warning(f"[TTS Çeviri Hata] {e} — orijinal metin kullanılıyor")
 
