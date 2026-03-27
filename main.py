@@ -171,17 +171,30 @@ async def deepgram_desifre_et(audio_path: str, kaynak_dil: str = "tr"):
         with open(audio_path, "rb") as f:
             buffer_data = f.read()
         payload: FileSource = {"buffer": buffer_data}
+
+        # Auto algılama: detect_language=True ile dil tespiti yap
+        otomatik = kaynak_dil in ["auto", None, ""]
         options = PrerecordedOptions(
             model="nova-2",
             smart_format=True,
             punctuate=True,
             diarize=True,
-            language=kaynak_dil if kaynak_dil not in ["auto", None, ""] else "tr",
             utterances=True,
+            **({"detect_language": True} if otomatik else {"language": kaynak_dil}),
         )
         response = await asyncio.to_thread(
             deepgram.listen.rest.v("1").transcribe_file, payload, options
         )
+
+        # Algılanan dili logla
+        if otomatik:
+            try:
+                detected = response.results.channels[0].detected_language
+                confidence = response.results.channels[0].language_confidence
+                log.info(f"[Deepgram] Otomatik algılanan dil: {detected} (güven: {confidence:.2f})")
+            except Exception:
+                pass
+
         return response
     except Exception as e:
         err = str(e).lower()
@@ -242,7 +255,14 @@ async def srt_paralel_cevir(srt_icerik: str, hedef_dil: str) -> str:
 # ============================================================
 # MOTOR 3 — ELEVENLABS (tek metin → ses, TTS için)
 # ============================================================
-async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str) -> bool:
+async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2) -> bool:
+    if not metin or not metin.strip():
+        log.warning("[ElevenLabs] Boş metin gönderildi")
+        return False
+    if not ses_id or not ses_id.strip():
+        log.warning("[ElevenLabs] ses_id boş — Brian kullanılıyor")
+        ses_id = "nPczCjzI2devNBz1zQrb"
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}"
     headers = {
         "Accept": "audio/mpeg",
@@ -250,18 +270,40 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str) -> bool
         "xi-api-key": ELEVENLABS_API_KEY,
     }
     data = {
-        "text": metin,
+        "text": metin[:5000],  # max 5000 karakter
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
     }
-    async with httpx.AsyncClient() as client:
-        r = await client.post(url, json=data, headers=headers, timeout=60.0)
-        if r.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(r.content)
-            return True
-        print(f"[ElevenLabs Hata] {r.text}")
-        return False
+    for deneme in range(retry + 1):
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.post(url, json=data, headers=headers, timeout=60.0)
+            if r.status_code == 200:
+                with open(output_path, "wb") as f:
+                    f.write(r.content)
+                return True
+            elif r.status_code == 429:
+                bekle = 5 * (deneme + 1)
+                log.warning(f"[ElevenLabs] Rate limit → {bekle}s bekleniyor")
+                await asyncio.sleep(bekle)
+                continue
+            else:
+                hata_detay = r.text[:300]
+                log.error(f"[ElevenLabs {r.status_code}] ses_id={ses_id} hata={hata_detay}")
+                # 401 = API key geçersiz, 422 = ses ID geçersiz
+                if r.status_code in (401, 422):
+                    return False
+                if deneme < retry:
+                    await asyncio.sleep(2)
+                    continue
+                return False
+        except Exception as e:
+            log.error(f"[ElevenLabs İstisna] {e}")
+            if deneme < retry:
+                await asyncio.sleep(2)
+            else:
+                return False
+    return False
 
 # ============================================================
 # MOTOR 4 — FFMPEG ALTYAZI
@@ -882,7 +924,7 @@ def deepgram_to_srt(dg_response, path: str):
 # ============================================================
 # ANA İŞLEM MOTORU
 # ============================================================
-async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v):
+async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0):
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
     os.makedirs(gecici, exist_ok=True)
@@ -946,7 +988,10 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             if ok:
                 islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             else:
-                islem_durumlari[out_file] = {"durum": "Hata: Ses üretilemedi. Ses ID geçerli mi?", "yuzde": 0}
+                islem_durumlari[out_file] = {
+                    "durum": f"Hata: Ses üretilemedi. Railway loglarında detay var. (ses_id={ses_id[:8]}...)",
+                    "yuzde": 0
+                }
             return
 
         # ── DEŞİFRE ────────────────────────────────────────
@@ -1140,8 +1185,8 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                 video_yolu=tmp_in,
                 ses_listesi=ses_liste,
                 cikti_yolu=cikti_tam,
-                orig_vol=0.03,
-                dub_vol=1.0,
+                orig_vol=orig_vol,
+                dub_vol=dub_vol,
                 gecici_klasor=ses_klasor,
             )
 
@@ -1181,6 +1226,8 @@ async def islem_baslat(
     is_bold: str      = Form("true"),
     is_shadow: str    = Form("true"),
     m_v: str          = Form("20"),
+    orig_vol: str     = Form("0.03"),   # Konuşmacı ses seviyesi
+    dub_vol_param: str = Form("1.0"),   # Dublaj ses seviyesi
 ):
     b_id   = uuid.uuid4().hex[:8]
     tmp_in = ""
@@ -1197,10 +1244,18 @@ async def islem_baslat(
         with open(tmp_in, "wb") as buf:
             shutil.copyfileobj(dosya.file, buf)
 
+    try:
+        orig_vol_f = float(orig_vol)
+        dub_vol_f  = float(dub_vol_param)
+    except ValueError:
+        orig_vol_f = 0.03
+        dub_vol_f  = 1.0
+
     arka_plan.add_task(
         islem_motoru, out_file, modul, hedef_dil,
         ses_id, tmp_in, yazili_metin, kaynak_dil,
         f_name, f_size, f_color, is_bold, is_shadow, m_v,
+        orig_vol_f, dub_vol_f,
     )
     return JSONResponse({"beklenen_dosya_adi": out_file})
 
@@ -1595,7 +1650,7 @@ async def segment_yeniden_seslendir(
                     video_yolu=yedek,
                     ses_listesi=[{"dosya": ses_yol, "baslangic": seg["baslangic"]}],
                     cikti_yolu=video_yol,
-                    orig_vol=0.03, dub_vol=1.0, gecici_klasor=tmp_dir,
+                    orig_vol=orig_vol, dub_vol=dub_vol, gecici_klasor=tmp_dir,
                 )
                 os.remove(yedek) if ok2 else shutil.copy(yedek, video_yol) or os.remove(yedek)
                 islem_durumlari[islem_id] = {
