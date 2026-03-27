@@ -1134,20 +1134,6 @@ function toggleTikTok() {
     toast('TikTok modu kapatıldı');
   }
 }
-  _tiktokOn = !_tiktokOn;
-  const btn = document.getElementById('tiktok_btn');
-  const overlay = document.getElementById('tiktok_overlay');
-  const liveSub = document.getElementById('live_sub_overlay');
-  btn?.classList.toggle('on', _tiktokOn);
-  if (_tiktokOn) {
-    if (liveSub) liveSub.style.display = 'none'; // TikTok modu aktifken normal overlay kapat
-    _loadTikTokWords();
-    toast('🎵 TikTok modu açık — kelimeler video ile yanıp söner');
-  } else {
-    if (overlay) overlay.innerHTML = '';
-    toast('TikTok modu kapatıldı');
-  }
-}
 
 async function _loadTikTokWords() {
   if (!aSrt) return;
@@ -2898,10 +2884,6 @@ async function sesOnizle(sesId, btn, lang) {
     if (!isFree) {
       toast('Bu ses Pro plana özel. Yakında aktif olacak.', 'twarn', 3000);
     } else {
-      toast('Demo yüklenemedi', 'twarn', 2000);
-    }
-  }
-}
       toast('Demo yüklenemedi', 'twarn', 2000);
     }
   }
