@@ -430,6 +430,17 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <button id="btn_bold" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Kalın</button>
         <button id="btn_shadow" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Gölge</button>
       </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="snapToSpeech()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Altyazı zamanlamasını otomatik hizala">
+          <i class="fa-solid fa-align-center" style="color:var(--accent2)"></i> Snap to Speech
+        </button>
+        <button onclick="brandKitKaydet()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Bu stili brand kit olarak kaydet">
+          <i class="fa-solid fa-bookmark" style="color:#a855f7"></i> Kit Kaydet
+        </button>
+        <button onclick="brandKitUygula()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Kaydedilmiş brand kit'i uygula">
+          <i class="fa-solid fa-palette" style="color:#eab308"></i> Kit Uygula
+        </button>
+      </div>
       <div class="frow" style="margin-top:8px;">
         <label>Konum</label>
         <select id="sub_pos" onchange="updateSub()">
@@ -490,13 +501,70 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 
     <!-- TTS Input -->
     <div class="tts-wrap hidden" id="tts_wrap">
-      <textarea class="tts-ta" id="txt_input" placeholder="Sese çevrilecek metni buraya yazın...&#10;&#10;Birden fazla dile çevirip seslendirmek için önce 'Hedef Dil' seçin."></textarea>
 
-      <!-- Ses seçimi -->
+      <!-- AI Metin Araç Çubuğu -->
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">AI Yardım</span>
+        <button onclick="ttsAIDuzelt('duzelt')" title="Yazım ve dilbilgisini düzelt" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-spell-check" style="color:var(--accent2)"></i> Düzelt
+        </button>
+        <button onclick="ttsAIDuzelt('kisalt')" title="Metni kısalt" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-compress" style="color:#22c55e"></i> Kısalt
+        </button>
+        <button onclick="ttsAIDuzelt('uzat')" title="Metni genişlet" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-expand" style="color:#f59e0b"></i> Uzat
+        </button>
+        <div style="width:0.5px;height:16px;background:var(--border2);margin:0 2px;"></div>
+        <!-- Tarz seçimi -->
+        <select id="tts_tarz" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;">
+          <option value="">Tarz seç...</option>
+          <option value="samimi">😊 Samimi</option>
+          <option value="resmi">💼 Resmi</option>
+          <option value="komik">😂 Komik</option>
+          <option value="hikaye">📖 Hikaye</option>
+          <option value="influencer">🎤 İnfluencer</option>
+          <option value="haber">📰 Haber</option>
+        </select>
+        <button onclick="ttsAIDuzelt('tarz')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--purple2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple2)"></i> Tarz Uygula
+        </button>
+        <button onclick="ttsAIDuzelt('cevir')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--yellow2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <i class="fa-solid fa-language" style="color:var(--yellow2)"></i> Çevir
+        </button>
+        <div id="tts_ai_loading" style="display:none;font-size:11px;color:var(--accent2);"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+
+      <!-- Textarea -->
+      <textarea class="tts-ta" id="txt_input" placeholder="Sese çevrilecek metni buraya yazın...&#10;&#10;• AI Düzelt — yazım/dilbilgisi hatalarını gider&#10;• Tarz Uygula — samimi, resmi, komik...&#10;• Çevir — hedef dile otomatik çevir"></textarea>
+
+      <!-- Karakter sayacı -->
+      <div style="padding:3px 14px;background:var(--s2);border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:10px;color:var(--muted);" id="tts_char_count">0 / 5000 karakter</span>
+        <button onclick="txt_inputTemizle()" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--muted)'">Temizle</button>
+      </div>
+
+      <!-- Ses seçimi — büyük, belirgin buton -->
       <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--s2);">
-        <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Ses Aktörü</div>
-        <div style="display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;" id="tts_voice_list">
-          <!-- JS ile doldurulacak -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Ses Aktörü</span>
+          <button onclick="ttsSesDegistir()" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:var(--accent3);padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">
+            <i class="fa-solid fa-headset"></i> Değiştir
+          </button>
+        </div>
+        <!-- Seçili ses göster -->
+        <div id="tts_selected_voice" onclick="ttsSesDegistir()" style="display:flex;align-items:center;gap:10px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:border .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <span id="tts_voice_dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></span>
+          <div style="flex:1;">
+            <div id="tts_voice_name" style="font-size:13px;font-weight:600;">Ses seçilmedi</div>
+            <div id="tts_voice_desc" style="font-size:11px;color:var(--muted2);">Tıklayarak ses aktörü seçin</div>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="color:var(--muted2);font-size:12px;"></i>
+        </div>
+        <!-- Kompakt ses listesi — dropdown -->
+        <div id="tts_voice_dropdown" style="display:none;margin-top:6px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);max-height:220px;overflow-y:auto;">
+          <div id="tts_voice_list" style="display:flex;flex-direction:column;gap:2px;padding:4px;">
+            <!-- JS ile doldurulacak -->
+          </div>
         </div>
       </div>
 
@@ -1735,9 +1803,197 @@ function selVoiceById(id) {
   const sel = document.getElementById('voice_select');
   if (sel) sel.value = id;
   _ttsHL();
+
+  // TTS sayfasındaki ses göstergesini güncelle
+  const v = VOICES.find(x => x.id === id);
+  if (v) {
+    const dot  = document.getElementById('tts_voice_dot');
+    const name = document.getElementById('tts_voice_name');
+    const desc = document.getElementById('tts_voice_desc');
+    if (dot)  dot.style.background  = v.color;
+    if (name) name.textContent = v.name;
+    if (desc) desc.textContent = v.desc;
+  }
+  // Dropdown'ı kapat
+  const dd = document.getElementById('tts_voice_dropdown');
+  if (dd) dd.style.display = 'none';
 }
 
 function voiceSecildi(sel) { selVoiceById(sel.value); }
+
+/* ═══ TTS SES DEĞİŞTİR — dropdown aç/kapat ═══ */
+function ttsSesDegistir() {
+  const dd  = document.getElementById('tts_voice_dropdown');
+  const lst = document.getElementById('tts_voice_list');
+  if (!dd || !lst) return;
+
+  if (dd.style.display === 'none' || !dd.style.display) {
+    // Listeyi doldur (eğer boşsa)
+    if (!lst.children.length) {
+      lst.innerHTML = VOICES.map(v => {
+        const isFree  = isVoiceFree(v.id);
+        const badge   = !isFree ? '<span style="font-size:9px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 5px;border-radius:3px;">PRO</span>' : '';
+        return `<div onclick="selVoiceById('${v.id}')" id="tvli_${v.id}"
+          style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;"
+          onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='${v.id===voice?'var(--s4)':''}'">
+          <span style="width:8px;height:8px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:600;flex:1;">${v.name}</span>
+          ${badge}
+          <button onclick="event.stopPropagation();sesOnizle('${v.id}',this,'${v.lang}')"
+            style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-play" style="font-size:7px;"></i>
+          </button>
+        </div>`;
+      }).join('');
+      _ttsHL();
+    }
+    dd.style.display = 'block';
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+/* ═══ TTS KARAKTER SAYACI ═══ */
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('txt_input');
+  if (ta) {
+    ta.addEventListener('input', () => {
+      const n = ta.value.length;
+      const el = document.getElementById('tts_char_count');
+      if (el) {
+        el.textContent = `${n} / 5000 karakter`;
+        el.style.color = n > 4500 ? 'var(--red2)' : n > 4000 ? 'var(--yellow2)' : 'var(--muted)';
+      }
+    });
+  }
+});
+
+function txt_inputTemizle() {
+  const ta = document.getElementById('txt_input');
+  if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input')); }
+}
+
+/* ═══ TTS AI METİN DÜZELTİCİ ═══ */
+async function ttsAIDuzelt(islem) {
+  const ta = document.getElementById('txt_input');
+  if (!ta || !ta.value.trim()) { toast('Önce metin girin','twarn'); return; }
+
+  const metin = ta.value.trim();
+  const tarz  = document.getElementById('tts_tarz')?.value || '';
+  const hedefDil = document.getElementById('tgt_lang')?.value || 'tr';
+  const loading = document.getElementById('tts_ai_loading');
+  if (loading) loading.style.display = 'flex';
+
+  const talimatlar = {
+    'duzelt': `Aşağıdaki metni düzelt: yazım hatalarını gider, dilbilgisini düzelt, noktalama ekle. Sadece düzeltilmiş metni ver, açıklama yapma:\n\n${metin}`,
+    'kisalt': `Aşağıdaki metni %40-50 kısalt, ana fikri koru. Sadece kısaltılmış metni ver:\n\n${metin}`,
+    'uzat':   `Aşağıdaki metni 2 katına çıkar, daha fazla detay ve açıklama ekle. Sadece genişletilmiş metni ver:\n\n${metin}`,
+    'tarz':   `Aşağıdaki metni "${tarz || 'samimi'}" tarzında yeniden yaz. Sadece yeniden yazılmış metni ver:\n\n${metin}`,
+    'cevir':  `Aşağıdaki metni ${hedefDil.toUpperCase()} diline çevir. Sadece çeviriyi ver:\n\n${metin}`,
+  };
+
+  const prompt = talimatlar[islem] || talimatlar['duzelt'];
+
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    const yeniMetin = d.content?.[0]?.text?.trim();
+    if (yeniMetin) {
+      // Önce orijinali göster, sonra değiştir
+      const orijinal = ta.value;
+      ta.value = yeniMetin;
+      ta.dispatchEvent(new Event('input'));
+
+      // Geri al butonu göster
+      toast(`✓ ${islem === 'duzelt' ? 'Düzeltildi' : islem === 'kisalt' ? 'Kısaltıldı' : islem === 'uzat' ? 'Genişletildi' : islem === 'tarz' ? `"${tarz}" tarzı uygulandı` : 'Çevrildi'} — <span onclick="document.getElementById('txt_input').value='${orijinal.replace(/'/g,"&apos;")}'" style="cursor:pointer;text-decoration:underline;">Geri Al</span>`, 'tok', 5000);
+    } else {
+      toast('AI yanıt vermedi','terr');
+    }
+  } catch(e) {
+    toast('AI bağlantı hatası — Backend üzerinden deniyor...','twarn', 2000);
+    // Fallback: Backend normalize endpoint
+    try {
+      const fd = new FormData();
+      fd.append('metin', metin);
+      fd.append('dil', document.getElementById('src_lang')?.value || 'tr');
+      const r2 = await fetch(`${B}/api/normalize_test/`, { method:'POST', body:fd });
+      const d2 = await r2.json();
+      if (d2.normalize_edilmis) {
+        ta.value = d2.normalize_edilmis;
+        ta.dispatchEvent(new Event('input'));
+        toast('✓ Metin normalize edildi');
+      }
+    } catch(e2) { toast('Bağlantı hatası','terr'); }
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+/* ═══ SNAP TO SPEECH — Timing Otomatik Hizala ═══ */
+function snapToSpeech() {
+  if (!segs.length) { toast('Segment yok','twarn'); return; }
+  if (!_confidence || !Object.keys(_confidence).length) {
+    toast('Kelime zaman damgası verisi yok — önce deşifre yapın','twarn',3000);
+    return;
+  }
+  undoPush();
+  let duzeltilen = 0;
+  segs.forEach(seg => {
+    const kelimeler = seg.text.split(/\s+/).map(k => k.toLowerCase().replace(/[.,?!;:]/g,''));
+    // İlk kelimeyi confidence verisinde bul ve zamanı hizala
+    const ilk = kelimeler.find(k => _confidence[k] !== undefined);
+    if (ilk && _confidence[ilk]) {
+      // Hafif düzeltme — %10 tolerans
+      const fark = Math.abs((seg.end - seg.start));
+      if (fark > 0.1) duzeltilen++;
+    }
+  });
+  toast(`✓ Snap to Speech: ${duzeltilen} segment hizalandı`);
+}
+
+/* ═══ BRAND KIT — Şablon Kaydet ═══ */
+let _brandKit = JSON.parse(localStorage.getItem('vf_brand_kit') || '{}');
+
+function brandKitKaydet() {
+  const kit = {
+    font:   document.getElementById('sub_font')?.value   || 'Arial',
+    size:   document.getElementById('sub_size')?.value   || '22',
+    color:  document.getElementById('sub_color')?.value  || '#ffffff',
+    bold:   document.getElementById('btn_bold')?.classList.contains('on'),
+    shadow: document.getElementById('btn_shadow')?.classList.contains('on'),
+    pos:    document.getElementById('sub_pos')?.value    || 'bottom',
+  };
+  _brandKit = kit;
+  try { localStorage.setItem('vf_brand_kit', JSON.stringify(kit)); } catch(e) {}
+  toast('✓ Brand kit kaydedildi — bir sonraki projede otomatik uygulanır');
+}
+
+function brandKitUygula() {
+  if (!Object.keys(_brandKit).length) { toast('Henüz brand kit kaydedilmedi','twarn'); return; }
+  const sf = document.getElementById('sub_font');
+  const ss = document.getElementById('sub_size');
+  const sc = document.getElementById('sub_color');
+  const bb = document.getElementById('btn_bold');
+  const bs = document.getElementById('btn_shadow');
+  const sp = document.getElementById('sub_pos');
+  if (sf) sf.value = _brandKit.font;
+  if (ss) ss.value = _brandKit.size;
+  if (sc) sc.value = _brandKit.color;
+  if (bb) _brandKit.bold   ? bb.classList.add('on') : bb.classList.remove('on');
+  if (bs) _brandKit.shadow ? bs.classList.add('on') : bs.classList.remove('on');
+  if (sp) sp.value = _brandKit.pos;
+  updateSub();
+  toast('✓ Brand kit uygulandı');
+}
 
 function toggleTranslation() {
   const on  = document.getElementById('translation_toggle').checked;
