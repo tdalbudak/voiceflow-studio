@@ -699,29 +699,29 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
               <option value="E7GwUhgj9sbeAZgubRba">Bahadır — Derin, Belgesel</option>
               <option value="xFsOR54lR471QiCvQ5re">İlknur — Net, Sıcak</option>
             </optgroup>
-            <optgroup label="🇺🇸 English">
+            <optgroup label="🇺🇸🇬🇧 English (22 ses)">
               <option value="nPczCjzI2devNBz1zQrb">Brian — Deep, Resonant</option>
               <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Mature, Confident</option>
               <option value="pNInz6obpgDQGcFmaJgB">Adam — Dominant, Firm</option>
-              <option value="JBFqnCBsd6RMkjVDRZzb">George — Warm Storyteller</option>
+              <option value="JBFqnCBsd6RMkjVDRZzb">George 🇬🇧 — Warm Storyteller</option>
               <option value="iP95p4xoKVk53GoZ742B">Chris — Charming</option>
               <option value="cgSgspJ2msm6clMCkdW9">Jessica — Playful, Warm</option>
               <option value="FGY2WhTYpPnrIDTdsKH5">Laura — Energetic</option>
               <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — Dynamic</option>
-              <option value="onwK4e9ZLuTAKqWW03F9">Daniel — Broadcaster</option>
+              <option value="onwK4e9ZLuTAKqWW03F9">Daniel 🇬🇧 — Broadcaster</option>
               <option value="SAz9YHcvj6GT2YYXdXww">River — Relaxed, Neutral</option>
-            </optgroup>
-            <optgroup label="🇩🇪 Deutsch">
-              <option value="pqHfZKP75CvOlQylNhV4">Bill — Wise, Mature</option>
-              <option value="bIHbv24MWmeRgasZH58o">Will — Relaxed Optimist</option>
-            </optgroup>
-            <optgroup label="🇫🇷 Français">
-              <option value="pFZP5JQG7iQjIQuC4Bku">Lily — Velvety Actress</option>
+              <option value="Xb7hH8MSUJpSbSDYk0k2">Alice 🇬🇧 — Clear, Educator</option>
+              <option value="pFZP5JQG7iQjIQuC4Bku">Lily 🇬🇧 — Velvety Actress</option>
               <option value="XrExE9yKIg1WjnnlVkGX">Matilda — Professional</option>
-            </optgroup>
-            <optgroup label="🇪🇸 Español">
-              <option value="IKne3meq5aSn9XLyUdCD">Charlie — Deep, Energetic</option>
+              <option value="UaYTS0wayjmO9KD1LR4R">Asher 🇬🇧 — Charismatic</option>
+              <option value="CwhRBWXzGAHq8TQ4Fs17">Roger — Laid-Back, Casual</option>
+              <option value="bIHbv24MWmeRgasZH58o">Will — Relaxed Optimist</option>
+              <option value="cjVigY5qzO86Huf0OWal">Eric — Smooth, Trustworthy</option>
+              <option value="hpp4J3VqNfWAUOO0d1Us">Bella — Professional, Warm</option>
+              <option value="SOYHLrjzK2X1ezoPC6cr">Harry — Fierce Warrior</option>
+              <option value="IKne3meq5aSn9XLyUdCD">Charlie 🇦🇺 — Deep, Energetic</option>
               <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Husky</option>
+              <option value="pqHfZKP75CvOlQylNhV4">Bill — Wise, Mature</option>
             </optgroup>
           </select>
         </div>
@@ -786,7 +786,10 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 /* ═══════════════════════════════════
    GLOBALS
 ═══════════════════════════════════ */
-const B="http://127.0.0.1:8000";
+// Localhost'ta 8000, Railway/production'da aynı origin
+const B = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:8000'
+  : '';
 let mod="seslendirme", voice="nPczCjzI2devNBz1zQrb";
 let pFile=null, pURL=null;
 let aSrt=null, aDosya=null;
@@ -1266,32 +1269,34 @@ const VOICES = [
   { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır 🇹🇷',   desc:'Derin, Hikayesel, Belgesel',        color:'#f97316', lang:'tr' },
   { id:'xFsOR54lR471QiCvQ5re', name:'İlknur 🇹🇷',    desc:'Net, Sıcak ve Genç',                color:'#a855f7', lang:'tr' },
   // ── İngilizce ──
-  { id:'nPczCjzI2devNBz1zQrb', name:'Brian 🇺🇸',     desc:'Deep, Resonant & Comforting',       color:'#3b82f6', lang:'en' },
-  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah 🇺🇸',     desc:'Mature, Reassuring, Confident',     color:'#8b5cf6', lang:'en' },
-  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam 🇺🇸',      desc:'Dominant, Firm',                    color:'#ef4444', lang:'en' },
+  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',          desc:'Deep, Resonant & Comforting',       color:'#3b82f6', lang:'en' },
+  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',          desc:'Mature, Reassuring, Confident',     color:'#8b5cf6', lang:'en' },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',           desc:'Dominant, Firm',                    color:'#ef4444', lang:'en' },
   { id:'JBFqnCBsd6RMkjVDRZzb', name:'George 🇬🇧',    desc:'Warm, Captivating Storyteller',     color:'#f59e0b', lang:'en' },
-  { id:'iP95p4xoKVk53GoZ742B', name:'Chris 🇺🇸',     desc:'Charming, Down-to-Earth',           color:'#10b981', lang:'en' },
-  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica 🇺🇸',   desc:'Playful, Bright, Warm',             color:'#ec4899', lang:'en' },
-  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura 🇺🇸',     desc:'Enthusiast, Quirky Attitude',       color:'#06b6d4', lang:'en' },
-  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam 🇺🇸',      desc:'Energetic, Social Media Creator',   color:'#84cc16', lang:'en' },
+  { id:'iP95p4xoKVk53GoZ742B', name:'Chris',          desc:'Charming, Down-to-Earth',           color:'#10b981', lang:'en' },
+  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica',        desc:'Playful, Bright, Warm',             color:'#ec4899', lang:'en' },
+  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',          desc:'Enthusiast, Quirky Attitude',       color:'#06b6d4', lang:'en' },
+  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',           desc:'Energetic, Social Media Creator',   color:'#84cc16', lang:'en' },
   { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel 🇬🇧',    desc:'Steady Broadcaster',                color:'#6366f1', lang:'en' },
-  { id:'SAz9YHcvj6GT2YYXdXww', name:'River 🇺🇸',     desc:'Relaxed, Neutral, Informative',     color:'#14b8a6', lang:'en' },
-  // ── Almanca ──
-  { id:'pqHfZKP75CvOlQylNhV4', name:'Bill 🇩🇪',      desc:'Wise, Mature, Balanced — DE',       color:'#64748b', lang:'de' },
-  { id:'bIHbv24MWmeRgasZH58o', name:'Will 🇩🇪',      desc:'Relaxed Optimist — DE',             color:'#475569', lang:'de' },
-  // ── Fransızca ──
-  { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily 🇫🇷',      desc:'Velvety Actress — FR',              color:'#7c3aed', lang:'fr' },
-  { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda 🇫🇷',   desc:'Knowledgeable, Professional — FR',  color:'#9333ea', lang:'fr' },
-  // ── İspanyolca / Diğer ──
-  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie 🇪🇸',   desc:'Deep, Confident, Energetic',        color:'#dc2626', lang:'es' },
-  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum 🇪🇸',    desc:'Husky Trickster',                   color:'#b91c1c', lang:'es' },
+  { id:'SAz9YHcvj6GT2YYXdXww', name:'River',          desc:'Relaxed, Neutral, Informative',     color:'#14b8a6', lang:'en' },
+  { id:'Xb7hH8MSUJpSbSDYk0k2', name:'Alice 🇬🇧',     desc:'Clear, Engaging Educator',          color:'#0891b2', lang:'en' },
+  { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily 🇬🇧',      desc:'Velvety Actress',                   color:'#7c3aed', lang:'en' },
+  { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda',        desc:'Knowledgeable, Professional',       color:'#9333ea', lang:'en' },
+  { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',          desc:'Laid-Back, Casual, Resonant',       color:'#64748b', lang:'en' },
+  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher 🇬🇧',     desc:'Confident, Charismatic & Playful',  color:'#0f766e', lang:'en' },
+  { id:'bIHbv24MWmeRgasZH58o', name:'Will',           desc:'Relaxed Optimist',                  color:'#475569', lang:'en' },
+  { id:'cjVigY5qzO86Huf0OWal', name:'Eric',           desc:'Smooth, Trustworthy',               color:'#1d4ed8', lang:'en' },
+  { id:'hpp4J3VqNfWAUOO0d1Us', name:'Bella',          desc:'Professional, Bright, Warm',        color:'#be185d', lang:'en' },
+  { id:'SOYHLrjzK2X1ezoPC6cr', name:'Harry',          desc:'Fierce Warrior',                    color:'#991b1b', lang:'en' },
+  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie 🇦🇺',   desc:'Deep, Confident, Energetic',        color:'#dc2626', lang:'en' },
+  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',         desc:'Husky Trickster',                   color:'#b91c1c', lang:'en' },
+  { id:'pqHfZKP75CvOlQylNhV4', name:'Bill',           desc:'Wise, Mature, Balanced',            color:'#374151', lang:'en' },
 ];
 
 function buildVoiceList() {
   const el = document.getElementById('voice_list');
   if (!el) return;
 
-  // Aktif dile göre sırala — o dilin sesleri önce
   const srcLang = document.getElementById('m_src')?.value || 'tr';
   const tgtLang = document.getElementById('m_tgt')?.value || 'en';
   const oncelikDil = tgtLang !== 'tr' ? tgtLang : srcLang;
@@ -1311,10 +1316,65 @@ function buildVoiceList() {
         <span style="font-size:13px;font-weight:600;">${v.name}</span>
         <span style="font-size:11px;color:var(--muted2);margin-left:8px;">${v.desc}</span>
       </div>
-      <i class="fa-solid fa-play" style="color:var(--muted);font-size:10px;" title="Önizle"></i>
+      <button onclick="event.stopPropagation();sesOnizle('${v.id}',this)" 
+        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"
+        title="Önizle" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <i class="fa-solid fa-play" style="font-size:9px;"></i>
+      </button>
     </div>
   `).join('');
   selVoiceById(voice);
+}
+
+/* ═══ SES ÖNİZLEME ═══ */
+let _onizlemeAudio = null;
+
+async function sesOnizle(sesId, btn) {
+  // Çalan varsa durdur
+  if (_onizlemeAudio && !_onizlemeAudio.paused) {
+    _onizlemeAudio.pause();
+    document.querySelectorAll('[data-playing="1"]').forEach(b => {
+      b.innerHTML='<i class="fa-solid fa-play" style="font-size:9px;"></i>';
+      b.removeAttribute('data-playing');
+    });
+    if (btn.dataset.playing) return;
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:9px;"></i>';
+  btn.dataset.playing = '1';
+
+  try {
+    const fd = new FormData();
+    fd.append('ses_id', sesId);
+    // Dile göre önizleme metni
+    const onizlemeler = {
+      tr: 'Merhaba, ben VoiceFlow Studio. Bu benim sesim.',
+      en: 'Hello, I am VoiceFlow Studio. This is my voice.',
+      de: 'Hallo, ich bin VoiceFlow Studio. Das ist meine Stimme.',
+      fr: 'Bonjour, je suis VoiceFlow Studio. Voici ma voix.',
+      es: 'Hola, soy VoiceFlow Studio. Esta es mi voz.',
+    };
+    const ses = VOICES.find(v=>v.id===sesId);
+    fd.append('metin', onizlemeler[ses?.lang||'en'] || onizlemeler.en);
+
+    const r = await fetch(`${B}/api/ses_onizle/`, {method:'POST', body:fd});
+    if (!r.ok) throw new Error(await r.text());
+
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    _onizlemeAudio = new Audio(url);
+    _onizlemeAudio.play();
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:9px;color:var(--accent3);"></i>';
+    _onizlemeAudio.onended = () => {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i>';
+      btn.removeAttribute('data-playing');
+      URL.revokeObjectURL(url);
+    };
+  } catch(e) {
+    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i>';
+    btn.removeAttribute('data-playing');
+    toast('Önizleme yüklenemedi — ElevenLabs API key gerekli','twarn', 3000);
+  }
 }
 
 function selVoiceById(id) {
@@ -1767,6 +1827,14 @@ function renderSegs(srt,fn,tr=false){
     </select>
     <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>
     <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>
+    <div style="margin-left:auto;display:flex;gap:5px;">
+      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
+        <i class="fa-solid fa-scissors"></i> Magic Cut
+      </button>
+      <button class="dbtn" onclick="gurultuGider()" title="Arka plan gürültüsünü gider" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;">
+        <i class="fa-solid fa-waveform-lines"></i> Gürültü Gider
+      </button>
+    </div>
   </div>
   <div id="speaker_map_panel" class="speaker-map-panel"></div>
   <div style="padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;">`;
@@ -1831,7 +1899,61 @@ function cClick(no,st){
   const b=document.getElementById(`b_${no}`);if(b){b.style.borderColor='var(--accent3)';setTimeout(()=>b.style.borderColor='',700);}
 }
 
-/* ═══ DEEPL ═══ */
+/* ═══ MAGIC CUT ═══ */
+async function magicCut(){
+  if(!aSrt)return toast('Önce transkript tamamlayın','twarn');
+  const dil = document.getElementById('src_lang')?.value||'tr';
+  if(!confirm(`Dolgu kelimeleri (hmm, şey, ıı, um...) otomatik silinsin mi?\n\nBu işlem geri alınabilir (Ctrl+Z)`))return;
+
+  try{
+    const fd=new FormData();
+    fd.append('srt_dosya_adi',aSrt);
+    fd.append('dil',dil);
+    fd.append('min_confidence','0.5');
+    const r=await fetch(`${B}/api/magic_cut/`,{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){
+      toast(`✓ Magic Cut: ${d.silinen_segment_sayisi} dolgu silindi, ${d.kalan_segment_sayisi} segment kaldı`);
+      await reload();
+    }else toast(d.hata||'Hata','terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
+
+/* ═══ GÜRÜLTÜ GİDERME ═══ */
+async function gurultuGider(){
+  if(!aDosya)return toast('Önce bir video/ses işleyin','twarn');
+
+  const seviye = prompt('Gürültü giderme seviyesi:\n\nhafif — hafif tıslama\norta — standart gürültü\nguclu — yoğun gürültü\n\n(hafif/orta/guclu yazın)','orta');
+  if(!seviye)return;
+  if(!['hafif','orta','guclu'].includes(seviye))return toast('Geçersiz seviye','terr');
+
+  toast(`<i class="fa-solid fa-spinner fa-spin"></i> Gürültü gideriliyor (${seviye})... Bu birkaç dakika sürebilir.`,'tok',60000);
+
+  try{
+    const fd=new FormData();
+    fd.append('dosya_adi',aDosya);
+    fd.append('seviye',seviye);
+    const r=await fetch(`${B}/api/gurultu_gider/`,{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.islem_id){
+      const iv=setInterval(async()=>{
+        const sr=await fetch(`${B}/durum/${d.islem_id}`);
+        const sd=await sr.json();
+        if(sd.yuzde===100){
+          clearInterval(iv);
+          aDosya=sd.cikti_dosya||d.beklenen_cikti;
+          toast(`✓ Gürültü giderildi → ${aDosya}`);
+          // Videoyu yenile
+          const v=document.getElementById('vid');
+          if(v.src) v.src=`${B}/dinle/${aDosya}?v=${Date.now()}`;
+        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
+          clearInterval(iv);
+          toast(sd.durum,'terr',5000);
+        }
+      },2000);
+    }else toast(d.hata||'Hata','terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
 async function deepL(){
   if(!aSrt)return alert('Transkript tamamlayın!');
   document.getElementById('dlbtn').style.display='none';

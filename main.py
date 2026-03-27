@@ -1634,6 +1634,210 @@ async def docs_page():
     return HTMLResponse("<h1>Dokümantasyon bulunamadı.</h1>")
 
 
+# ============================================================
+# SES ÖNİZLEME
+# ============================================================
+@app.post("/api/ses_onizle/")
+async def ses_onizle(
+    ses_id: str = Form(...),
+    metin: str  = Form("Merhaba, ben VoiceFlow Studio. Bu benim sesim."),
+):
+    """
+    ElevenLabs preview endpoint ile sesin küçük bir örneğini üretir.
+    Karakter kotasından düşmez — sadece önizleme.
+    """
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+
+    # Metni 100 karakterle sınırla — preview için yeterli
+    onizleme_metni = metin[:100]
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}/stream"
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": ELEVENLABS_API_KEY,
+    }
+    data = {
+        "text": onizleme_metni,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75,
+            "style": 0.0,
+        },
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.post(url, json=data, headers=headers, timeout=30.0)
+        if r.status_code == 200:
+            # Geçici dosyaya kaydet, serve et
+            b_id = uuid.uuid4().hex[:8]
+            onizleme_yol = os.path.join(TEMP_DIR, f"onizleme_{b_id}.mp3")
+            with open(onizleme_yol, "wb") as f:
+                f.write(r.content)
+            return FileResponse(onizleme_yol, media_type="audio/mpeg",
+                                filename=f"preview_{ses_id}.mp3")
+        return JSONResponse({"hata": f"ElevenLabs {r.status_code}: {r.text[:100]}"}, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
+# MAGIC CUT — DOLGU KELİME SİLME
+# ============================================================
+DOLGU_KELIMELER = {
+    "tr": ["hmm", "hm", "şey", "ıı", "ee", "eee", "şeyden", "yani", "işte", "falan",
+           "filan", "hani", "neyse", "yok", "ha", "aa", "öf", "uh", "um"],
+    "en": ["um", "uh", "hmm", "hm", "like", "you know", "i mean", "basically",
+           "literally", "actually", "sort of", "kind of", "right", "okay so"],
+    "de": ["äh", "ähm", "hm", "hmm", "naja", "also", "ja", "ne"],
+    "fr": ["euh", "eh", "hm", "hmm", "ben", "voilà", "bah"],
+}
+
+@app.post("/api/magic_cut/")
+async def magic_cut(
+    srt_dosya_adi: str = Form(...),
+    dil: str           = Form("tr"),
+    min_confidence: float = Form(0.5),  # Bu skoru altındaki dolgu kelimeleri sil
+):
+    """
+    SRT dosyasındaki düşük güvenli dolgu kelimeleri tespit edip
+    o segmentleri işaretler veya siler.
+    """
+    srt_yol  = os.path.join(OUTPUT_DIR, srt_dosya_adi)
+    conf_yol = os.path.join(OUTPUT_DIR, srt_dosya_adi.replace('.srt', '_confidence.json'))
+
+    if not os.path.exists(srt_yol):
+        return JSONResponse({"hata": "SRT bulunamadı."}, status_code=404)
+
+    try:
+        with open(srt_yol, encoding="utf-8") as f:
+            bloklar = _srt_parse(f.read())
+
+        # Confidence verisi varsa kullan
+        conf_data = {}
+        if os.path.exists(conf_yol):
+            with open(conf_yol, encoding="utf-8") as f:
+                conf_data = json.load(f)
+
+        dolgu_listesi = DOLGU_KELIMELER.get(dil, DOLGU_KELIMELER["en"])
+        silinen = []
+        kalan   = []
+
+        for blok in bloklar:
+            metin  = re.sub(r"\[Konuşmacı \d+\]:\s*", "", blok["metin"]).strip().lower()
+            kelimeler = metin.split()
+
+            # Tek kelimeli segment dolgu kelimesiyse sil
+            if len(kelimeler) == 1 and kelimeler[0] in dolgu_listesi:
+                silinen.append(blok["no"])
+                continue
+
+            # Confidence düşükse ve dolgu kelimesiyse sil
+            if len(kelimeler) <= 2:
+                conf = min(conf_data.get(k, 1.0) for k in kelimeler)
+                if conf < min_confidence and any(k in dolgu_listesi for k in kelimeler):
+                    silinen.append(blok["no"])
+                    continue
+
+            kalan.append(blok)
+
+        if silinen:
+            with open(srt_yol, "w", encoding="utf-8") as f:
+                f.write(_srt_serialize(kalan))
+            log.info(f"[Magic Cut] {len(silinen)} dolgu silindi, {len(kalan)} segment kaldı")
+
+        return JSONResponse({
+            "basari": True,
+            "silinen_segment_sayisi": len(silinen),
+            "kalan_segment_sayisi": len(kalan),
+            "silinen_segmentler": silinen[:20],  # ilk 20
+        })
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
+# ARKA PLAN GÜRÜLTÜ GİDERME
+# ============================================================
+@app.post("/api/gurultu_gider/")
+async def gurultu_gider(
+    arka_plan: BackgroundTasks,
+    dosya_adi: str   = Form(...),   # sonuc_xxx.mp4 veya ses dosyası
+    seviye: str      = Form("orta"), # hafif | orta | guclu
+):
+    """
+    FFmpeg anlmdn (Adaptive Non-Local Means Denoiser) filtresi ile
+    arka plan gürültüsünü giderir. Dolby gerekmiyor — tamamen ücretsiz.
+    """
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": _hata_mesaji("ffmpeg_yok")}, status_code=500)
+
+    giris_yol  = os.path.join(OUTPUT_DIR, dosya_adi)
+    if not os.path.exists(giris_yol):
+        return JSONResponse({"hata": "Dosya bulunamadı."}, status_code=404)
+
+    # Seviyeye göre filtre parametreleri
+    seviye_params = {
+        "hafif": "s=7:p=0.01:r=0.001:pdl=0.001",
+        "orta":  "s=7:p=0.03:r=0.003:pdl=0.003",
+        "guclu": "s=7:p=0.09:r=0.009:pdl=0.009",
+    }
+    filtre = seviye_params.get(seviye, seviye_params["orta"])
+
+    b_id = uuid.uuid4().hex[:8]
+    islem_id = f"gurultu_{b_id}"
+    islem_durumlari[islem_id] = {"durum": "Gürültü gideriliyor...", "yuzde": 20}
+
+    # Çıktı dosyası
+    ext      = os.path.splitext(dosya_adi)[1]
+    cikti_ad = dosya_adi.replace(ext, f"_temiz{ext}")
+    cikti_yol = os.path.join(OUTPUT_DIR, cikti_ad)
+
+    async def _denoise():
+        try:
+            is_video = ext.lower() in [".mp4", ".mov", ".avi", ".mkv"]
+
+            if is_video:
+                cmd = [
+                    "ffmpeg", "-y", "-i", giris_yol,
+                    "-af", f"anlmdn={filtre}",
+                    "-c:v", "copy",
+                    "-c:a", "aac", "-b:a", "192k",
+                    cikti_yol
+                ]
+            else:
+                cmd = [
+                    "ffmpeg", "-y", "-i", giris_yol,
+                    "-af", f"anlmdn={filtre}",
+                    "-c:a", "libmp3lame", "-q:a", "2",
+                    cikti_yol
+                ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                islem_durumlari[islem_id] = {
+                    "durum": "Tamamlandı",
+                    "yuzde": 100,
+                    "cikti_dosya": cikti_ad,
+                }
+                log.info(f"[Gürültü Gider] ✓ {cikti_yol}")
+            else:
+                islem_durumlari[islem_id] = {"durum": "Hata: FFmpeg başarısız.", "yuzde": 0}
+                log.error(f"[Gürültü Gider] {result.stderr[-400:]}")
+        except Exception as e:
+            islem_durumlari[islem_id] = {"durum": f"Hata: {e}", "yuzde": 0}
+
+    arka_plan.add_task(_denoise)
+    return JSONResponse({
+        "islem_id": islem_id,
+        "dosya_adi": dosya_adi,
+        "seviye": seviye,
+        "beklenen_cikti": cikti_ad,
+    })
+
+
 @app.get("/creator", response_class=HTMLResponse)
 async def creator_page():
     if os.path.exists("creator.html"):
