@@ -346,6 +346,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <div class="xitem" onclick="xport('txt')"><i class="fa-solid fa-file-lines" style="color:var(--muted2)"></i>TXT (Zaman Damgalı)</div>
         <div class="xitem" onclick="xport('txt_clean')"><i class="fa-solid fa-align-left" style="color:var(--muted2)"></i>TXT (Düz Metin)</div>
         <div class="xitem" onclick="xport('burn_sub')" id="xitem_burn" style="display:none;"><i class="fa-solid fa-closed-captioning" style="color:var(--accent3)"></i>Altyazı Gömülü MP4</div>
+        <div class="xitem" onclick="cokluDilExport()" id="xitem_multidil" style="display:none;"><i class="fa-solid fa-globe" style="color:var(--yellow2)"></i>Çoklu Dil SRT İndir 🌍</div>
       </div>
     </div>
   </div>
@@ -2118,43 +2119,47 @@ function reset(){
 function sw(m){
   reset();mod=m;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById(`tab_${m}`).classList.add('on');
+  document.getElementById(`tab_${m}`)?.classList.add('on');
 
-  const hide=['sec_sub_design','sec_audio','sec_voice_btn','mixer','tl','sec_style'];
-  hide.forEach(id=>{document.getElementById(id)?.classList.add('hidden');});
-  document.getElementById('slist').classList.remove('hidden');
-  document.getElementById('tts_wrap').classList.add('hidden');
-  document.getElementById('rp').classList.remove('hidden');
+  // Hepsini gizle
+  ['sec_sub_design','sec_audio','sec_voice_btn','mixer','tl','sec_style'].forEach(id=>{
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  document.getElementById('slist')?.classList.remove('hidden');
+  document.getElementById('tts_wrap')?.classList.add('hidden');
+  document.getElementById('rp')?.classList.remove('hidden');
 
-  const title=document.getElementById('cp_title');
-  const btn=document.getElementById('btn_run');
+  const title = document.getElementById('cp_title');
+  const btn   = document.getElementById('btn_run');
 
   if(m==='desifre'){
-    document.getElementById('tl').classList.add('hidden');
-    document.getElementById('sec_style').classList.remove('hidden');
-    btn.innerHTML='<span class="run-dot"></span> Transkripti Başlat';
-    title.innerHTML='<i class="fa-solid fa-pen-to-square"></i> Transkript & Metin Dökümü';
+    document.getElementById('tl')?.classList.add('hidden');
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Transkripti Başlat';
+    if(title) title.innerHTML='<i class="fa-solid fa-pen-to-square"></i> Transkript & Metin Dökümü';
+
   }else if(m==='altyazi'){
     ['sec_sub_design','sec_audio','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
     subSablonGalerisiOlustur();
-    btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
-    title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
+    if(title) title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
+
   }else if(m==='seslendirme'){
-    ['sec_audio','sec_voice_btn','mixer','tl','sec_style'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
-    btn.innerHTML='<span class="run-dot"></span> Dublajı Başlat';
-    title.innerHTML='<i class="fa-solid fa-layer-group"></i> Dublaj Editörü';
+    ['sec_audio','sec_voice_btn','mixer','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Dublajı Başlat';
+    if(title) title.innerHTML='<i class="fa-solid fa-layer-group"></i> Dublaj Editörü';
+
   }else if(m==='metinden_sese'){
-    document.getElementById('slist').classList.add('hidden');
-    document.getElementById('tts_wrap').classList.remove('hidden');
-    document.getElementById('sec_voice_btn').classList.remove('hidden');
-    document.getElementById('sec_style').classList.remove('hidden');
-    document.getElementById('rp').classList.add('hidden');
-    btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
-    title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
-    // TTS ses listesini doldur
-    const tl=document.getElementById('tts_voice_list');
-    if(tl&&!tl.children.length){
-      tl.innerHTML=VOICES.map(v=>`
+    document.getElementById('slist')?.classList.add('hidden');
+    document.getElementById('tts_wrap')?.classList.remove('hidden');
+    document.getElementById('sec_voice_btn')?.classList.remove('hidden');
+    document.getElementById('rp')?.classList.add('hidden');
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
+    if(title) title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
+
+    // TTS ses listesini doldur (boşsa)
+    const tl = document.getElementById('tts_voice_list');
+    if(tl && !tl.children.length){
+      tl.innerHTML = VOICES.map(v=>`
         <div onclick="selVoiceById('${v.id}');_ttsHL()" id="tvli_${v.id}"
           style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid transparent;transition:all .12s;"
           onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}'){this.style.background='';this.style.borderColor='transparent';}">
@@ -2163,6 +2168,19 @@ function sw(m){
           <span style="font-size:11px;color:var(--muted2);flex:1;">${v.desc}</span>
         </div>`).join('');
       _ttsHL();
+    }
+
+    // Seçili sesi göster
+    if(voice) {
+      const v = VOICES.find(x=>x.id===voice);
+      if(v) {
+        const dot  = document.getElementById('tts_voice_dot');
+        const name = document.getElementById('tts_voice_name');
+        const desc = document.getElementById('tts_voice_desc');
+        if(dot)  dot.style.background = v.color;
+        if(name) name.textContent = v.name;
+        if(desc) desc.textContent = v.desc;
+      }
     }
   }
 }
@@ -2460,18 +2478,22 @@ function showResult(fn){
   }else if(mod==='desifre'){
     aSrt=fn;
     fetch(`${B}/dinle/${fn}`).then(r=>r.text()).then(c=>renderSegs(c,fn)).catch(()=>{});
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
   }else if(mod==='altyazi'){
     const v=document.getElementById('vid');v.src=`${B}/dinle/${fn}?v=${Date.now()}`;v.play();
     document.getElementById('live_badge').style.display='inline';
     aSrt=fn.replace('.mp4','.srt');
     fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
     setTimeout(()=>waveform(fn),1800);
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+    document.getElementById('xitem_burn')?.style && (document.getElementById('xitem_burn').style.display='flex');
   }else if(mod==='seslendirme'){
     document.getElementById('live_badge').style.display='inline';
     aSrt=fn.replace('.mp4','.srt');
     const v=document.getElementById('vid');v.src=`${B}/dinle/${fn}?v=${Date.now()}`;v.play();
     fetch(`${B}/dinle/${aSrt}`).then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
     setTimeout(()=>waveform(fn),1800);
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
   }
 
   // TikTok modu modal'da seçildiyse otomatik aktifleştir
@@ -3604,7 +3626,91 @@ async function waveform(dosya){
     const ctx=cv.getContext('2d'),step=cv.width/d.waveform.length,mid=cv.height/2;
     ctx.fillStyle='#3b82f6';
     d.waveform.forEach((v,i)=>{const h=Math.max(2,v*cv.height*.85);ctx.fillRect(i*step,mid-h/2,Math.max(step-.5,.5),h);});
+
+    // Timeline'a tıklayarak o ana atla
+    track.onclick = (e) => {
+      if (e.target === cv || e.target === track) {
+        const rect = track.getBoundingClientRect();
+        const oran = (e.clientX - rect.left) / rect.width;
+        const vid = document.getElementById('vid');
+        const aud = document.getElementById('aud');
+        const media = (vid?.style.display !== 'none' && vid?.src) ? vid : aud;
+        if (media && media.duration) {
+          media.currentTime = oran * media.duration;
+        }
+      }
+    };
   }catch(e){}
+}
+
+/* ═══ ÇOKLU DİL EXPORT ═══ */
+async function cokluDilExport() {
+  if (!aSrt) { toast('Önce transkript oluşturun','twarn'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = '_multidil_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">🌍 Çoklu Dil Export</div>
+        <button onclick="document.getElementById('_multidil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Seçilen dillere aynı anda çevir ve SRT indir:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        ${[['EN','🇺🇸 İngilizce'],['DE','🇩🇪 Almanca'],['FR','🇫🇷 Fransızca'],['ES','🇪🇸 İspanyolca'],['IT','🇮🇹 İtalyanca'],['PT','🇧🇷 Portekizce'],['RU','🇷🇺 Rusça'],['JA','🇯🇵 Japonca']].map(([k,l])=>`
+          <label style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;">
+            <input type="checkbox" value="${k}" class="_mdil_cb" style="accent-color:var(--accent2);">
+            ${l}
+          </label>`).join('')}
+      </div>
+      <div id="_mdil_progress" style="display:none;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="_mdil_status">Çevriliyor...</div>
+        <div style="background:var(--s3);border-radius:100px;height:4px;overflow:hidden;">
+          <div id="_mdil_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
+      <button onclick="cokluDilExportBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
+        <i class="fa-solid fa-download"></i> Hepsini İndir
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function cokluDilExportBaslat() {
+  const secili = [...document.querySelectorAll('._mdil_cb:checked')].map(cb => cb.value);
+  if (!secili.length) { toast('En az bir dil seçin','twarn'); return; }
+
+  const prog  = document.getElementById('_mdil_progress');
+  const bar   = document.getElementById('_mdil_bar');
+  const stat  = document.getElementById('_mdil_status');
+  if (prog) prog.style.display = 'block';
+
+  for (let i = 0; i < secili.length; i++) {
+    const dil = secili[i];
+    if (stat) stat.textContent = `${dil} diline çevriliyor... (${i+1}/${secili.length})`;
+    if (bar)  bar.style.width = ((i / secili.length) * 100) + '%';
+    try {
+      const fd = new FormData();
+      fd.append('srt_dosya_adi', aSrt);
+      fd.append('hedef_dil', dil);
+      const r = await fetch(`${B}/api/cevir/`, { method:'POST', body:fd });
+      const d = await r.json();
+      if (d.cevrilmis_dosya_adi) {
+        // Otomatik indir
+        const a = document.createElement('a');
+        a.href = `${B}/indir/${d.cevrilmis_dosya_adi}`;
+        a.download = d.cevrilmis_dosya_adi;
+        a.click();
+        await new Promise(r => setTimeout(r, 800));
+      }
+    } catch(e) { toast(`${dil} çeviri hatası`,'terr'); }
+  }
+
+  if (bar)  bar.style.width = '100%';
+  if (stat) stat.textContent = `✓ ${secili.length} dil tamamlandı`;
+  toast(`✓ ${secili.length} dil SRT indirildi`);
+  setTimeout(() => document.getElementById('_multidil_overlay')?.remove(), 2000);
 }
 
 /* ═══ OVERLAP ═══ */
