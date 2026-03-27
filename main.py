@@ -919,28 +919,24 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             hedef_dil_upper = hedef_dil.upper() if hedef_dil else ""
             kaynak_dil_upper = kaynak_dil.upper() if kaynak_dil else "TR"
 
-            # Kaynak ve hedef dil farklıysa çevir
             if hedef_dil_upper and hedef_dil_upper not in ("AUTO", "") and hedef_dil_upper != kaynak_dil_upper and DEEPL_API_KEY:
                 try:
                     islem_durumlari[out_file] = {"durum": f"DeepL ile {hedef_dil_upper}'e çevriliyor...", "yuzde": 35}
                     deepl_hedef = DEEPL_DILLER.get(hedef_dil_upper, hedef_dil_upper)
                     async with httpx.AsyncClient() as c:
                         dr = await c.post(
-                            "https://api.deepl.com/v2/translate",
+                            f"{_deepl_base_url()}/v2/translate",
                             headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
-                            params={
-                                "text": metin_final,
-                                "target_lang": deepl_hedef,
-                            },
+                            json={"text": [metin_final], "target_lang": deepl_hedef},
                             timeout=30.0,
                         )
                         if dr.status_code == 200:
                             metin_final = dr.json()["translations"][0]["text"]
                             log.info(f"[TTS Çeviri] {kaynak_dil_upper}→{hedef_dil_upper}: {metin_final[:80]}")
                         else:
-                            log.warning(f"[TTS Çeviri] DeepL {dr.status_code}: {dr.text[:100]}")
+                            log.warning(f"[TTS Çeviri] DeepL {dr.status_code}: {dr.text[:200]}")
                 except Exception as e:
-                    log.warning(f"[TTS Çeviri Hata] {e} — orijinal metin kullanılıyor")
+                    log.warning(f"[TTS Çeviri Hata] {e}")
 
             # Normalize et
             metin_final = metin_normalize(metin_final, hedef_dil.lower() if hedef_dil else "tr")
@@ -987,14 +983,19 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             deepgram_to_srt(dg, srt_kaynak)
             srt_final = srt_kaynak
 
-            if hedef_dil and hedef_dil.upper() != kaynak_dil.upper():
-                islem_durumlari[out_file] = {"durum": "DeepL ile çevriliyor...", "yuzde": 50}
+            # Çeviri kontrolü — kaynak "auto" bile olsa hedef dil varsa çevir
+            hd = (hedef_dil or "").strip().upper()
+            kd = (kaynak_dil or "").strip().upper()
+            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
+                islem_durumlari[out_file] = {"durum": f"DeepL ile {hd}'e çevriliyor...", "yuzde": 50}
                 with open(srt_kaynak, encoding="utf-8") as f:
                     icerik = f.read()
                 cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
                 srt_final = os.path.join(gecici, f"ceviri_{hedef_dil}.srt")
                 with open(srt_final, "w", encoding="utf-8") as f:
                     f.write(cevrilmis)
+            elif hd and hd not in ("", "AUTO") and not DEEPL_API_KEY:
+                log.warning("[Altyazı] Hedef dil seçili ama DEEPL_API_KEY eksik — çeviri atlandı")
 
             base = os.path.splitext(out_file)[0]
             shutil.copy(srt_final, os.path.join(OUTPUT_DIR, base + ".srt"))
@@ -1043,14 +1044,19 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # Hem kalite artar hem ElevenLabs karakter israfı azalır
             segmentler = _kisa_seg_birlestir(segmentler, min_sure=0.8)
 
-            # 3. Çeviri
-            if hedef_dil and hedef_dil.strip() and hedef_dil.upper() not in [kaynak_dil.upper(), ""]:
+            # 3. Çeviri — kaynak "auto" bile olsa hedef dil varsa çevir
+            hd = (hedef_dil or "").strip().upper()
+            kd = (kaynak_dil or "").strip().upper()
+            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"{hedef_dil} diline çevriliyor...", "yuzde": 15}
                 cevrilmis_srt = await srt_paralel_cevir(srt_icerik, hedef_dil)
                 with open(srt_path, "w", encoding="utf-8") as f:
                     f.write(cevrilmis_srt)
                 segmentler = _srt_parse(cevrilmis_srt)
                 segmentler = _kisa_seg_birlestir(segmentler, min_sure=0.8)
+                log.info(f"[Dublaj] Çeviri tamamlandı → {hedef_dil}, {len(segmentler)} segment")
+            elif hd and hd not in ("", "AUTO") and not DEEPL_API_KEY:
+                log.warning("[Dublaj] Hedef dil seçili ama DEEPL_API_KEY eksik — çeviri atlandı")
 
             # 4. Karakter sayısı kontrolü — kota uyarısı
             toplam_karakter = sum(len(re.sub(r"\[Konuşmacı \d+\]:\s*", "", s["metin"])) for s in segmentler)
