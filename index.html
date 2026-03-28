@@ -1448,70 +1448,373 @@ async function cloudUpload_process(url, svc){
 }
 
 /* ═══ EXPORT ═══ */
+/* ═══ KAYDET / PAYLAŞ MODALİ ═══ */
 function xport(fmt_){
-  if(!aSrt&&!aDosya)return toast('Önce işlem tamamlayın','twarn');
-  if(fmt_==='original'){window.open(B + '/indir/${aDosya||aSrt}','_blank');return;}
-  if(fmt_==='srt'){if(!aSrt)return toast('SRT yok','twarn');window.open(B + '/indir/${aSrt}','_blank');return;}
-  if(!aSrt)return toast('SRT yok','twarn');
+  if(!aSrt&&!aDosya) return toast('Once islem tamamlayin','twarn');
+  kaydetModalAc(fmt_);
+}
 
-  fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>{
-    const base=aSrt.replace('.srt','');
-    const bloklar=c.trim().split(/\n\n+/).filter(b=>b.trim().split('\n').length>=3);
+function kaydetModalAc(fmt_) {
+  document.getElementById('_kaydet_modal')?.remove();
+
+  const base = (aSrt || aDosya || 'voiceflow_cikti').replace(/\.[^.]+$/, '');
+  const uzanti = {'original':'.mp4','srt':'.srt','vtt':'.vtt','ass':'.ass','txt':'.txt','txt_clean':'.txt','burn_sub':'.mp4'}[fmt_] || '.srt';
+  const isVideo = ['original','burn_sub'].includes(fmt_);
+
+  const formatAdi = {
+    'original':'Orijinal Video (MP4)','srt':'Altyazi (SRT)','vtt':'Altyazi (VTT)',
+    'ass':'Altyazi (ASS - Gelismis)','txt':'Transkript (Zaman Damgali)',
+    'txt_clean':'Transkript (Duz Metin)','burn_sub':'Altyazi Gomulu Video'
+  }[fmt_] || fmt_;
+
+  const ov = document.createElement('div');
+  ov.id = '_kaydet_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+
+  const platformHTML = isVideo ? (
+    '<div style="margin-bottom:20px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:8px;">Platform Boyutu</label>'
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="platform_sec">'
+    + platformBtn('original','⬛','Original','Orijinal boyut','#71717a',true)
+    + platformBtn('tiktok','📱','TikTok','9:16 Dikey','#ec4899',false)
+    + platformBtn('youtube','▶️','YouTube','16:9 Yatay','#ef4444',false)
+    + platformBtn('instagram_post','⬜','Instagram','1:1 Kare','#a855f7',false)
+    + platformBtn('instagram_story','📲','Hikaye','9:16 Dikey','#f97316',false)
+    + platformBtn('shorts','🩳','Shorts','9:16 Dikey','#22c55e',false)
+    + '</div></div>'
+  ) : '';
+
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:460px;max-width:95vw;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:15px;font-weight:700;">Kaydet & Paylaş</div>'
+    + '<button onclick="document.getElementById(\'_kaydet_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Format</div>'
+    + '<div style="background:var(--s3);border-radius:var(--r);padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:16px;">' + formatAdi + '</div>'
+    // Dosya adı
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:6px;">Dosya Adı</label>'
+    + '<div style="display:flex;align-items:center;">'
+    + '<input id="kaydet_isim" type="text" value="' + base + '" style="flex:1;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r) 0 0 var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;">'
+    + '<div style="padding:10px 12px;background:var(--s4);border:1px solid var(--border2);border-left:none;border-radius:0 var(--r) var(--r) 0;font-size:12px;color:var(--muted2);white-space:nowrap;">' + uzanti + '</div>'
+    + '</div></div>'
+    // Platform seçimi (sadece video)
+    + platformHTML
+    // Konum
+    + '<div style="margin-bottom:20px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:8px;">Nereye?</label>'
+    + '<div style="display:flex;flex-direction:column;gap:6px;">'
+    + '<label style="display:flex;align-items:center;gap:10px;background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r);padding:10px 14px;cursor:pointer;">'
+    + '<input type="radio" name="kaydet_yer" value="indir" checked style="accent-color:var(--accent2);">'
+    + '<div><div style="font-size:13px;font-weight:600;">Bilgisayara İndir</div><div style="font-size:11px;color:var(--muted2);">Downloads klasörüne</div></div>'
+    + '<i class="fa-solid fa-download" style="margin-left:auto;color:var(--accent3);"></i>'
+    + '</label>'
+    + '<label style="display:flex;align-items:center;gap:10px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;cursor:pointer;opacity:.5;" title="Yakindan">'
+    + '<input type="radio" name="kaydet_yer" value="drive" disabled>'
+    + '<div><div style="font-size:13px;font-weight:600;">Google Drive</div><div style="font-size:11px;color:var(--muted2);">Yakindan gelecek</div></div>'
+    + '<i class="fa-brands fa-google-drive" style="margin-left:auto;color:#4285f4;"></i>'
+    + '</label>'
+    + '</div></div>'
+    // Butonlar
+    + '<button onclick="kaydetBaslat(\'' + fmt_ + '\')" id="kaydet_btn" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;margin-bottom:10px;">'
+    + '<i class="fa-solid fa-download"></i> Kaydet'
+    + '</button>'
+    // Paylaş butonları (sadece video)
+    + (isVideo ? (
+      '<div style="border-top:1px solid var(--border);padding-top:12px;">'
+      + '<div style="font-size:11px;color:var(--muted2);margin-bottom:8px;text-align:center;">veya direkt paylaş</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">'
+      + paylasBtnHTML('tiktok','TikTok','#111','#fff','M9 12h6m-3-3v6',true)
+      + paylasBtnHTML('youtube','YouTube','#ef4444','#fff','',false)
+      + paylasBtnHTML('instagram','Instagram','linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)','#fff','',false)
+      + paylasBtnHTML('twitter','X / Twitter','#000','#fff','',false)
+      + '</div></div>'
+    ) : '')
+    + '</div>';
+
+  document.body.appendChild(ov);
+  setTimeout(function(){ const inp=document.getElementById('kaydet_isim'); if(inp){inp.focus();inp.select();} },100);
+}
+
+function platformBtn(val, emoji, isim, boyut, renk, aktif) {
+  return '<button onclick="platformSec(\'' + val + '\',this)" data-plat="' + val + '"'
+    + ' style="background:var(--s3);border:1.5px solid ' + (aktif ? renk : 'var(--border2)') + ';border-radius:10px;padding:10px 6px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;">'
+    + '<div style="font-size:20px;margin-bottom:3px;">' + emoji + '</div>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--txt);">' + isim + '</div>'
+    + '<div style="font-size:9px;color:var(--muted2);">' + boyut + '</div>'
+    + '</button>';
+}
+
+function platformSec(val, btn) {
+  document.querySelectorAll('[data-plat]').forEach(function(b) {
+    b.style.borderColor = 'var(--border2)';
+  });
+  if (btn) btn.style.borderColor = 'var(--accent2)';
+  window._secilenPlatform = val;
+}
+
+function paylasBtnHTML(platform, isim, bg, color, icon, isFirst) {
+  const urls = {
+    'tiktok': 'https://www.tiktok.com/upload',
+    'youtube': 'https://studio.youtube.com/channel/upload',
+    'instagram': 'https://www.instagram.com',
+    'twitter': 'https://twitter.com/compose/tweet'
+  };
+  return '<button onclick="paylasBaslat(\'' + platform + '\')" style="background:' + bg + ';border:none;color:' + color + ';padding:9px 6px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;transition:all .2s;text-align:center;">'
+    + isim
+    + '</button>';
+}
+
+async function paylasBaslat(platform) {
+  const isimEl = document.getElementById('kaydet_isim');
+  const isim = isimEl ? isimEl.value.trim() || 'voiceflow_cikti' : 'voiceflow_cikti';
+  const plat = window._secilenPlatform || 'original';
+
+  // Önce indir
+  const btn = document.getElementById('kaydet_btn');
+  if (btn) { btn.textContent = 'Hazirlaniyor...'; btn.disabled = true; }
+
+  const paylasBtnler = document.querySelectorAll('[onclick^="paylasBaslat"]');
+  paylasBtnler.forEach(function(b){ b.disabled = true; });
+
+  try {
+    let dosyaIndirildi = aDosya || aSrt;
+
+    // Platform resize gerekiyorsa
+    if (plat !== 'original' && aDosya) {
+      const fd = new FormData();
+      fd.append('dosya_adi', aDosya);
+      fd.append('platform', plat);
+      const r = await fetch(B + '/api/platform_boyutlandir/', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.basari) dosyaIndirildi = d.dosya;
+    }
+
+    // İndir
+    indir(B + '/indir/' + dosyaIndirildi, isim + '.mp4');
+
+    // Platform sayfasını aç
+    const urls = {
+      'tiktok':    'https://www.tiktok.com/upload',
+      'youtube':   'https://studio.youtube.com/channel/upload',
+      'instagram': 'https://www.instagram.com',
+      'twitter':   'https://twitter.com/compose/tweet'
+    };
+
+    setTimeout(function() {
+      window.open(urls[platform] || 'https://www.tiktok.com/upload', '_blank');
+      toast('Dosya indirildi! Platform sayfası açıldı — yükleyebilirsin.', 'tok', 5000);
+      document.getElementById('_kaydet_modal')?.remove();
+    }, 1500);
+
+  } catch(e) {
+    toast('Hata: ' + e.message, 'terr');
+    if (btn) { btn.textContent = 'Kaydet'; btn.disabled = false; }
+    paylasBtnler.forEach(function(b){ b.disabled = false; });
+  }
+}
+
+window._secilenPlatform = 'original';
+
+function kaydetModalAc(fmt_) {
+  document.getElementById('_kaydet_modal')?.remove();
+
+  // Varsayılan dosya adı
+  const base = (aSrt || aDosya || 'voiceflow_cikti').replace(/\.[^.]+$/, '');
+  const uzanti = {
+    'original': '.mp4', 'srt': '.srt', 'vtt': '.vtt', 'ass': '.ass',
+    'txt': '.txt', 'txt_clean': '.txt', 'burn_sub': '.mp4'
+  }[fmt_] || '.srt';
+
+  const ov = document.createElement('div');
+  ov.id = '_kaydet_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const formatAdi = {
+    'original':'Orijinal Video (MP4)', 'srt':'Altyazı (SRT)', 'vtt':'Altyazı (VTT)',
+    'ass':'Altyazı (ASS - Gelişmiş)', 'txt':'Transkript (Zaman Damgalı)',
+    'txt_clean':'Transkript (Düz Metin)', 'burn_sub':'Altyazı Gömülü Video'
+  }[fmt_] || fmt_;
+
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:420px;max-width:95vw;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:15px;font-weight:700;">Dosyayı Kaydet</div>'
+    + '<button onclick="document.getElementById(\'_kaydet_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Format</div>'
+    + '<div style="background:var(--s3);border-radius:var(--r);padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:16px;">' + formatAdi + '</div>'
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:6px;">Dosya Adı</label>'
+    + '<div style="display:flex;align-items:center;gap:0;">'
+    + '<input id="kaydet_isim" type="text" value="' + base + '" style="flex:1;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r) 0 0 var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;">'
+    + '<div style="padding:10px 12px;background:var(--s4);border:1px solid var(--border2);border-left:none;border-radius:0 var(--r) var(--r) 0;font-size:12px;color:var(--muted2);white-space:nowrap;">' + uzanti + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="margin-bottom:20px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:8px;">Kayıt Yeri</label>'
+    + '<div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px;">'
+    + '<i class="fa-solid fa-folder-open" style="color:var(--yellow2);font-size:18px;"></i>'
+    + '<div><div style="font-size:13px;font-weight:600;">Klasör Seç</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">'
+    + (window.showSaveFilePicker ? 'Kaydet butonuna basınca klasör seçme penceresi açılacak' : 'Dosya otomatik olarak Downloads klasörüne inecek')
+    + '</div></div>'
+    + '<i class="fa-solid fa-chevron-right" style="margin-left:auto;color:var(--muted);"></i>'
+    + '</div>'
+    + '</div>'
+    + '<button onclick="kaydetBaslat(\'' + fmt_ + '\')" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;">'
+    + '<i class="fa-solid fa-download"></i> Kaydet'
+    + '</button>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+  // Dosya adı input'una focus
+  setTimeout(function(){ const inp=document.getElementById('kaydet_isim'); if(inp){inp.focus();inp.select();} },100);
+}
+
+function kaydetBaslat(fmt_) {
+  const isimEl = document.getElementById('kaydet_isim');
+  const isim = isimEl ? isimEl.value.trim() || 'voiceflow_cikti' : 'voiceflow_cikti';
+  document.getElementById('_kaydet_modal')?.remove();
+  kaydetKlasorSec(fmt_, isim);
+}
+
+async function kaydetKlasorSec(fmt_, isim) {
+  // File System Access API — Chrome/Edge'de klasör seçtiriyor
+  if (window.showSaveFilePicker) {
+    try {
+      const uzantiMap = {
+        'original':'.mp4','srt':'.srt','vtt':'.vtt','ass':'.ass',
+        'txt':'.txt','txt_clean':'.txt','burn_sub':'.mp4'
+      };
+      const uzanti = uzantiMap[fmt_] || '.srt';
+      const mimeMap = {
+        '.mp4':'video/mp4','.srt':'text/plain','.vtt':'text/vtt',
+        '.ass':'text/plain','.txt':'text/plain'
+      };
+
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: isim + uzanti,
+        types: [{
+          description: 'VoiceFlow Dosyası',
+          accept: { [mimeMap[uzanti] || 'application/octet-stream']: [uzanti] }
+        }]
+      });
+
+      // Dosya içeriğini al ve kaydet
+      await kaydetIcerik(fmt_, isim, fileHandle);
+      toast('Dosya kaydedildi!');
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return; // Kullanıcı iptal etti
+      // API desteklenmiyorsa normal indirmeye geç
+    }
+  }
+
+  // Fallback: Normal indirme (Firefox / Safari)
+  xportGercek(fmt_, isim);
+}
+
+async function kaydetIcerik(fmt_, isim, fileHandle) {
+  const uzantiMap = {'original':'.mp4','srt':'.srt','vtt':'.vtt','ass':'.ass','txt':'.txt','txt_clean':'.txt'};
+  const uzanti = uzantiMap[fmt_] || '.srt';
+
+  if (fmt_ === 'original' || fmt_ === 'srt' || fmt_ === 'burn_sub') {
+    // Sunucudan indir
+    const dosya = fmt_ === 'srt' ? aSrt : (aDosya || aSrt);
+    const r = await fetch(B + '/indir/' + dosya);
+    const blob = await r.blob();
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
+
+  // Metin formatları — SRT içeriğini işle
+  const srtRes = await fetch(B + '/dinle/' + aSrt);
+  const c = await srtRes.text();
+  const bloklar = c.trim().split(/\n\n+/).filter(function(b){ return b.trim().split('\n').length >= 3; });
+  let icerik = '';
+
+  if (fmt_ === 'vtt') {
+    icerik = 'WEBVTT\n\n' + c.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,'$1.$2');
+  } else if (fmt_ === 'ass') {
+    const base = aSrt.replace('.srt','');
+    const assHeader = '[Script Info]\nTitle: '+base+'\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\n\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n';
+    const assTime = function(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),cs=Math.round((s-Math.floor(s))*100); return h+':'+String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0')+'.'+String(cs).padStart(2,'0'); };
+    icerik = assHeader + bloklar.map(function(b){ const l=b.trim().split('\n'),tp=l[1].split(' --> '); return 'Dialogue: 0,'+assTime(t2s(tp[0]))+','+assTime(t2s(tp[1]))+',Default,,0,0,0,,'+l.slice(2).join('\\N'); }).join('\n');
+  } else if (fmt_ === 'txt') {
+    icerik = bloklar.map(function(b){ const l=b.trim().split('\n'),tp=l[1].split(' --> '); return '['+fmt(t2s(tp[0]))+']  '+l.slice(2).join(' '); }).join('\n');
+  } else if (fmt_ === 'txt_clean') {
+    icerik = bloklar.map(function(b){ return b.trim().split('\n').slice(2).join(' '); }).join('\n');
+  }
+
+  const writable = await fileHandle.createWritable();
+  await writable.write(icerik);
+  await writable.close();
+}
+
+function xportGercek(fmt_, isim) {
+  if(!aSrt&&!aDosya) return toast('Once islem tamamlayin','twarn');
+
+  if(fmt_==='original'){
+    const dosya = aDosya || aSrt;
+    indir(B+'/indir/'+dosya, isim+'.mp4');
+    return;
+  }
+  if(fmt_==='srt'){
+    if(!aSrt) return toast('SRT yok','twarn');
+    indir(B+'/indir/'+aSrt, isim+'.srt');
+    return;
+  }
+  if(!aSrt) return toast('SRT yok','twarn');
+
+  fetch(B+'/dinle/'+aSrt).then(function(r){return r.text();}).then(function(c){
+    const bloklar=c.trim().split(/\n\n+/).filter(function(b){return b.trim().split('\n').length>=3;});
 
     if(fmt_==='vtt'){
-      // WebVTT — virgül yerine nokta, WEBVTT başlığı
-      const vtt='WEBVTT\n\n'+c
-        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,'$1.$2');
-      dl(vtt, base+'.vtt', 'text/vtt');
+      const vtt='WEBVTT\n\n'+c.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,'$1.$2');
+      dl(vtt, isim+'.vtt', 'text/vtt');
 
     }else if(fmt_==='ass'){
-      // Advanced SubStation Alpha — video player'larda en iyi kalite
-      const assHeader='[Script Info]\nTitle: ${base}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\n\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n';
-      const assTime=s=>{
+      const base=aSrt.replace('.srt','');
+      const assHeader='[Script Info]\nTitle: '+base+'\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\n\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n';
+      const assTime=function(s){
         const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),cs=Math.round((s-Math.floor(s))*100);
-        return h + ':' + String(m).padStart(2,'0') + ':' + String(sc).padStart(2,'0') + '.' + String(cs).padStart(2,'0');
+        return h+':'+String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0')+'.'+String(cs).padStart(2,'0');
       };
-      const events=bloklar.map(b=>{
-        const l=b.trim().split('\n');
-        const tp=l[1].split(' --> ');
-        const metin=l.slice(2).join('\\N').replace(/\[Konuşmacı \d+\]:\s*/g,'');
-        return 'Dialogue: 0,' + assTime(t2s(tp[0])) + ',' + assTime(t2s(tp[1])) + ',Default,,0,0,0,,' + metin;
+      const events=bloklar.map(function(b){
+        const l=b.trim().split('\n'),tp=l[1].split(' --> ');
+        const metin=l.slice(2).join('\\N').replace(/\[Konusmacu \d+\]:\s*/g,'');
+        return 'Dialogue: 0,'+assTime(t2s(tp[0]))+','+assTime(t2s(tp[1]))+',Default,,0,0,0,,'+metin;
       }).join('\n');
-      dl(assHeader+events, base+'.ass', 'text/plain');
+      dl(assHeader+events, isim+'.ass', 'text/plain');
 
     }else if(fmt_==='txt'){
-      // Zaman damgalı — [00:01:23]  metin
-      const lines=bloklar.map(b=>{
-        const l=b.trim().split('\n');
-        const tp=l[1].split(' --> ');
-        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
-        return '[' + fmt(t2s(tp[0])) + ']  ' + metin;
+      const lines=bloklar.map(function(b){
+        const l=b.trim().split('\n'),tp=l[1].split(' --> ');
+        return '['+fmt(t2s(tp[0]))+']  '+l.slice(2).join(' ').replace(/\[Konusmacu \d+\]:\s*/g,'');
       });
-      dl(lines.join('\n'), base+'_zaman_damgali.txt', 'text/plain');
+      dl(lines.join('\n'), isim+'.txt', 'text/plain');
 
     }else if(fmt_==='txt_clean'){
-      // Sadece metin, alt alta
-      const lines=bloklar.map(b=>{
-        const l=b.trim().split('\n');
-        return l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+      const lines=bloklar.map(function(b){
+        return b.trim().split('\n').slice(2).join(' ').replace(/\[Konusmacu \d+\]:\s*/g,'');
       });
-      dl(lines.join('\n'), base+'_metin.txt', 'text/plain');
-
-    }else if(fmt_==='srt_notes'){
-      // Not formatı: zaman → metin, aralarında boşluk
-      const lines=[];
-      bloklar.forEach(b=>{
-        const l=b.trim().split('\n');
-        const tp=l[1].split(' --> ');
-        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
-        lines.push(fmt(t2s(tp[0])) + '  →  ' + fmt(t2s(tp[1])));
-        lines.push(metin);
-        lines.push('');
-      });
-      dl(lines.join('\n'), base+'_notlar.txt', 'text/plain');
+      dl(lines.join('\n'), isim+'.txt', 'text/plain');
     }
-  }).catch(()=>toast('Export hatası','terr'));
+  }).catch(function(){toast('Export hatasi','terr');});
 }
+
+function indir(url, dosyaAdi) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = dosyaAdi;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 function dl(c,n,m){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([c],{type:m}));

@@ -2429,6 +2429,74 @@ DOLGU_KELIMELER = {
     "fr": ["euh", "eh", "hm", "hmm", "ben", "voilà", "bah"],
 }
 
+@app.post("/api/platform_boyutlandir/")
+async def platform_boyutlandir(
+    dosya_adi: str = Form(...),
+    platform: str = Form("tiktok"),  # tiktok | youtube | instagram_post | instagram_story | original
+):
+    """
+    FFmpeg ile videoyu platforma göre boyutlandır.
+    - tiktok / instagram_story: 9:16 dikey (1080x1920)
+    - youtube: 16:9 yatay (1920x1080)
+    - instagram_post: 1:1 kare (1080x1080)
+    """
+    kaynak = os.path.join(OUTPUT_DIR, dosya_adi)
+    if not os.path.exists(kaynak):
+        return JSONResponse({"hata": "Dosya bulunamadı"}, status_code=404)
+
+    PLATFORM_AYAR = {
+        "tiktok":           {"w": 1080, "h": 1920, "etiket": "TikTok_9x16"},
+        "instagram_story":  {"w": 1080, "h": 1920, "etiket": "Instagram_Story"},
+        "youtube":          {"w": 1920, "h": 1080, "etiket": "YouTube_16x9"},
+        "instagram_post":   {"w": 1080, "h": 1080, "etiket": "Instagram_Post"},
+        "shorts":           {"w": 1080, "h": 1920, "etiket": "Shorts_9x16"},
+    }
+
+    if platform == "original":
+        return JSONResponse({"basari": True, "dosya": dosya_adi, "platform": "original"})
+
+    ayar = PLATFORM_AYAR.get(platform)
+    if not ayar:
+        return JSONResponse({"hata": f"Bilinmeyen platform: {platform}"}, status_code=400)
+
+    b_id = uuid.uuid4().hex[:8]
+    cikti_adi = f"sonuc_{b_id}_{ayar['etiket']}.mp4"
+    cikti = os.path.join(OUTPUT_DIR, cikti_adi)
+
+    w, h = ayar["w"], ayar["h"]
+
+    # FFmpeg: scale + crop ile hedef boyuta getir, siyah şerit ekle
+    # scale: en büyük kenarı hedefle, crop: tam boyuta getir
+    ffmpeg = _ffmpeg_path()
+    filtre = (
+        f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+        f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black"
+    )
+
+    proc = await asyncio.create_subprocess_exec(
+        ffmpeg, "-y", "-i", kaynak,
+        "-vf", filtre,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "aac", "-b:a", "128k",
+        cikti,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    _, err = await proc.communicate()
+
+    if proc.returncode != 0:
+        log.error(f"[PlatformResize] Hata: {err.decode()[-300:]}")
+        return JSONResponse({"hata": "Video boyutlandırılamadı"}, status_code=500)
+
+    log.info(f"[PlatformResize] {platform} → {cikti_adi}")
+    return JSONResponse({
+        "basari": True,
+        "dosya": cikti_adi,
+        "platform": platform,
+        "boyut": f"{w}x{h}",
+        "etiket": ayar["etiket"]
+    })
+
+
 @app.post("/api/klip_kes/")
 async def klip_kes(
     dosya_adi: str    = Form(...),
