@@ -48,12 +48,6 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(TEMP_DIR,   exist_ok=True)
 app.mount("/ciktilar", StaticFiles(directory=OUTPUT_DIR), name="ciktilar")
 
-# Static JS dosyaları
-import os as _os
-_static_dir = _os.path.join(_os.path.dirname(__file__), "static")
-_os.makedirs(_static_dir, exist_ok=True)
-app.mount("/static", StaticFiles(directory=_static_dir), name="static")
-
 islem_durumlari: dict = {}
 
 DEEPL_DILLER = {
