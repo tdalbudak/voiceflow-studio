@@ -2138,16 +2138,27 @@ document.getElementById('m_tgt')?.addEventListener('change', function() {
 /* ═══ RESET & SWITCH ═══ */
 function reset(){
   pFile=null;pURL=null;aSrt=null;aDosya=null;segs=[];dur=0;
-  document.getElementById('finput').value='';
-  ['vid','aud'].forEach(id=>{const e=document.getElementById(id);e.src='';e.style.display='none';});
-  document.getElementById('dz').style.display='flex';
-  document.getElementById('tts_player').classList.add('hidden');
-  document.getElementById('tts_audio').src='';
-  document.getElementById('tts_status').textContent='Ses üretmeye hazır';
-  document.getElementById('slist').innerHTML='<div class="empty-state"><i class="fa-solid fa-film"></i><span>Medya yükleyip işlemi başlatın</span></div>';
-  document.getElementById('tl_track').innerHTML='<div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>';
-  document.getElementById('xwrap').classList.add('hidden');
-  document.getElementById('live_badge').style.display='none';
+  const finput = document.getElementById('finput');
+  if(finput) finput.value='';
+  ['vid','aud'].forEach(id=>{const e=document.getElementById(id);if(e){e.src='';e.style.display='none';}});
+  const vboxEmpty = document.getElementById('vbox_empty');
+  if(vboxEmpty) vboxEmpty.style.display='flex';
+  const dz = document.getElementById('dz');
+  if(dz) dz.style.display='flex';
+  const ttsPlayer = document.getElementById('tts_player');
+  if(ttsPlayer) ttsPlayer.classList.add('hidden');
+  const ttsAudio = document.getElementById('tts_audio');
+  if(ttsAudio) ttsAudio.src='';
+  const ttsStatus = document.getElementById('tts_status');
+  if(ttsStatus) ttsStatus.textContent='Ses üretmeye hazır';
+  const slist = document.getElementById('slist');
+  if(slist) slist.innerHTML='<div class="empty-state"><i class="fa-solid fa-film"></i><span>Medya yükleyip işlemi başlatın</span></div>';
+  const tlTrack = document.getElementById('tl_track');
+  if(tlTrack) tlTrack.innerHTML='<div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>';
+  const xwrap = document.getElementById('xwrap');
+  if(xwrap) xwrap.classList.add('hidden');
+  const liveBadge = document.getElementById('live_badge');
+  if(liveBadge) liveBadge.style.display='none';
 }
 
 function sw(m){
