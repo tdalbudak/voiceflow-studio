@@ -392,6 +392,23 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <div class="nav-tab" id="tab_metinden_sese" onclick="sw('metinden_sese')">✍ Metin→Ses</div>
   </div>
   <div class="nav-right">
+    <!-- UI Dil Seçici -->
+    <select onchange="uiDilDegistir(this.value)" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:var(--r);font-size:11px;font-family:inherit;cursor:pointer;outline:none;">
+      <option value="tr">🇹🇷 TR</option>
+      <option value="en">🇺🇸 EN</option>
+      <option value="de">🇩🇪 DE</option>
+      <option value="fr">🇫🇷 FR</option>
+      <option value="es">🇪🇸 ES</option>
+      <option value="it">🇮🇹 IT</option>
+      <option value="pt">🇧🇷 PT</option>
+      <option value="ru">🇷🇺 RU</option>
+      <option value="ja">🇯🇵 JA</option>
+      <option value="ar">🇸🇦 AR</option>
+    </select>
+    <!-- AI Asistan -->
+    <button onclick="aiAsistanAc()" class="cloud-btn" title="Ne yapmak istiyorsun?" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:var(--accent3);">
+      🤖 AI Asistan
+    </button>
     <!-- Sihirli Mod / Pro Stüdyo Toggle -->
     <div class="mod-toggle" title="Mod değiştir">
       <button class="mod-toggle-btn" id="btn_sihirli" onclick="modGecis('sihirli')">✨ Sihirli</button>
@@ -426,40 +443,21 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <!-- Dil -->
     <div class="lp-sec" id="sec_dil">
       <div class="sec-hd"><i class="fa-solid fa-language"></i> Proje Dili</div>
-      <div class="frow">
-        <label>Kaynak Dil</label>
-        <select id="src_lang">
-          <option value="auto">Otomatik Algıla 🤖</option>
-          <option value="tr">Türkçe 🇹🇷</option>
-          <option value="en">English 🇺🇸</option>
-          <option value="es">Español 🇪🇸</option>
-          <option value="fr">Français 🇫🇷</option>
-          <option value="de">Deutsch 🇩🇪</option>
-          <option value="it">Italiano 🇮🇹</option>
-          <option value="pt">Português 🇧🇷</option>
-          <option value="ru">Русский 🇷🇺</option>
-          <option value="zh">中文 🇨🇳</option>
-          <option value="ja">日本語 🇯🇵</option>
-          <option value="ar">العربية 🇸🇦</option>
-          <option value="ko">한국어 🇰🇷</option>
-        </select>
+      <!-- Modal'dan gelen değerler — sadece gösterim -->
+      <div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:12px;cursor:pointer;" onclick="openModal()" title="Değiştirmek için tıkla">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="color:var(--muted2);">Kaynak</span>
+          <span id="src_lang_label" style="font-weight:600;">Otomatik 🤖</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="color:var(--muted2);">Hedef</span>
+          <span id="tgt_lang_label" style="font-weight:600;color:var(--accent3);">—</span>
+        </div>
+        <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);padding-top:6px;">Değiştirmek için tıkla</div>
       </div>
-      <div class="frow">
-        <label>Hedef Dil</label>
-        <select id="tgt_lang">
-          <option value="tr">Türkçe 🇹🇷</option>
-          <option value="en">English 🇺🇸</option>
-          <option value="es">Español 🇪🇸</option>
-          <option value="fr">Français 🇫🇷</option>
-          <option value="de">Deutsch 🇩🇪</option>
-          <option value="it">Italiano 🇮🇹</option>
-          <option value="pt">Português 🇧🇷</option>
-          <option value="ru">Русский 🇷🇺</option>
-          <option value="zh">中文 🇨🇳</option>
-          <option value="ja">日本語 🇯🇵</option>
-          <option value="ar">العربية 🇸🇦</option>
-        </select>
-      </div>
+      <!-- Gizli gerçek değerler — JS okur -->
+      <input type="hidden" id="src_lang" value="auto">
+      <input type="hidden" id="tgt_lang" value="">
     </div>
 
     <!-- Altyazı Tasarımcısı -->
@@ -1189,8 +1187,8 @@ async function _applyUndoRedo(state) {
     const fd = new FormData();
     fd.append('dosya_adi', aSrt);
     fd.append('segment_no', state.no);
-    fd.append('yeni_baslangic', state.start);
-    fd.append('yeni_bitis', state.end);
+    fd.append('yeni_baslangic', parseFloat(state.start).toFixed(3));
+    fd.append('yeni_bitis',     parseFloat(state.end).toFixed(3));
     await fetch(B + '/api/zaman_guncelle/', { method:'POST', body:fd });
     await reload();
   } else if (state.type === 'render') {
@@ -1863,22 +1861,35 @@ document.getElementById('finput').addEventListener('change',function(){
 function closeModal(){document.getElementById('modal')?.classList.add('hidden');}
 
 function finishSetup(){
-  // Adım 1 verileri
+  // Modal'dan dil değerlerini oku
   const srcVal = document.getElementById('m_src')?.value || 'auto';
   const hasTranslation = document.getElementById('translation_toggle')?.checked;
-  const _m_tgt2 = document.getElementById('m_tgt2');
-  const _m_tgt  = document.getElementById('m_tgt');
-  const tgtVal = hasTranslation
-    ? ((_m_tgt2 && _m_tgt2.value) || (_m_tgt && _m_tgt.value) || 'en')
-    : '';
+  const tgtSec = document.getElementById('m_tgt');
+  const tgtVal = hasTranslation && tgtSec && tgtSec.value ? tgtSec.value : '';
 
-  (function(){var _oa=document.getElementById('src_lang');if(_oa)_oa.value=srcVal;})();
-  (function(){var _oa=document.getElementById('tgt_lang');if(_oa)_oa.value=tgtVal;})();
+  // Hidden input'lara yaz — startProcess bunları okuyacak
+  const srcInput = document.getElementById('src_lang');
+  const tgtInput = document.getElementById('tgt_lang');
+  if (srcInput) srcInput.value = srcVal;
+  if (tgtInput) tgtInput.value = tgtVal;
 
-  // Arka plan ses tercihi
-  const bgKeep = document.getElementById('bg_audio_keep')?.checked;
-  // (dublaj motoruna geçirilmek üzere global'e yaz)
-  window._bgVol = bgKeep ? 0.1 : 0.0;
+  // Sol panel etiketlerini güncelle
+  const srcLabel = document.getElementById('src_lang_label');
+  const tgtLabel = document.getElementById('tgt_lang_label');
+  if (srcLabel) {
+    const srcDil = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === srcVal.toLowerCase(); });
+    srcLabel.textContent = srcVal === 'auto' ? 'Otomatik 🤖' : (srcDil ? srcDil.fl + ' ' + srcDil.ad : srcVal.toUpperCase());
+  }
+  if (tgtLabel) {
+    if (tgtVal) {
+      const tgtDil = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === tgtVal.toLowerCase(); });
+      tgtLabel.textContent = tgtDil ? tgtDil.fl + ' ' + tgtDil.ad : tgtVal.toUpperCase();
+      tgtLabel.style.color = 'var(--accent3)';
+    } else {
+      tgtLabel.textContent = '— (Çeviri Yok)';
+      tgtLabel.style.color = 'var(--muted2)';
+    }
+  }
 
   closeModal();
   if (mod !== 'metinden_sese') loadMedia();
@@ -2209,7 +2220,219 @@ function ttsSesDegistir() {
   ttsSesListesiGuncelle();
 }
 
-/* ═══ TTS SES GRID — Demo Dinle ═══ */
+/* ═══ 100+ DİL LİSTESİ ═══ */
+const TUM_DILLER = [
+  {k:'TR',ad:'Türkçe',fl:'🇹🇷'},{k:'EN',ad:'İngilizce',fl:'🇺🇸'},{k:'DE',ad:'Almanca',fl:'🇩🇪'},
+  {k:'FR',ad:'Fransızca',fl:'🇫🇷'},{k:'ES',ad:'İspanyolca',fl:'🇪🇸'},{k:'IT',ad:'İtalyanca',fl:'🇮🇹'},
+  {k:'PT',ad:'Portekizce',fl:'🇧🇷'},{k:'RU',ad:'Rusça',fl:'🇷🇺'},{k:'JA',ad:'Japonca',fl:'🇯🇵'},
+  {k:'ZH',ad:'Çince (Basit)',fl:'🇨🇳'},{k:'KO',ad:'Korece',fl:'🇰🇷'},{k:'AR',ad:'Arapça',fl:'🇸🇦'},
+  {k:'NL',ad:'Hollandaca',fl:'🇳🇱'},{k:'PL',ad:'Lehçe',fl:'🇵🇱'},{k:'SV',ad:'İsveççe',fl:'🇸🇪'},
+  {k:'NO',ad:'Norveççe',fl:'🇳🇴'},{k:'DA',ad:'Danca',fl:'🇩🇰'},{k:'FI',ad:'Fince',fl:'🇫🇮'},
+  {k:'CS',ad:'Çekçe',fl:'🇨🇿'},{k:'SK',ad:'Slovakça',fl:'🇸🇰'},{k:'HU',ad:'Macarca',fl:'🇭🇺'},
+  {k:'RO',ad:'Romence',fl:'🇷🇴'},{k:'BG',ad:'Bulgarca',fl:'🇧🇬'},{k:'HR',ad:'Hırvatça',fl:'🇭🇷'},
+  {k:'SR',ad:'Sırpça',fl:'🇷🇸'},{k:'SL',ad:'Slovence',fl:'🇸🇮'},{k:'LT',ad:'Litvanca',fl:'🇱🇹'},
+  {k:'LV',ad:'Letçe',fl:'🇱🇻'},{k:'ET',ad:'Estonca',fl:'🇪🇪'},{k:'EL',ad:'Yunanca',fl:'🇬🇷'},
+  {k:'UK',ad:'Ukraynaca',fl:'🇺🇦'},{k:'VI',ad:'Vietnamca',fl:'🇻🇳'},{k:'TH',ad:'Tayca',fl:'🇹🇭'},
+  {k:'ID',ad:'Endonezyaca',fl:'🇮🇩'},{k:'MS',ad:'Malayca',fl:'🇲🇾'},{k:'HI',ad:'Hintçe',fl:'🇮🇳'},
+  {k:'BN',ad:'Bengalce',fl:'🇧🇩'},{k:'UR',ad:'Urduca',fl:'🇵🇰'},{k:'FA',ad:'Farsça',fl:'🇮🇷'},
+  {k:'HE',ad:'İbranice',fl:'🇮🇱'},{k:'AF',ad:'Afrikaanca',fl:'🇿🇦'},{k:'SQ',ad:'Arnavutça',fl:'🇦🇱'},
+  {k:'HY',ad:'Ermenice',fl:'🇦🇲'},{k:'AZ',ad:'Azerice',fl:'🇦🇿'},{k:'BE',ad:'Belarusça',fl:'🇧🇾'},
+  {k:'BS',ad:'Boşnakça',fl:'🇧🇦'},{k:'CA',ad:'Katalanca',fl:'🏴'},{k:'CY',ad:'Galce',fl:'🏴󠁧󠁢󠁷󠁬󠁳󠁿'},
+  {k:'EU',ad:'Baskça',fl:'🏴'},{k:'GL',ad:'Galiçyaca',fl:'🇪🇸'},{k:'KA',ad:'Gürcüce',fl:'🇬🇪'},
+  {k:'IS',ad:'İzlandaca',fl:'🇮🇸'},{k:'MK',ad:'Makedonca',fl:'🇲🇰'},{k:'MT',ad:'Maltaca',fl:'🇲🇹'},
+  {k:'GA',ad:'İrlandaca',fl:'🇮🇪'},{k:'LB',ad:'Lüksemburgca',fl:'🇱🇺'},{k:'MN',ad:'Moğolca',fl:'🇲🇳'},
+  {k:'MY',ad:'Birmanca',fl:'🇲🇲'},{k:'KM',ad:'Khmerçe',fl:'🇰🇭'},{k:'LO',ad:'Laoca',fl:'🇱🇦'},
+  {k:'SW',ad:'Svahili',fl:'🇰🇪'},{k:'AM',ad:'Amharca',fl:'🇪🇹'},{k:'YO',ad:'Yorubaca',fl:'🇳🇬'},
+  {k:'IG',ad:'İgboca',fl:'🇳🇬'},{k:'HA',ad:'Hausa',fl:'🇳🇬'},{k:'ZU',ad:'Zulu',fl:'🇿🇦'},
+  {k:'XH',ad:'Xhosa',fl:'🇿🇦'},{k:'ST',ad:'Sotho',fl:'🇿🇦'},{k:'TL',ad:'Filipince',fl:'🇵🇭'},
+  {k:'JW',ad:'Cava dili',fl:'🇮🇩'},{k:'SU',ad:'Sunda dili',fl:'🇮🇩'},{k:'NE',ad:'Nepalce',fl:'🇳🇵'},
+  {k:'SI',ad:'Sinhala',fl:'🇱🇰'},{k:'KY',ad:'Kırgızca',fl:'🇰🇬'},{k:'UZ',ad:'Özbekçe',fl:'🇺🇿'},
+  {k:'TK',ad:'Türkmence',fl:'🇹🇲'},{k:'KK',ad:'Kazakça',fl:'🇰🇿'},{k:'TT',ad:'Tatarca',fl:'🇷🇺'},
+  {k:'PA',ad:'Pencapça',fl:'🇮🇳'},{k:'GU',ad:'Gujarati',fl:'🇮🇳'},{k:'MR',ad:'Marathi',fl:'🇮🇳'},
+  {k:'TA',ad:'Tamilce',fl:'🇮🇳'},{k:'TE',ad:'Telugu',fl:'🇮🇳'},{k:'KN',ad:'Kannada',fl:'🇮🇳'},
+  {k:'ML',ad:'Malayalam',fl:'🇮🇳'},{k:'OR',ad:'Oriya',fl:'🇮🇳'},{k:'MG',ad:'Malgaşça',fl:'🇲🇬'},
+  {k:'SM',ad:'Samoa dili',fl:'🇼🇸'},{k:'HT',ad:'Haitice',fl:'🇭🇹'},{k:'MI',ad:'Maori',fl:'🇳🇿'},
+  {k:'LA',ad:'Latince',fl:'🏛️'},{k:'EO',ad:'Esperanto',fl:'🌍'},{k:'IA',ad:'Interlingua',fl:'🌍'},
+];
+
+function dilSelectDoldur(selectId, secili) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.innerHTML = TUM_DILLER.map(function(d) {
+    return '<option value="' + d.k + '"' + (d.k === secili ? ' selected' : '') + '>' + d.fl + ' ' + d.ad + '</option>';
+  }).join('');
+}
+
+/* ═══ AI ASISTAN — "Ne yapmak istiyorsun?" ═══ */
+function aiAsistanAc() {
+  document.getElementById('_ai_asistan_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_ai_asistan_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:500px;max-width:95vw;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:15px;font-weight:700;">🤖 AI Asistan — Ne yapmak istiyorsun?</div>'
+    + '<button onclick="document.getElementById(\'_ai_asistan_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">İsteğini yaz, AI en uygun modları ve paketi önersin:</div>'
+    + '<textarea id="ai_asistan_input" placeholder="Örn: TikTok için Türkçe videoyu İngilizceye çevirmek ve Hormozi stili altyazı eklemek istiyorum..." style="width:100%;height:100px;padding:12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:12px;"></textarea>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'
+    + hizliOneri('TikTok için viral altyazı istiyorum')
+    + hizliOneri('Videoyu İngilizceye çevir, kendi sesimle')
+    + hizliOneri('YouTube için altyazı ve dublaj')
+    + hizliOneri('Podcast transkripti almak istiyorum')
+    + '</div>'
+    + '<div id="ai_asistan_sonuc" style="display:none;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:13px;line-height:1.7;"></div>'
+    + '<button onclick="aiAsistanGonder()" id="ai_asistan_btn" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;">'
+    + '✨ Analiz Et & Öneri Al'
+    + '</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){ document.getElementById('ai_asistan_input')?.focus(); }, 100);
+}
+
+function hizliOneri(metin) {
+  return '<button onclick="document.getElementById(\'ai_asistan_input\').value=\'' + metin + '\'" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:100px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">' + metin + '</button>';
+}
+
+async function aiAsistanGonder() {
+  const input = document.getElementById('ai_asistan_input');
+  const btn   = document.getElementById('ai_asistan_btn');
+  const sonuc = document.getElementById('ai_asistan_sonuc');
+  if (!input || !input.value.trim()) { toast('Lütfen isteğinizi yazın','twarn'); return; }
+
+  if (btn) { btn.textContent = '⏳ Analiz ediliyor...'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: 'Sen VoiceFlow Studio AI asistanısın. Kullanıcı şunu istiyor: "' + input.value.trim() + '"\n\n'
+            + 'VoiceFlow Studio özellikleri:\n'
+            + '- Transkript: Video/ses dosyasını metne çevirir\n'
+            + '- Altyazı: Altyazı ekler, TikTok/Hormozi stili yapabilir\n'
+            + '- Dublaj: Başka dile çevirip seslendirme yapar, ses klonlama var\n'
+            + '- Metin→Ses: Yazdığın metni sese çevirir\n'
+            + '- Kendi Sesiyle Dublaj: Videonun sesini klonlayıp başka dilde konuşturur\n'
+            + 'Planlar: Lite $0/10dk, Creator $9/75dk, Studio $19/200dk, Business $49/600dk\n\n'
+            + 'Kullanıcının isteğine göre:\n'
+            + '1. Hangi modu/modları kullanmalı? (adım adım)\n'
+            + '2. Hangi plan önerirsin ve neden?\n'
+            + '3. Önemli ipuçları\n\n'
+            + 'Kısa ve net cevap ver, emoji kullan, Türkçe yaz.'
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || 'Yanıt alınamadı';
+
+    if (sonuc) {
+      sonuc.style.display = 'block';
+      sonuc.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    }
+
+    // Uygula butonu ekle
+    if (btn) {
+      btn.textContent = '✅ Öneri alındı — Kapat';
+      btn.disabled = false;
+      btn.onclick = function() { document.getElementById('_ai_asistan_modal')?.remove(); };
+    }
+
+  } catch(e) {
+    if (sonuc) {
+      sonuc.style.display = 'block';
+      sonuc.innerHTML = '⚠️ Analiz yapılamadı. Lütfen tekrar deneyin.';
+    }
+    if (btn) { btn.textContent = '✨ Analiz Et & Öneri Al'; btn.disabled = false; }
+  }
+}
+
+/* ═══ UI DİL SEÇİCİ (10 dil) ═══ */
+const UI_DILLER = {
+  tr: { ad:'Türkçe', flag:'🇹🇷',
+    'Transkript':'Transkript','Altyazı':'Altyazı','Dublaj':'Dublaj','Metin→Ses':'Metin→Ses',
+    'Başlat':'Başlat','Medya Yükle':'Medya Yükle','Ses Aktörü':'Ses Aktörü',
+    'Ne yapmak istiyorsun?':'Ne yapmak istiyorsun?'
+  },
+  en: { ad:'English', flag:'🇺🇸',
+    'Transkript':'Transcript','Altyazı':'Subtitle','Dublaj':'Dubbing','Metin→Ses':'Text→Speech',
+    'Başlat':'Start','Medya Yükle':'Upload Media','Ses Aktörü':'Voice Actor',
+    'Ne yapmak istiyorsun?':'What do you want to do?'
+  },
+  de: { ad:'Deutsch', flag:'🇩🇪',
+    'Transkript':'Transkript','Altyazı':'Untertitel','Dublaj':'Synchronisation','Metin→Ses':'Text→Sprache',
+    'Başlat':'Starten','Medya Yükle':'Medien hochladen','Ses Aktörü':'Sprecher',
+    'Ne yapmak istiyorsun?':'Was möchtest du tun?'
+  },
+  fr: { ad:'Français', flag:'🇫🇷',
+    'Transkript':'Transcription','Altyazı':'Sous-titres','Dublaj':'Doublage','Metin→Ses':'Texte→Parole',
+    'Başlat':'Démarrer','Medya Yükle':'Télécharger','Ses Aktörü':'Voix',
+    'Ne yapmak istiyorsun?':'Que voulez-vous faire?'
+  },
+  es: { ad:'Español', flag:'🇪🇸',
+    'Transkript':'Transcripción','Altyazı':'Subtítulos','Dublaj':'Doblaje','Metin→Ses':'Texto→Voz',
+    'Başlat':'Iniciar','Medya Yükle':'Subir archivo','Ses Aktörü':'Voz',
+    'Ne yapmak istiyorsun?':'¿Qué quieres hacer?'
+  },
+  it: { ad:'Italiano', flag:'🇮🇹',
+    'Transkript':'Trascrizione','Altyazı':'Sottotitoli','Dublaj':'Doppiaggio','Metin→Ses':'Testo→Voce',
+    'Başlat':'Avvia','Medya Yükle':'Carica file','Ses Aktörü':'Voce',
+    'Ne yapmak istiyorsun?':'Cosa vuoi fare?'
+  },
+  pt: { ad:'Português', flag:'🇧🇷',
+    'Transkript':'Transcrição','Altyazı':'Legendas','Dublaj':'Dublagem','Metin→Ses':'Texto→Fala',
+    'Başlat':'Iniciar','Medya Yükle':'Carregar','Ses Aktörü':'Voz',
+    'Ne yapmak istiyorsun?':'O que você quer fazer?'
+  },
+  ru: { ad:'Русский', flag:'🇷🇺',
+    'Transkript':'Транскрипт','Altyazı':'Субтитры','Dublaj':'Дублирование','Metin→Ses':'Текст→Речь',
+    'Başlat':'Начать','Medya Yükle':'Загрузить','Ses Aktörü':'Голос',
+    'Ne yapmak istiyorsun?':'Что вы хотите сделать?'
+  },
+  ja: { ad:'日本語', flag:'🇯🇵',
+    'Transkript':'文字起こし','Altyazı':'字幕','Dublaj':'吹き替え','Metin→Ses':'テキスト→音声',
+    'Başlat':'開始','Medya Yükle':'ファイル選択','Ses Aktörü':'音声',
+    'Ne yapmak istiyorsun?':'何をしたいですか？'
+  },
+  ar: { ad:'العربية', flag:'🇸🇦',
+    'Transkript':'النص','Altyazı':'ترجمة','Dublaj':'دبلجة','Metin→Ses':'نص→كلام',
+    'Başlat':'ابدأ','Medya Yükle':'رفع ملف','Ses Aktörü':'الصوت',
+    'Ne yapmak istiyorsun?':'ماذا تريد أن تفعل؟'
+  },
+};
+
+let _uiDil = 'tr';
+function uiDilDegistir(dil) {
+  _uiDil = dil;
+  const sozluk = UI_DILLER[dil] || UI_DILLER.tr;
+  // Nav tablarını güncelle
+  const tabMap = { tab_desifre:'Transkript', tab_altyazi:'Altyazı', tab_seslendirme:'Dublaj', tab_metinden_sese:'Metin→Ses' };
+  Object.entries(tabMap).forEach(function(pair) {
+    const el = document.getElementById(pair[0]);
+    if (el) el.innerHTML = el.innerHTML.replace(/[^📝💬🎙✍]+$/, sozluk[pair[1]] || pair[1]);
+  });
+  // Başlat butonu
+  const btnRun = document.getElementById('btn_run');
+  if (btnRun) {
+    const dot = btnRun.querySelector('.run-dot');
+    if (dot) btnRun.innerHTML = '<span class="run-dot"></span> ' + sozluk['Başlat'];
+  }
+  toast(sozluk.flag + ' ' + sozluk.ad);
+}
+
+// Sayfa yüklenince dil select'leri doldur
+document.addEventListener('DOMContentLoaded', function() {
+  // Modal dil seçicilerini doldur
+  ['m_src','m_tgt','m_tgt2','src_lang','tgt_lang'].forEach(function(id) {
+    dilSelectDoldur(id, id.includes('src') ? 'TR' : 'EN');
+  });
+});
 function ttsSesListesiGuncelle() {
   const grid = document.getElementById('tts_voice_grid');
   if (!grid) return;
@@ -4098,16 +4321,23 @@ function kullanımSartlariAc() {
 const MODUL_MALIYET = { desifre:5, altyazi:8, seslendirme:20, metinden_sese:3 };
 
 async function bakiyeKontrolVeBaslat() {
+  // Giriş yapılmamışsa her zaman geç (demo mod)
+  if (!_sbUser) return true;
+
   const maliyet = MODUL_MALIYET[mod] || 5;
   try {
     const r = await fetch(B + '/api/bakiye_kontrol/', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ modul:mod, user_id:_sbUser ? _sbUser.id : null })
+      body:JSON.stringify({ modul:mod, user_id:_sbUser.id })
     });
+    if (!r.ok) return true; // Backend hatası = geç
     const d = await r.json();
     if (!d.yeterli) { krediBittiModalAc(d.bakiye || 0, maliyet); return false; }
-  } catch(e) { console.warn('Bakiye kontrol atlandı:', e); }
+  } catch(e) {
+    // Hata varsa işleme devam et
+    return true;
+  }
   return true;
 }
 
@@ -4299,7 +4529,10 @@ function modGecis(yeniMod) {
     });
     (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='flex';})();
     document.getElementById('slist')?.classList.add('hidden');
-    toast('Sihirli Mod aktif — hızlı aksiyon seçin!');
+    // Sihirli modda vbox_empty (upload alanı) HER ZAMAN görünür kalır
+    var vbe = document.getElementById('vbox_empty');
+    if (vbe) { vbe.style.display='flex'; vbe.style.pointerEvents='all'; vbe.style.zIndex='1'; }
+    toast('Sihirli Mod aktif — video yukleyin!');
   } else {
     (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='none';})();
     sw(mod);
@@ -4337,8 +4570,15 @@ function onboardingBaslat() {
 }
 
 function obAdimGoster() {
-  document.getElementById('_ob_tip')?.remove();
-  if (_obStep >= OB_STEPS.length) { localStorage.setItem('vf_ob_done','1'); return; }
+  const existing = document.getElementById('_ob_tip');
+  if (existing) { existing.style.display='none'; existing.remove(); }
+  if (_obStep >= OB_STEPS.length) {
+    localStorage.setItem('vf_ob_done','1');
+    // Hayalet katmanı temizle
+    const ghost = document.getElementById('_ob_tip');
+    if (ghost) ghost.remove();
+    return;
+  }
   const step = OB_STEPS[_obStep];
   const target = document.getElementById(step.target);
   if (!target) { _obStep++; obAdimGoster(); return; }
@@ -4346,7 +4586,7 @@ function obAdimGoster() {
   const tip = document.createElement('div');
   tip.id = '_ob_tip';
   tip.className = 'ob-tip ' + step.pos;
-  tip.style.cssText = 'left:' + (rect.left + step.left) + 'px;top:' + (rect.top + step.top) + 'px;';
+  tip.style.cssText = 'left:' + (rect.left + step.left) + 'px;top:' + (rect.top + step.top) + 'px;pointer-events:all;';
   tip.innerHTML = '<span style="flex:1;">' + step.text + '</span>'
     + '<button class="ob-close" onclick="obKapat()">x</button>'
     + '<div class="ob-progress">'
@@ -4358,7 +4598,11 @@ function obAdimGoster() {
 }
 
 function obIleri() { _obStep++; obAdimGoster(); }
-function obKapat() { document.getElementById('_ob_tip')?.remove(); localStorage.setItem('vf_ob_done','1'); }
+function obKapat() {
+  const tip = document.getElementById('_ob_tip');
+  if (tip) { tip.style.display='none'; tip.remove(); }
+  localStorage.setItem('vf_ob_done','1');
+}
 
 /* ═══ KENDİ SESİYLE DUBLAJ ═══ */
 function kendiSesiyleyDublajModalAc() {

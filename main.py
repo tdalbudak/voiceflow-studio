@@ -270,7 +270,7 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
         "xi-api-key": ELEVENLABS_API_KEY,
     }
     data = {
-        "text": metin[:5000],  # max 5000 karakter
+        "text": metin[:5000],
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
     }
@@ -282,20 +282,35 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
                 with open(output_path, "wb") as f:
                     f.write(r.content)
                 return True
+            # Kota doldu veya API key geçersiz — retry YOK, direkt çık
+            elif r.status_code in (401, 403):
+                log.error(f"[ElevenLabs] API key geçersiz ({r.status_code}) — işlem iptal")
+                return False
             elif r.status_code == 429:
+                # Rate limit — kısa bekleme sonra tekrar dene
                 bekle = 5 * (deneme + 1)
                 log.warning(f"[ElevenLabs] Rate limit → {bekle}s bekleniyor")
                 await asyncio.sleep(bekle)
                 continue
+            elif r.status_code == 422:
+                log.error(f"[ElevenLabs] Ses ID geçersiz: {ses_id} — işlem iptal")
+                return False
             else:
                 hata_detay = r.text[:300]
                 log.error(f"[ElevenLabs {r.status_code}] ses_id={ses_id} hata={hata_detay}")
-                # 401 = API key geçersiz, 422 = ses ID geçersiz
-                if r.status_code in (401, 422):
+                # Kota mesajı içeriyorsa direkt çık
+                if any(k in hata_detay.lower() for k in ["quota", "limit", "insufficient"]):
+                    log.error("[ElevenLabs] Kota doldu — işlem iptal")
                     return False
                 if deneme < retry:
                     await asyncio.sleep(2)
                     continue
+                return False
+        except asyncio.TimeoutError:
+            log.error(f"[ElevenLabs] Timeout (60s) — deneme {deneme+1}/{retry+1}")
+            if deneme < retry:
+                await asyncio.sleep(2)
+            else:
                 return False
         except Exception as e:
             log.error(f"[ElevenLabs İstisna] {e}")
@@ -1002,13 +1017,30 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             except ValueError as e:
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji(str(e))}", "yuzde": 0}
                 return
-            islem_durumlari[out_file] = {"durum": "Transkript oluşturuluyor...", "yuzde": 80}
+            islem_durumlari[out_file] = {"durum": "Transkript oluşturuluyor...", "yuzde": 70}
             srt_path = os.path.join(OUTPUT_DIR, os.path.splitext(out_file)[0] + ".srt")
             deepgram_to_srt(dg, srt_path)
-            # Segment kontrolü
             if not os.path.exists(srt_path) or os.path.getsize(srt_path) < 10:
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('segment_yok')}", "yuzde": 0}
                 return
+
+            # Çeviri — hedef dil varsa çevir
+            hd = (hedef_dil or "").strip().upper()
+            kd = (kaynak_dil or "").strip().upper()
+            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
+                islem_durumlari[out_file] = {"durum": f"DeepL ile {hd}'e çevriliyor...", "yuzde": 85}
+                try:
+                    with open(srt_path, encoding="utf-8") as f:
+                        icerik = f.read()
+                    cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
+                    with open(srt_path, "w", encoding="utf-8") as f:
+                        f.write(cevrilmis)
+                    log.info(f"[Desifre] Çeviri tamamlandı: {kaynak_dil}→{hedef_dil}")
+                except Exception as e:
+                    log.warning(f"[Desifre] Çeviri hatası: {e} — orijinal transkript kullanılıyor")
+            elif hd and not DEEPL_API_KEY:
+                log.warning("[Desifre] Hedef dil seçili ama DEEPL_API_KEY eksik")
+
             islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             return
 
@@ -1240,7 +1272,12 @@ async def islem_baslat(
         out_file = f"sonuc_{b_id}.mp4"
 
     if dosya:
-        tmp_in = os.path.join(TEMP_DIR, f"orijinal_{b_id}_{dosya.filename}")
+        # Dosya adını güvenli hale getir — boşluk, Türkçe karakter, özel karakter temizle
+        import re as _re
+        guvenli_ad = dosya.filename or "upload"
+        guvenli_ad = _re.sub(r'[^\w.\-]', '_', guvenli_ad.replace(' ', '_'))
+        guvenli_ad = guvenli_ad[:80]  # max 80 karakter
+        tmp_in = os.path.join(TEMP_DIR, f"orijinal_{b_id}_{guvenli_ad}")
         with open(tmp_in, "wb") as buf:
             shutil.copyfileobj(dosya.file, buf)
 
