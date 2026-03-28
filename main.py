@@ -48,6 +48,12 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(TEMP_DIR,   exist_ok=True)
 app.mount("/ciktilar", StaticFiles(directory=OUTPUT_DIR), name="ciktilar")
 
+# Static JS dosyaları
+import os as _os
+_static_dir = _os.path.join(_os.path.dirname(__file__), "static")
+_os.makedirs(_static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
 islem_durumlari: dict = {}
 
 DEEPL_DILLER = {
@@ -1818,6 +1824,41 @@ async def words_al(dosya_adi: str):
         return JSONResponse({"hata": "Kelime verisi bulunamadı."}, status_code=404)
     with open(words_path, encoding="utf-8") as f:
         return JSONResponse({"words": json.load(f)})
+
+
+@app.post("/api/bakiye_kontrol/")
+async def bakiye_kontrol(request: Request):
+    """
+    Kullanıcının işlem için yeterli kredisi var mı kontrol eder.
+    Supabase entegrasyonu gelince gerçek bakiye çekilecek.
+    Şimdilik: giriş yapılmamışsa serbest, yapılmışsa mock bakiye.
+    """
+    try:
+        body = await request.json()
+        modul   = body.get("modul", "desifre")
+        user_id = body.get("user_id")
+    except Exception:
+        modul   = "desifre"
+        user_id = None
+
+    # Modül başına kredi maliyeti
+    maliyet = {"desifre": 5, "altyazi": 8, "seslendirme": 20, "metinden_sese": 3}.get(modul, 5)
+
+    # Giriş yapılmamışsa demo mod — serbest
+    if not user_id:
+        return JSONResponse({"yeterli": True, "bakiye": 999, "maliyet": maliyet, "mod": "demo"})
+
+    # TODO: Supabase'den gerçek bakiye çek
+    # Şimdilik mock: 15 kredi var gibi davran
+    mock_bakiye = 15
+    yeterli = mock_bakiye >= maliyet
+
+    return JSONResponse({
+        "yeterli": yeterli,
+        "bakiye": mock_bakiye,
+        "maliyet": maliyet,
+        "mod": "supabase_mock"
+    })
 
 
 @app.post("/api/normalize_test/")

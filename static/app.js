@@ -1,0 +1,3530 @@
+/* ═══════════════════════════════════
+   GLOBALS
+═══════════════════════════════════ */
+// Localhost'ta 8000, Railway/production'da aynı origin
+const B = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:8000'
+  : '';
+let mod="seslendirme", voice="nPczCjzI2devNBz1zQrb";
+let pFile=null, pURL=null;
+let aSrt=null, aDosya=null;
+let segs=[], dur=0, autoScroll=true;
+let cStyle="normal";
+const SP=['sp0','sp1','sp2','sp3','sp4'];
+
+/* ═══ UNDO / REDO ═══ */
+const _undoStack = [];
+const _redoStack = [];
+
+function _pushUndo(action) {
+  _undoStack.push(action);
+  if (_undoStack.length > 50) _undoStack.shift();
+  _redoStack.length = 0;
+  _updateUndoUI();
+}
+
+function _updateUndoUI() {
+  const u = document.getElementById('undo_btn');
+  const r = document.getElementById('redo_btn');
+  if (u) u.disabled = _undoStack.length === 0;
+  if (r) r.disabled = _redoStack.length === 0;
+}
+
+async function undo() {
+  if (!_undoStack.length) return;
+  const action = _undoStack.pop();
+  _redoStack.push(action);
+  await _applyUndoRedo(action.undo);
+  _updateUndoUI();
+  toast('↩ Geri alındı');
+}
+
+async function redo() {
+  if (!_redoStack.length) return;
+  const action = _redoStack.pop();
+  _undoStack.push(action);
+  await _applyUndoRedo(action.redo);
+  _updateUndoUI();
+  toast('↪ Yenilendi');
+}
+
+async function _applyUndoRedo(state) {
+  if (!state || !aSrt) return;
+  if (state.type === 'metin') {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('segment_no', state.no);
+    fd.append('yeni_metin', state.metin);
+    await fetch(B + '/api/metin_guncelle/', { method:'POST', body:fd });
+    const el = document.getElementById('t_' + state.no);
+    if (el) el.innerHTML = state.metin.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
+  } else if (state.type === 'zaman') {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('segment_no', state.no);
+    fd.append('yeni_baslangic', state.start);
+    fd.append('yeni_bitis', state.end);
+    await fetch(B + '/api/zaman_guncelle/', { method:'POST', body:fd });
+    await reload();
+  } else if (state.type === 'render') {
+    renderSegs(state.srt, aSrt, true);
+  }
+}
+
+/* ═══ TİKTOK ALTYAZI MODU ═══ */
+let _tiktokOn   = false;
+let _tiktokWords = [];
+
+function tiktokModalToggle(cb) {
+  const track = document.getElementById('modal_tiktok_track');
+  const thumb  = document.getElementById('modal_tiktok_thumb');
+  const row    = document.getElementById('tiktok_modal_row');
+  if (cb.checked) {
+    track.style.background = '#a855f7';
+    thumb.style.transform  = 'translateX(16px)';
+    row.style.borderColor  = '#a855f7';
+  } else {
+    track.style.background = 'var(--border2)';
+    thumb.style.transform  = 'translateX(0)';
+    row.style.borderColor  = 'var(--border2)';
+  }
+}
+
+function toggleTikTok() {
+  _tiktokOn = !_tiktokOn;
+  const btn     = document.getElementById('tiktok_btn');
+  const overlay = document.getElementById('tiktok_overlay');
+  const liveSub = document.getElementById('live_sub_overlay');
+  btn?.classList.toggle('on', _tiktokOn);
+  if (_tiktokOn) {
+    if (liveSub) liveSub.style.display = 'none';
+    _loadTikTokWords();
+    toast('🎵 TikTok modu açık — kelimeler video ile yanıp söner');
+  } else {
+    if (overlay) overlay.innerHTML = '';
+    if (liveSub) liveSub.style.display = '';
+    toast('TikTok modu kapatıldı');
+  }
+}
+
+async function _loadTikTokWords() {
+  if (!aSrt) return;
+  try {
+    const r = await fetch(B + '/api/words/${aSrt}');
+    if (!r.ok) { toast('Kelime verisi yok — önce deşifre yapın','twarn'); _tiktokOn=false; return; }
+    const d = await r.json();
+    _tiktokWords = d.words || [];
+    _buildTikTokOverlay();
+  } catch(e) { toast('Kelime verisi yüklenemedi','terr'); }
+}
+
+function _buildTikTokOverlay() {
+  const overlay = document.getElementById('tiktok_overlay');
+  if (!overlay) return;
+
+  const size  = document.getElementById('sub_size')?.value  || '22';
+  const color = document.getElementById('sub_color')?.value || '#ffffff';
+  const bold  = document.getElementById('btn_bold')?.classList.contains('on');
+  const pos   = document.getElementById('sub_pos')?.value   || 'bottom';
+  const fw    = bold ? '900' : '700';
+  const fs    = Math.max(18, parseInt(size) + 4) + 'px';
+
+  overlay.style.bottom = pos === 'top' ? 'auto' : pos === 'center' ? '40%' : '12%';
+  overlay.style.top    = pos === 'top' ? '12%' : 'auto';
+
+  overlay.innerHTML = _tiktokWords.map((w, i) =>
+    '<span class="tiktok-word" id="tw_' + i + '" style="font-size:' + fs + ';font-weight:' + fw + ';color:' + color + ';">' + w.word + '</span>'
+  ).join(' ');
+}
+
+function _updateTikTokHighlight(currentTime) {
+  if (!_tiktokOn || !_tiktokWords.length) return;
+  _tiktokWords.forEach((w, i) => {
+    const el = document.getElementById('tw_' + i);
+    if (!el) return;
+    if (currentTime >= w.start && currentTime < w.end) {
+      el.className = 'tiktok-word tw-active';
+      el.scrollIntoView?.({ block:'nearest', inline:'center' });
+    } else if (currentTime >= w.end) {
+      el.className = 'tiktok-word tw-done';
+    } else {
+      el.className = 'tiktok-word';
+    }
+  });
+}
+
+/* ═══ CANLI ALTYAZI ÖNİZLEME ═══ */
+let _subVisible = true;
+
+function _updateLiveSubtitle(currentTime) {
+  const overlay = document.getElementById('live_sub_overlay');
+  if (!overlay || _tiktokOn || !_subVisible) { if(overlay) overlay.style.display='none'; return; }
+  if (!segs.length) { overlay.style.display='none'; return; }
+  const aktif = segs.find(s => currentTime >= s.start && currentTime < s.end);
+  if (aktif) {
+    // Temiz metin — konuşmacı prefix kaldır
+    const temizMetin = aktif.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
+    overlay.textContent = temizMetin;
+    // Canlı font ayarları uygula
+    const font   = document.getElementById('sub_font')?.value  || 'Arial';
+    const size   = document.getElementById('sub_size')?.value  || '22';
+    const color  = document.getElementById('sub_color')?.value || '#ffffff';
+    const bold   = document.getElementById('btn_bold')?.classList.contains('on');
+    const shadow = document.getElementById('btn_shadow')?.classList.contains('on');
+    const pos    = document.getElementById('sub_pos')?.value   || 'bottom';
+    overlay.style.fontFamily  = font;
+    overlay.style.fontSize    = size + 'px';
+    overlay.style.color       = color;
+    overlay.style.fontWeight  = bold ? '700' : '400';
+    overlay.style.textShadow  = shadow ? '2px 2px 4px #000,0 0 8px #000' : 'none';
+    overlay.style.bottom      = pos === 'top' ? 'auto' : pos === 'center' ? '50%' : '8%';
+    overlay.style.top         = pos === 'top' ? '8%' : pos === 'center' ? '50%' : 'auto';
+    overlay.style.transform   = pos === 'center' ? 'translateX(-50%) translateY(-50%)' : 'translateX(-50%)';
+    overlay.style.display     = 'block';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function toggleAltyazi() {
+  _subVisible = !_subVisible;
+  const btn = document.getElementById('altyazi_toggle_btn');
+  if (btn) {
+    btn.innerHTML = _subVisible
+      ? '<i class="fa-solid fa-closed-captioning"></i> Altyazı Kapat'
+      : '<i class="fa-solid fa-closed-captioning-slash"></i> Altyazı Aç';
+    btn.style.background = _subVisible ? 'rgba(99,102,241,.15)' : 'rgba(239,68,68,.1)';
+    btn.style.color = _subVisible ? 'var(--accent3)' : 'var(--red2)';
+    btn.style.borderColor = _subVisible ? 'rgba(99,102,241,.3)' : 'rgba(239,68,68,.3)';
+  }
+  if (!_subVisible) document.getElementById('live_sub_overlay').style.display = 'none';
+}
+
+/* ═══ UTILS ═══ */
+function p2(n){return String(n).padStart(2,'0');}
+function p3(n){return String(n).padStart(3,'0');}
+function s2t(s){s=Math.max(0,s);returnp2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60)) + ',' + p3(Math.round((s-Math.floor(s))*1000));}
+function t2s(str){if(!str)return 0;const c=str.trim().replace(',','.');const p=c.split(':');return parseFloat(p[0])*3600+parseFloat(p[1])*60+parseFloat(p[2]);}
+function fmt(s){returnp2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60));}
+function cps(txt,d){return d<=0?0:Math.round(txt.replace(/\s/g,'').length/d);}
+function cpsC(c){return c<=20?'cps-ok':c<=27?'cps-warn':'cps-bad';}
+
+function toast(msg,t='ok',ms=2600){
+  const e=document.createElement('div');
+  e.className='toast t' + t;e.innerHTML=msg;
+  document.body.appendChild(e);
+  setTimeout(()=>e.remove(),ms);
+}
+
+function setStyle(el){
+  document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  cStyle=el.dataset.style;
+}
+
+function toggleAS(){
+  autoScroll=!autoScroll;
+  document.getElementById('as_dot').style.background=autoScroll?'var(--green2)':'var(--muted)';
+}
+
+/* ═══ CLOUD (placeholder) ═══ */
+function cloudConnect(svc){
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> ' + svc==='gdrive'?'Google Drive':'Dropbox' + ' bağlantısı yakında aktif olacak','twarn',3000);
+}
+async function cloudUpload(svc){
+  if(svc==='url'){
+    const url=prompt('Video URL girin:\n\n• YouTube: https://youtube.com/watch?v=...\n• Dropbox: Paylaşım linkini yapıştırın\n• Google Drive: Herkese açık linki yapıştırın\n• Direkt video: .mp4 uzantılı link');
+    if(!url||!url.trim())return;
+
+    const kaliteSecim = await kaliteSecimGoster();
+    if(!kaliteSecim) return;
+
+    toast('<i class="fa-solid fa-spinner fa-spin"></i> İndiriliyor (' + kaliteSecim + ')...','tok',30000);
+
+    let indirUrl = url.trim();
+    if(indirUrl.includes('drive.google.com/file/d/')){
+      const id = indirUrl.match(/\/d\/([^\/]+)/)?.[1];
+      if(id) indirUrl = 'https://drive.google.com/uc?export=download&id=' + id;
+    }
+    if(indirUrl.includes('dropbox.com')){
+      indirUrl = indirUrl.replace('dl=0','dl=1').replace('?dl=0','?dl=1');
+      if(!indirUrl.includes('dl=1')) indirUrl += (indirUrl.includes('?')?'&':'?')+'dl=1';
+    }
+
+    try{
+      const fd=new FormData();
+      fd.append('url', indirUrl);
+      fd.append('kalite', kaliteSecim);
+      const r=await fetch(B + '/api/url_yukle/',{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.basari){
+        pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
+        pURL = B + '/indir/${d.dosya_adi}';
+        toast('✓ "' + d.baslik + '" — ' + d.boyut_mb + 'MB (' + kaliteSecim + ')');
+        document.getElementById('modal').classList.remove('hidden');
+        modalStep(1);
+        updateModalBtn();
+      }else{
+        toast(d.hata||'İndirme başarısız','terr',5000);
+      }
+    }catch(e){
+      toast('Bağlantı hatası','terr');
+    }
+  }else if(svc==='gdrive'){
+    const url=prompt('Google Drive paylaşım linkini yapıştırın:\n(Herkesle paylaşıldığından emin olun)');
+    if(url){ window._pendingUrl=url; cloudUpload('url'); }
+  }else if(svc==='dropbox'){
+    const url=prompt('Dropbox paylaşım linkini yapıştırın:');
+    if(url){ window._pendingUrl=url; cloudUpload('url'); }
+  }else if(svc==='onedrive'){
+    const url=prompt('OneDrive paylaşım linkini yapıştırın:\n(Dosya → Paylaş → Link kopyala)');
+    if(!url||!url.trim())return;
+    // OneDrive embed linkine çevir
+    let indirUrl = url.trim();
+    if(indirUrl.includes('1drv.ms')||indirUrl.includes('onedrive.live.com')){
+      // OneDrive direkt indirme linki için download=1 ekle
+      indirUrl = indirUrl.replace('redir?', 'download?').replace('embed?','download?');
+      if(!indirUrl.includes('download=1')) indirUrl += (indirUrl.includes('?')?'&':'?')+'download=1';
+    }
+    window._pendingUrl = indirUrl;
+    cloudUpload('url');
+  }
+}
+
+function kaliteSecimGoster() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:290px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt);">📥 İndirme Kalitesi Seç</div>
+        <div style="display:flex;flex-direction:column;gap:5px;" id="_kl_list">
+          ${[
+            ['best','En Yüksek (4K/1080p+)','En iyi kalite, büyük dosya','🔥'],
+            ['1080','1080p Full HD','Standart yüksek kalite','📺'],
+            ['720','720p HD','Dengeli kalite / boyut','⚡'],
+            ['480','480p','Küçük dosya','📱'],
+            ['360','360p','En küçük dosya','💾'],
+            ['audio_only','Yalnızca Ses','Sadece ses, video yok','🎵'],
+          ].map(([v,l,d,ic]) => `
+            <button data-val="${v}" class="_klbtn"
+              onclick="document.querySelectorAll('._klbtn').forEach(b=>b.style.borderColor='var(--border2)');this.style.borderColor='var(--accent2)';window._kalite='${v}'"
+              style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--txt);display:flex;align-items:center;gap:8px;transition:border .12s;">
+              <span style="font-size:16px;">${ic}</span>
+              <div><div style="font-size:12px;font-weight:600;">${l}</div><div style="font-size:10px;color:var(--muted2);">${d}</div></div>
+            </button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(window._kalite||'best')"
+            style="flex:1;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">
+            İndir
+          </button>
+          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(null)"
+            style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">
+            İptal
+          </button>
+        </div>
+      </div>`;
+    overlay.id = '_kl_overlay';
+    window._kalite = 'best';
+    window._kaliteResolve = resolve;
+    document.body.appendChild(overlay);
+    // Varsayılan seçili göster
+    setTimeout(()=>{
+      const first = document.querySelector('._klbtn');
+      if(first) first.style.borderColor='var(--accent2)';
+    },50);
+  });
+}
+
+async function cloudUpload_process(url, svc){
+  cloudUpload('url');
+}
+
+/* ═══ EXPORT ═══ */
+function xport(fmt_){
+  if(!aSrt&&!aDosya)return toast('Önce işlem tamamlayın','twarn');
+  if(fmt_==='original'){window.open(B + '/indir/${aDosya||aSrt}','_blank');return;}
+  if(fmt_==='srt'){if(!aSrt)return toast('SRT yok','twarn');window.open(B + '/indir/${aSrt}','_blank');return;}
+  if(!aSrt)return toast('SRT yok','twarn');
+
+  fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>{
+    const base=aSrt.replace('.srt','');
+    const bloklar=c.trim().split(/\n\n+/).filter(b=>b.trim().split('\n').length>=3);
+
+    if(fmt_==='vtt'){
+      // WebVTT — virgül yerine nokta, WEBVTT başlığı
+      const vtt='WEBVTT\n\n'+c
+        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g,'$1.$2');
+      dl(vtt, base+'.vtt', 'text/vtt');
+
+    }else if(fmt_==='ass'){
+      // Advanced SubStation Alpha — video player'larda en iyi kalite
+      const assHeader=`[Script Info]
+Title: ${base}
+ScriptType: v4.00+
+WrapStyle: 0
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+`;
+      const assTime=s=>{
+        const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),cs=Math.round((s-Math.floor(s))*100);
+        return h + ':' + String(m).padStart(2,'0') + ':' + String(sc).padStart(2,'0') + '.' + String(cs).padStart(2,'0');
+      };
+      const events=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join('\\N').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        return 'Dialogue: 0,' + assTime(t2s(tp[0])) + ',' + assTime(t2s(tp[1])) + ',Default,,0,0,0,,' + metin;
+      }).join('\n');
+      dl(assHeader+events, base+'.ass', 'text/plain');
+
+    }else if(fmt_==='txt'){
+      // Zaman damgalı — [00:01:23]  metin
+      const lines=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        return '[' + fmt(t2s(tp[0])) + ']  ' + metin;
+      });
+      dl(lines.join('\n'), base+'_zaman_damgali.txt', 'text/plain');
+
+    }else if(fmt_==='txt_clean'){
+      // Sadece metin, alt alta
+      const lines=bloklar.map(b=>{
+        const l=b.trim().split('\n');
+        return l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+      });
+      dl(lines.join('\n'), base+'_metin.txt', 'text/plain');
+
+    }else if(fmt_==='srt_notes'){
+      // Not formatı: zaman → metin, aralarında boşluk
+      const lines=[];
+      bloklar.forEach(b=>{
+        const l=b.trim().split('\n');
+        const tp=l[1].split(' --> ');
+        const metin=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/g,'');
+        lines.push(fmt(t2s(tp[0])) + '  →  ' + fmt(t2s(tp[1])));
+        lines.push(metin);
+        lines.push('');
+      });
+      dl(lines.join('\n'), base+'_notlar.txt', 'text/plain');
+    }
+  }).catch(()=>toast('Export hatası','terr'));
+}
+function dl(c,n,m){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([c],{type:m}));
+  a.download=n; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══ FILE INPUT ═══ */
+document.getElementById('finput').addEventListener('change',function(){
+  if(!this.files.length)return;
+  pFile=this.files[0];pURL=URL.createObjectURL(pFile);
+  // Center stage güncelle
+  const empty = document.getElementById('vbox_empty');
+  if (empty) empty.style.display = 'none';
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal_lang_row').style.display='block';
+  document.getElementById('transcript_upload_row').style.display = 'block';
+  modalStep(1);
+  updateModalBtn();
+  if(mod==='seslendirme'){
+    document.getElementById('modal_btn_text').textContent='Ses Seçimine Geç →';
+    document.getElementById('modal_main_btn').querySelector('i').className='fa-solid fa-arrow-right';
+  }
+  // Onboarding sonraki adıma geç
+  if (_obStep === 0) obIleri();
+});
+
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
+
+function finishSetup(){
+  // Adım 1 verileri
+  const srcVal = document.getElementById('m_src')?.value || 'auto';
+  const hasTranslation = document.getElementById('translation_toggle')?.checked;
+  const tgtVal = hasTranslation
+    ? (document.getElementById('m_tgt2')?.value || document.getElementById('m_tgt')?.value || 'en')
+    : '';
+
+  document.getElementById('src_lang').value = srcVal;
+  document.getElementById('tgt_lang').value = tgtVal;
+
+  // Arka plan ses tercihi
+  const bgKeep = document.getElementById('bg_audio_keep')?.checked;
+  // (dublaj motoruna geçirilmek üzere global'e yaz)
+  window._bgVol = bgKeep ? 0.1 : 0.0;
+
+  closeModal();
+  if (mod !== 'metinden_sese') loadMedia();
+}
+/* ═══ CONFIDENCE & KELİME ÖNERİ ═══ */
+let _confidence = {};
+const SP_COLORS = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#8b5cf6','#06b6d4'];
+
+// İnfluencer / sokak jargonu — frontend'de de tanı (sarı vurgula)
+const JARGON_LIST = new Set([
+  'ngl','fr','frfr','ong','cap','bussin','slay','bet','goat','lowkey','highkey',
+  'bruh','bro','fam','w','l','fire','lit','sus','ratio','mid','based','rizz',
+  'delulu','iykyk','istg','omg','lmao','tbh','imo','nvm','idk','idc','smh',
+  'kanka','knk','aga','agam','nbr','naber','bi','mk','len','ya','hani','işte',
+  'falan','filan','efsane','deli','acayip','leş','vibe','content','collab',
+  'viral','trending','drop','era','rent free','no cap','no shot','send it',
+]);
+
+async function confidenceYukle(srtAdi) {
+  try {
+    const r = await fetch(B + '/api/confidence/${srtAdi}');
+    if (r.ok) {
+      const d = await r.json();
+      _confidence = d.words || d || {};
+    }
+  } catch(e) { _confidence = {}; }
+}
+
+function kelimeHtml(kelime, segNo) {
+  const temiz = kelime.toLowerCase().replace(/[.,?!;:'"]/g,'');
+  const conf  = _confidence[temiz];
+  const isJargon = JARGON_LIST.has(temiz);
+
+  // Jargon kelime — sarı ama farklı stil (normal confidence olabilir ama dikkat çek)
+  if (isJargon) {
+    const uid = 'w_' + segNo + '_' + Math.random().toString(36).substr(2,5);
+    return `<span class="w-jargon" id="${uid}" data-word="${kelime}" data-conf="${conf||1}" data-jargon="1"
+      onclick="kelimeOneriAc(event,this)" title="Jargon/kısaltma — doğru okunuyor mu?">${kelime}<sup style="font-size:7px;opacity:.6">🔤</sup></span>`;
+  }
+
+  if (conf === undefined || conf >= 0.85) return kelime;
+
+  const uid = 'w_' + segNo + '_' + Math.random().toString(36).substr(2,5);
+  if (conf >= 0.70) {
+    return `<span class="w-low" id="${uid}" data-word="${kelime}" data-conf="${conf}"
+      onclick="kelimeOneriAc(event,this)" title="Düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+  }
+  return `<span class="w-bad" id="${uid}" data-word="${kelime}" data-conf="${conf}"
+    onclick="kelimeOneriAc(event,this)" title="Çok düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+}
+
+async function kelimeOneriAc(e, el) {
+  e.stopPropagation();
+  document.getElementById('word_popup')?.remove();
+
+  const kelime  = el.dataset.word;
+  const conf    = parseFloat(el.dataset.conf||'1');
+  const jargon  = el.dataset.jargon === '1';
+
+  // Bağlamı al — span'ın parent segmentinin metnini bul
+  const segCard = el.closest('.sc');
+  const baglam  = segCard ? segCard.querySelector('.sc-txt')?.textContent?.trim().slice(0,120) || '' : '';
+
+  const popup = document.createElement('div');
+  popup.id = 'word_popup';
+  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
+    border-radius:var(--r2);padding:0;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.left = Math.min(e.clientX, window.innerWidth-290) + 'px';
+  popup.style.top  = Math.min(e.clientY + 10, window.innerHeight-200) + 'px';
+
+  const renk = jargon ? 'var(--yellow2)' : conf>=0.7 ? 'var(--yellow2)' : 'var(--red2)';
+  const baslik = jargon
+    ? '<i class="fa-solid fa-hashtag" style="color:var(--yellow2)"></i> Jargon / Kısaltma'
+    : '<i class="fa-solid fa-triangle-exclamation" style="color:' + renk + '"></i> Düşük Güven: ' + Math.round(conf*100) + '%';
+
+  popup.innerHTML = `
+    <div style="padding:10px 12px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);">${baslik}</div>
+      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
+    </div>
+    <div style="padding:6px 8px;background:var(--s3);font-size:12px;color:var(--txt);">
+      <span style="opacity:.6;">Kelime: </span><b>"${kelime}"</b>
+      ${jargon ? '<span style="margin-left:6px;font-size:10px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 6px;border-radius:3px;">Jargon</span>' : ''}
+    </div>
+    <div id="popup_items" style="padding:4px 0;">
+      <div style="padding:10px 12px;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-spinner fa-spin"></i> AI öneri yükleniyor...
+      </div>
+    </div>
+    <div style="padding:6px 8px;border-top:1px solid var(--border);">
+      <div onclick="manuelDuzelt(event,'${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-pen" style="color:var(--accent2)"></i> Manuel Düzenle
+      </div>
+      <div onclick="kelimeAtla('${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-check" style="color:var(--green2)"></i> Doğru, geç
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+
+  // Önerileri yükle
+  try {
+    const fd = new FormData();
+    fd.append('kelime', kelime);
+    fd.append('baglam', baglam);
+    fd.append('dil', document.getElementById('src_lang')?.value || 'tr');
+    const r = await fetch(B + '/api/kelime_oneri/', { method:'POST', body:fd });
+    const d = await r.json();
+    const items = document.getElementById('popup_items');
+    if (!items) return;
+
+    if (!d.oneriler?.length) {
+      items.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--muted2);">Öneri bulunamadı</div>';
+      return;
+    }
+
+    items.innerHTML = d.oneriler.map((o,i) => `
+      <div onclick="kelimeUygula('${el.id}','${o.replace(/'/g,"\\'")}',this)"
+        style="padding:7px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-radius:var(--r);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);min-width:16px;">${i===0&&d.jargon?'🤖':'→'}</span>
+        <span style="color:var(--txt);">${o}</span>
+        ${i===0&&d.jargon?'<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;margin-left:auto;">AI</span>':''}
+      </div>`).join('');
+  } catch(err) {
+    const items = document.getElementById('popup_items');
+    if (items) items.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--red2);">Öneri alınamadı</div>';
+  }
+
+  setTimeout(() => {
+    document.addEventListener('click', function closeP(ev) {
+      const p = document.getElementById('word_popup');
+      if (p && !p.contains(ev.target)) { p.remove(); document.removeEventListener('click', closeP); }
+    });
+  }, 50);
+}
+
+function kelimeUygula(elId, yeniKelime, item) {
+  document.getElementById('word_popup')?.remove();
+  const el = document.getElementById(elId);
+  if (!el) {
+    toast('Öneri: "' + yeniKelime + '" — segmentte manuel uygulayın', 'tok', 3000);
+    return;
+  }
+  // Gerçekten değiştir
+  const eskiKelime = el.dataset.word;
+  el.outerHTML = yeniKelime;  // span'ı düz metinle değiştir
+
+  // İlgili segmentin metnini güncelle (undo stack için)
+  const segCard = el.closest?.('.sc') || document.querySelector('.sc');
+  if (segCard) {
+    const no = parseInt(segCard.id.replace('c_',''));
+    const seg = segs.find(s => s.no === no);
+    if (seg) {
+      undoPush();
+      const eski = new RegExp('\\b' + eskiKelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b');
+      seg.text = seg.text.replace(eski, yeniKelime);
+    }
+  }
+  toast('✓ "' + eskiKelime + '" → "' + yeniKelime + '" uygulandı', 'tok', 2000);
+}
+
+function manuelDuzelt(e, elId) {
+  document.getElementById('word_popup')?.remove();
+  const el = document.getElementById(elId);
+  const segCard = el?.closest('.sc');
+  if (segCard) {
+    const txt = segCard.querySelector('.sc-txt');
+    if (txt) {
+      txt.focus();
+      toast('Düzenlemek için karttaki metne tıklayın', 'tok', 2000);
+    }
+  }
+}
+
+function kelimeAtla(elId) {
+  document.getElementById('word_popup')?.remove();
+  const el = document.getElementById(elId);
+  if (el) {
+    // Vurguyu kaldır — doğru olarak işaretle
+    el.outerHTML = el.dataset.word;
+  }
+}
+
+/* ═══ SPEAKER VOICE MAP ═══ */
+let _speakerMap = {};
+
+function speakerMapPanelOlustur(segmentler) {
+  // Benzersiz konuşmacıları bul
+  const speakers = new Set();
+  segmentler.forEach(s => {
+    const m = s.text?.match(/\[Konuşmacı (\d+)\]/);
+    if (m) speakers.add(m[1]);
+  });
+  if (speakers.size === 0) return;
+
+  const panel = document.getElementById('speaker_map_panel');
+  if (!panel) return;
+
+  panel.style.display = 'block';
+  const voiceOpts = VOICES.map(v => '<option value="' + v.id + '">' + v.name + '</option>').join('');
+
+  panel.innerHTML = `
+    <div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>
+    ${[...speakers].sort().map((sp, i) => `
+      <div class="speaker-map-row">
+        <span class="sp-dot-big" style="background:${SP_COLORS[parseInt(sp)%SP_COLORS.length]};"></span>
+        <span class="sp-label">Konuşmacı ${sp}</span>
+        <select class="sp-voice-sel" id="spv_${sp}" onchange="speakerSesGuncelle()">
+          <option value="${voice}">— Varsayılan Ses —</option>
+          ${voiceOpts}
+        </select>
+      </div>`).join('')}
+    <button onclick="speakerMapKaydet()" style="margin-top:6px;width:100%;padding:7px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+      <i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet
+    </button>`;
+}
+
+function speakerSesGuncelle() {
+  document.querySelectorAll('[id^="spv_"]').forEach(sel => {
+    const spNo = sel.id.replace('spv_','');
+    if (sel.value) _speakerMap[spNo] = sel.value;
+  });
+}
+
+async function speakerMapKaydet() {
+  if (!aSrt) return;
+  speakerSesGuncelle();
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('speaker_map', JSON.stringify(_speakerMap));
+    const r = await fetch(B + '/api/speaker_map/', { method:'POST', body:fd });
+    if (r.ok) toast('✓ Konuşmacı ses haritası kaydedildi — Dublaj başlatınca uygulanacak');
+  } catch(e) { toast('Kayıt hatası','terr'); }
+}
+function _ttsHL(){
+  document.querySelectorAll('[id^="tvli_"]').forEach(el=>{
+    const id=el.id.replace('tvli_','');
+    el.style.background=voice===id?'var(--s4)':'';
+    el.style.borderColor=voice===id?'var(--accent2)':'transparent';
+  });
+}
+
+const VOICES = [
+  // ── Türkçe ──
+  // ── Türkçe ──
+  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep'         },
+  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm'         },
+  // ── Almanca ──
+  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Gentle',          color:'#dc2626', lang:'de', gender:'male',   tone:'warm'         },
+  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Confident, Trustworthy',color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral'      },
+  { id:'kAzI34nYjizE0zON6rXv', name:'Sami',     flag:'🇩🇪', desc:'Energetic, Expressive', color:'#ef4444', lang:'de', gender:'male',   tone:'energetic'    },
+  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea',      flag:'🇩🇪', desc:'UGC Creator',           color:'#f87171', lang:'de', gender:'female', tone:'energetic'    },
+  // ── Fransızca ──
+  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversational',        color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral'      },
+  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Lovely, Emotional',     color:'#60a5fa', lang:'fr', gender:'female', tone:'warm'         },
+  // ── İtalyanca ──
+  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana',  flag:'🇮🇹', desc:'Smart, Credible',       color:'#22c55e', lang:'it', gender:'female', tone:'neutral'      },
+  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea',   flag:'🇮🇹', desc:'Mature, Empathetic',    color:'#4ade80', lang:'it', gender:'male',   tone:'warm'         },
+  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio',  flag:'🇮🇹', desc:'Storyteller',           color:'#86efac', lang:'it', gender:'male',   tone:'deep'         },
+  // ── İngilizce Erkek ──
+  { id:'nPczCjzI2devNBz1zQrb', name:'Brian',    flag:'🇺🇸', desc:'Deep, Comforting',      color:'#6366f1', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',     flag:'🇺🇸', desc:'Dominant, Firm',        color:'#a78bfa', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'JBFqnCBsd6RMkjVDRZzb', name:'George',   flag:'🇬🇧', desc:'Captivating Storyteller',color:'#f59e0b',lang:'en', gender:'male',   tone:'warm'         },
+  { id:'iP95p4xoKVk53GoZ742B', name:'Chris',    flag:'🇺🇸', desc:'Charming, Casual',      color:'#10b981', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',     flag:'🇺🇸', desc:'Social Media Creator',  color:'#84cc16', lang:'en', gender:'male',   tone:'energetic'    },
+  { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',   flag:'🇬🇧', desc:'Steady Broadcaster',    color:'#0ea5e9', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'SAz9YHcvj6GT2YYXdXww', name:'River',    flag:'🇺🇸', desc:'Relaxed, Informative',  color:'#14b8a6', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher',    flag:'🇬🇧', desc:'Charismatic, Playful',  color:'#0f766e', lang:'en', gender:'male',   tone:'energetic'    },
+  { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',    flag:'🇺🇸', desc:'Laid-Back, Resonant',   color:'#64748b', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'bIHbv24MWmeRgasZH58o', name:'Will',     flag:'🇺🇸', desc:'Relaxed Optimist',      color:'#475569', lang:'en', gender:'male',   tone:'warm'         },
+  { id:'cjVigY5qzO86Huf0OWal', name:'Eric',     flag:'🇺🇸', desc:'Smooth, Trustworthy',   color:'#1d4ed8', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'SOYHLrjzK2X1ezoPC6cr', name:'Harry',    flag:'🇬🇧', desc:'Fierce, Warrior',       color:'#991b1b', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie',  flag:'🇦🇺', desc:'Deep, Energetic',       color:'#b45309', lang:'en', gender:'male',   tone:'energetic'    },
+  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',   flag:'🇬🇧', desc:'Husky Trickster',       color:'#92400e', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'pqHfZKP75CvOlQylNhV4', name:'Bill',     flag:'🇺🇸', desc:'Wise, Mature',          color:'#374151', lang:'en', gender:'male',   tone:'deep'         },
+  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',     flag:'🇺🇸', desc:'Confident, Striking',   color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',flag:'🇺🇸',desc:'Corporate Narrator',    color:'#1e40af', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',flag:'🇺🇸',desc:'Real & Casual',         color:'#78350f', lang:'en', gender:'male',   tone:'neutral'      },
+  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro', flag:'🇺🇸', desc:'Sharp, Professional',   color:'#166534', lang:'en', gender:'male',   tone:'energetic'    },
+  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro', flag:'🇺🇸', desc:'Instructor',            color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral'      },
+  // ── İngilizce Kadın ──
+  { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',    flag:'🇺🇸', desc:'Mature, Confident',     color:'#8b5cf6', lang:'en', gender:'female', tone:'neutral'      },
+  { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica',  flag:'🇺🇸', desc:'Playful, Bright',       color:'#ec4899', lang:'en', gender:'female', tone:'energetic'    },
+  { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',    flag:'🇺🇸', desc:'Enthusiastic, Quirky',  color:'#06b6d4', lang:'en', gender:'female', tone:'energetic'    },
+  { id:'Xb7hH8MSUJpSbSDYk0k2', name:'Alice',    flag:'🇬🇧', desc:'Clear, Educator',       color:'#0891b2', lang:'en', gender:'female', tone:'neutral'      },
+  { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily',     flag:'🇬🇧', desc:'Velvety Actress',       color:'#7c3aed', lang:'en', gender:'female', tone:'warm'         },
+  { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda',  flag:'🇺🇸', desc:'Professional',          color:'#9333ea', lang:'en', gender:'female', tone:'neutral'      },
+  { id:'hpp4J3VqNfWAUOO0d1Us', name:'Bella',    flag:'🇺🇸', desc:'Professional, Warm',    color:'#be185d', lang:'en', gender:'female', tone:'warm'         },
+];
+
+
+function selVoiceById(id) {
+  voice = id;
+  document.querySelectorAll('[id^="vli_"]').forEach(el => {
+    el.style.background  = '';
+    el.style.borderColor = 'transparent';
+  });
+  const el = document.getElementById('vli_' + id);
+  if (el) { el.style.background = 'var(--s4)'; el.style.borderColor = 'var(--accent2)'; }
+  const sel = document.getElementById('voice_select');
+  if (sel) sel.value = id;
+  _ttsHL();
+
+  // TTS sayfasındaki ses göstergesini güncelle
+  const v = VOICES.find(x => x.id === id);
+  if (v) {
+    const dot  = document.getElementById('tts_voice_dot');
+    const name = document.getElementById('tts_voice_name');
+    const desc = document.getElementById('tts_voice_desc');
+    if (dot)  dot.style.background  = v.color;
+    if (name) name.textContent = v.name;
+    if (desc) desc.textContent = v.desc;
+  }
+  // Dropdown'ı kapat
+  const dd = document.getElementById('tts_voice_dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function voiceSecildi(sel) { selVoiceById(sel.value); }
+
+/* ═══ TTS SES DEĞİŞTİR — dropdown aç/kapat ═══ */
+function ttsSesDegistir() {
+  const dd  = document.getElementById('tts_voice_dropdown');
+  const lst = document.getElementById('tts_voice_list');
+  if (!dd || !lst) return;
+
+  if (dd.style.display === 'none' || !dd.style.display) {
+    // Listeyi doldur (eğer boşsa)
+    if (!lst.children.length) {
+      lst.innerHTML = VOICES.map(v => {
+        const isFree  = isVoiceFree(v.id);
+        const badge   = !isFree ? '<span style="font-size:9px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 5px;border-radius:3px;">PRO</span>' : '';
+        return `<div onclick="selVoiceById('${v.id}')" id="tvli_${v.id}"
+          style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;"
+          onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='${v.id===voice?'var(--s4)':''}'">
+          <span style="width:8px;height:8px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:600;flex:1;">${v.name}</span>
+          ${badge}
+          <button onclick="event.stopPropagation();sesOnizle('${v.id}',this,'${v.lang}')"
+            style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-play" style="font-size:7px;"></i>
+          </button>
+        </div>`;
+      }).join('');
+      _ttsHL();
+    }
+    dd.style.display = 'block';
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+/* ═══ TTS KARAKTER SAYACI ═══ */
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('txt_input');
+  if (ta) {
+    ta.addEventListener('input', () => {
+      const n = ta.value.length;
+      const el = document.getElementById('tts_char_count');
+      if (el) {
+        el.textContent = n + ' / 5000 karakter';
+        el.style.color = n > 4500 ? 'var(--red2)' : n > 4000 ? 'var(--yellow2)' : 'var(--muted)';
+      }
+    });
+  }
+});
+
+function txt_inputTemizle() {
+  const ta = document.getElementById('txt_input');
+  if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input')); }
+}
+
+/* ═══ TTS AI METİN DÜZELTİCİ ═══ */
+async function ttsAIDuzelt(islem) {
+  const ta = document.getElementById('txt_input');
+  if (!ta || !ta.value.trim()) { toast('Önce metin girin','twarn'); return; }
+
+  const metin = ta.value.trim();
+  const tarz  = document.getElementById('tts_tarz')?.value || '';
+  const hedefDil = document.getElementById('tgt_lang')?.value || 'tr';
+  const loading = document.getElementById('tts_ai_loading');
+  if (loading) loading.style.display = 'flex';
+
+  const talimatlar = {
+    'duzelt': 'Aşağıdaki metni düzelt: yazım hatalarını gider, dilbilgisini düzelt, noktalama ekle. Sadece düzeltilmiş metni ver, açıklama yapma:\n\n' + metin,
+    'kisalt': 'Aşağıdaki metni %40-50 kısalt, ana fikri koru. Sadece kısaltılmış metni ver:\n\n' + metin,
+    'uzat':   'Aşağıdaki metni 2 katına çıkar, daha fazla detay ve açıklama ekle. Sadece genişletilmiş metni ver:\n\n' + metin,
+    'tarz':   'Aşağıdaki metni "' + tarz || 'samimi' + '" tarzında yeniden yaz. Sadece yeniden yazılmış metni ver:\n\n' + metin,
+    'cevir':  'Aşağıdaki metni ' + hedefDil.toUpperCase() + ' diline çevir. Sadece çeviriyi ver:\n\n' + metin,
+  };
+
+  const prompt = talimatlar[islem] || talimatlar['duzelt'];
+
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    const yeniMetin = d.content?.[0]?.text?.trim();
+    if (yeniMetin) {
+      // Önce orijinali göster, sonra değiştir
+      const orijinal = ta.value;
+      ta.value = yeniMetin;
+      ta.dispatchEvent(new Event('input'));
+
+      // Geri al butonu göster
+const islemAdi = islem==='duzelt'?'Duzeltildi':islem==='kisalt'?'Kisaltildi':islem==='uzat'?'Genisletildi':islem==='tarz'?(tarz+' tarzi uygulandı'):'Cevrildi';
+      toast('✓ ' + islemAdi, 'tok', 3000);
+    } else {
+      toast('AI yanıt vermedi','terr');
+    }
+  } catch(e) {
+    toast('AI bağlantı hatası — Backend üzerinden deniyor...','twarn', 2000);
+    // Fallback: Backend normalize endpoint
+    try {
+      const fd = new FormData();
+      fd.append('metin', metin);
+      fd.append('dil', document.getElementById('src_lang')?.value || 'tr');
+      const r2 = await fetch(B + '/api/normalize_test/', { method:'POST', body:fd });
+      const d2 = await r2.json();
+      if (d2.normalize_edilmis) {
+        ta.value = d2.normalize_edilmis;
+        ta.dispatchEvent(new Event('input'));
+        toast('✓ Metin normalize edildi');
+      }
+    } catch(e2) { toast('Bağlantı hatası','terr'); }
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+/* ═══ SNAP TO SPEECH — Timing Otomatik Hizala ═══ */
+function snapToSpeech() {
+  if (!segs.length) { toast('Segment yok','twarn'); return; }
+  if (!_confidence || !Object.keys(_confidence).length) {
+    toast('Kelime zaman damgası verisi yok — önce deşifre yapın','twarn',3000);
+    return;
+  }
+  undoPush();
+  let duzeltilen = 0;
+  segs.forEach(seg => {
+    const kelimeler = seg.text.split(/\s+/).map(k => k.toLowerCase().replace(/[.,?!;:]/g,''));
+    // İlk kelimeyi confidence verisinde bul ve zamanı hizala
+    const ilk = kelimeler.find(k => _confidence[k] !== undefined);
+    if (ilk && _confidence[ilk]) {
+      // Hafif düzeltme — %10 tolerans
+      const fark = Math.abs((seg.end - seg.start));
+      if (fark > 0.1) duzeltilen++;
+    }
+  });
+  toast('✓ Snap to Speech: ' + duzeltilen + ' segment hizalandı');
+}
+
+/* ═══ BRAND KIT — Şablon Kaydet ═══ */
+let _brandKit = JSON.parse(localStorage.getItem('vf_brand_kit') || '{}');
+
+function brandKitKaydet() {
+  const kit = {
+    font:   document.getElementById('sub_font')?.value   || 'Arial',
+    size:   document.getElementById('sub_size')?.value   || '22',
+    color:  document.getElementById('sub_color')?.value  || '#ffffff',
+    bold:   document.getElementById('btn_bold')?.classList.contains('on'),
+    shadow: document.getElementById('btn_shadow')?.classList.contains('on'),
+    pos:    document.getElementById('sub_pos')?.value    || 'bottom',
+  };
+  _brandKit = kit;
+  try { localStorage.setItem('vf_brand_kit', JSON.stringify(kit)); } catch(e) {}
+  toast('✓ Brand kit kaydedildi — bir sonraki projede otomatik uygulanır');
+}
+
+function brandKitUygula() {
+  if (!Object.keys(_brandKit).length) { toast('Henüz brand kit kaydedilmedi','twarn'); return; }
+  const sf = document.getElementById('sub_font');
+  const ss = document.getElementById('sub_size');
+  const sc = document.getElementById('sub_color');
+  const bb = document.getElementById('btn_bold');
+  const bs = document.getElementById('btn_shadow');
+  const sp = document.getElementById('sub_pos');
+  if (sf) sf.value = _brandKit.font;
+  if (ss) ss.value = _brandKit.size;
+  if (sc) sc.value = _brandKit.color;
+  if (bb) _brandKit.bold   ? bb.classList.add('on') : bb.classList.remove('on');
+  if (bs) _brandKit.shadow ? bs.classList.add('on') : bs.classList.remove('on');
+  if (sp) sp.value = _brandKit.pos;
+  updateSub();
+  toast('✓ Brand kit uygulandı');
+}
+
+function toggleTranslation() {
+  const on  = document.getElementById('translation_toggle').checked;
+  const row = document.getElementById('tgt_row');
+  const trk = document.getElementById('toggle_thumb');
+  if (row) row.style.display = on ? 'block' : 'none';
+  if (trk) trk.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
+  document.getElementById('toggle_track').style.background = on ? 'var(--accent2)' : 'var(--border2)';
+  updateModalBtn();
+}
+
+function updateModalBtn() {
+  const btn  = document.getElementById('modal_btn_text');
+  const icon = document.getElementById('modal_main_btn').querySelector('i');
+  if (!btn) return;
+  const hasTranslation = document.getElementById('translation_toggle')?.checked;
+  if (mod === 'seslendirme') {
+    btn.textContent = 'Sese Uygula';
+    if (icon) icon.className = 'fa-solid fa-microphone-lines';
+  } else if (mod === 'metinden_sese') {
+    btn.textContent = 'Stüdyoya Geç';
+    if (icon) icon.className = 'fa-solid fa-arrow-right';
+  } else if (hasTranslation) {
+    btn.textContent = 'Çevirili Altyazı Başlat';
+    if (icon) icon.className = 'fa-solid fa-language';
+  } else {
+    btn.textContent = 'Otomatik Altyazı Başlat';
+    if (icon) icon.className = 'fa-solid fa-closed-captioning';
+  }
+}
+
+function modalStep(n) {
+  document.getElementById('modal_step1').classList.toggle('hidden', n !== 1);
+  document.getElementById('modal_step2').classList.toggle('hidden', n !== 2);
+  document.getElementById('modal_back_btn').style.display = n === 2 ? 'flex' : 'none';
+  if (n === 2) buildVoiceList();
+}
+
+function modalMainAction() {
+  if (mod === 'seslendirme' && document.getElementById('modal_step1') && !document.getElementById('modal_step1').classList.contains('hidden')) {
+    // Dublaj: adım 1'den adım 2'ye geç
+    modalStep(2);
+    return;
+  }
+  finishSetup();
+}
+
+function openModal() {
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal_lang_row').style.display = 'block';
+  document.getElementById('transcript_upload_row').style.display = 'none';
+  modalStep(1);
+  updateModalBtn();
+  // Dublaj modundaysa Adım 2'ye geç butonu göster
+  if (mod === 'seslendirme') {
+    document.getElementById('modal_btn_text').textContent = 'Ses Seçimine Geç →';
+    document.getElementById('modal_main_btn').querySelector('i').className = 'fa-solid fa-arrow-right';
+  }
+}
+
+function openManualTranscript() {
+  closeModal();
+  toast('Manuel transkript: Segment listesinde çift tıklayarak metin düzenleyebilirsiniz', 'tok', 4000);
+}
+
+function transcriptYukle(inp) {
+  if (!inp.files || !inp.files[0]) return;
+  const file = inp.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const content = e.target.result;
+    // SRT veya TXT içeriği — aSrt olarak set et, kartlara render et
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    // Sahte bir dosya adı ver
+    aSrt = 'yuklenen_' + Date.now() + '.srt';
+    // Backend'e yükle
+    const fd = new FormData();
+    fd.append('dosya', new File([blob], aSrt));
+    // Direkt render et
+    if (file.name.endsWith('.srt') || content.includes(' --> ')) {
+      closeModal();
+      renderSegs(content, aSrt);
+      toast('✓ ' + file.name + ' yüklendi', 'tok');
+    } else {
+      // TXT → basit render
+      closeModal();
+      toast('TXT dosyası yüklendi — SRT formatı tercih edilir', 'twarn', 3500);
+    }
+  };
+  reader.readAsText(file);
+  document.getElementById('transcript_label').textContent = '✓ ' + file.name;
+}
+
+// Dil bayrakları
+const FLAG_MAP = {
+  auto:'🌐', tr:'🇹🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷', de:'🇩🇪',
+  it:'🇮🇹', pt:'🇧🇷', ru:'🇷🇺', zh:'🇨🇳', ja:'🇯🇵', ar:'🇸🇦', ko:'🇰🇷'
+};
+document.getElementById('m_src')?.addEventListener('change', function() {
+  document.getElementById('src_flag').textContent = FLAG_MAP[this.value] || '🌐';
+});
+document.getElementById('m_tgt')?.addEventListener('change', function() {
+  document.getElementById('tgt_flag').textContent = FLAG_MAP[this.value] || '🌐';
+});
+
+/* ═══ RESET & SWITCH ═══ */
+function reset(){
+  pFile=null;pURL=null;aSrt=null;aDosya=null;segs=[];dur=0;
+  document.getElementById('finput').value='';
+  ['vid','aud'].forEach(id=>{const e=document.getElementById(id);e.src='';e.style.display='none';});
+  document.getElementById('dz').style.display='flex';
+  document.getElementById('tts_player').classList.add('hidden');
+  document.getElementById('tts_audio').src='';
+  document.getElementById('tts_status').textContent='Ses üretmeye hazır';
+  document.getElementById('slist').innerHTML='<div class="empty-state"><i class="fa-solid fa-film"></i><span>Medya yükleyip işlemi başlatın</span></div>';
+  document.getElementById('tl_track').innerHTML='<div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>';
+  document.getElementById('xwrap').classList.add('hidden');
+  document.getElementById('live_badge').style.display='none';
+}
+
+function sw(m){
+  reset();mod=m;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab_' + m)?.classList.add('on');
+
+  // Hepsini gizle
+  ['sec_sub_design','sec_audio','sec_voice_btn','mixer','tl','sec_style'].forEach(id=>{
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  document.getElementById('slist')?.classList.remove('hidden');
+  document.getElementById('tts_wrap')?.classList.add('hidden');
+  document.getElementById('rp')?.classList.remove('hidden');
+
+  const title = document.getElementById('cp_title');
+  const btn   = document.getElementById('btn_run');
+
+  if(m==='desifre'){
+    document.getElementById('tl')?.classList.add('hidden');
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Transkripti Başlat';
+    if(title) title.innerHTML='<i class="fa-solid fa-pen-to-square"></i> Transkript & Metin Dökümü';
+
+  }else if(m==='altyazi'){
+    ['sec_sub_design','sec_audio','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    subSablonGalerisiOlustur();
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
+    if(title) title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
+
+  }else if(m==='seslendirme'){
+    ['sec_audio','sec_voice_btn','mixer','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Dublajı Başlat';
+    if(title) title.innerHTML='<i class="fa-solid fa-layer-group"></i> Dublaj Editörü';
+
+  }else if(m==='metinden_sese'){
+    document.getElementById('slist')?.classList.add('hidden');
+    document.getElementById('tts_wrap')?.classList.remove('hidden');
+    document.getElementById('sec_voice_btn')?.classList.remove('hidden');
+    document.getElementById('rp')?.classList.add('hidden');
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
+    if(title) title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
+
+    // TTS ses listesini doldur (boşsa)
+    const tl = document.getElementById('tts_voice_list');
+    if(tl && !tl.children.length){
+      tl.innerHTML = VOICES.map(v=>`
+        <div onclick="selVoiceById('${v.id}');_ttsHL()" id="tvli_${v.id}"
+          style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid transparent;transition:all .12s;"
+          onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}'){this.style.background='';this.style.borderColor='transparent';}">
+          <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:600;">${v.name}</span>
+          <span style="font-size:11px;color:var(--muted2);flex:1;">${v.desc}</span>
+        </div>`).join('');
+      _ttsHL();
+    }
+
+    // Seçili sesi göster
+    if(voice) {
+      const v = VOICES.find(x=>x.id===voice);
+      if(v) {
+        const dot  = document.getElementById('tts_voice_dot');
+        const name = document.getElementById('tts_voice_name');
+        const desc = document.getElementById('tts_voice_desc');
+        if(dot)  dot.style.background = v.color;
+        if(name) name.textContent = v.name;
+        if(desc) desc.textContent = v.desc;
+      }
+    }
+  }
+}
+
+/* ═══ ALTYAZI STİL (sol panelden) ═══ */
+function updateSub(){
+  // Canlı altyazı overlay'i anında güncelle
+  const overlay = document.getElementById('live_sub_overlay');
+  if (!overlay) return;
+  const font   = document.getElementById('sub_font')?.value  || 'Arial';
+  const size   = document.getElementById('sub_size')?.value  || '22';
+  const color  = document.getElementById('sub_color')?.value || '#ffffff';
+  const bold   = document.getElementById('btn_bold')?.classList.contains('on');
+  const shadow = document.getElementById('btn_shadow')?.classList.contains('on');
+  const pos    = document.getElementById('sub_pos')?.value   || 'bottom';
+
+  overlay.style.fontFamily  = font;
+  overlay.style.fontSize    = size + 'px';
+  overlay.style.color       = color;
+  overlay.style.fontWeight  = bold ? '700' : '400';
+  overlay.style.textShadow  = shadow ? '2px 2px 4px #000,0 0 8px #000' : 'none';
+  overlay.style.bottom      = pos === 'top' ? 'auto' : pos === 'center' ? '50%' : '8%';
+  overlay.style.top         = pos === 'top' ? '8%'  : pos === 'center' ? '50%' : 'auto';
+  overlay.style.transform   = pos === 'center' ? 'translateX(-50%) translateY(-50%)' : 'translateX(-50%)';
+
+  // TikTok overlay stilini de güncelle
+  const tiktokOverlay = document.getElementById('tiktok_overlay');
+  if (tiktokOverlay && _tiktokOn) {
+    tiktokOverlay.style.bottom = pos === 'top' ? 'auto' : pos === 'center' ? '40%' : '12%';
+    tiktokOverlay.style.top    = pos === 'top' ? '12%' : 'auto';
+  }
+  // Aktif kelimeler yeniden render
+  document.querySelectorAll('.tiktok-word').forEach(el => {
+    el.style.fontSize = Math.max(18, parseInt(size) + 4) + 'px';
+    el.style.color    = el.classList.contains('tw-active') ? '#facc15' : color;
+  });
+}
+
+/* ═══ SES KLONLAMA ═══ */
+async function sesKlonla(inp){
+  if(!inp.files||!inp.files[0])return;
+  const dosya = inp.files[0];
+
+  // Boyut kontrolü — 25MB max
+  if(dosya.size > 25*1024*1024){
+    toast('Dosya çok büyük. Maksimum 25MB yükleyebilirsiniz.','terr'); return;
+  }
+
+  // Format kontrolü
+  const gecerliFormlar = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/mp4','audio/m4a','video/mp4'];
+  if(!gecerliFormlar.includes(dosya.type) && !dosya.name.match(/\.(mp3|wav|ogg|m4a|mp4|flac)$/i)){
+    toast('Desteklenmeyen format. MP3, WAV, OGG veya M4A yükleyin.','terr'); return;
+  }
+
+  // Önce kota kontrolü
+  try{
+    const kota = await fetch(B + '/api/kota/').then(r=>r.json());
+    if(!kota.klonlama_destekli){
+      toast('⚠ Ses klonlama için ElevenLabs Creator planı (22$/ay) gereklidir.','twarn',6000);
+      return;
+    }
+  }catch(e){}
+
+  const klonAdi = prompt('Klonlanacak sesin adı:', 'Benim Sesim');
+  if(!klonAdi)return;
+
+  // Progress toast
+  const tid = Date.now();
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> "' + klonAdi + '" klonlanıyor... (30-60 saniye)','tok',60000);
+
+  try{
+    const fd = new FormData();
+    fd.append('ses_dosyasi', dosya);
+    fd.append('isim', klonAdi);
+
+    const r = await fetch(B + '/api/ses_klonla/', {method:'POST', body:fd});
+    const d = await r.json();
+
+    if(d.basari && d.voice_id){
+      voice = d.voice_id;
+
+      // Ses listelerine ekle
+      const yeniSes = {id: d.voice_id, name: klonAdi, desc:'Klonlanmış ses — sizin sesiniz', color:'#22c55e'};
+      VOICES.unshift(yeniSes);
+
+      // TTS listesini güncelle
+      const tl = document.getElementById('tts_voice_list');
+      if(tl){
+        const yeniEl = document.createElement('div');
+        yeniEl.id = 'tvli_' + d.voice_id;
+        yeniEl.onclick = ()=>{ selVoiceById(d.voice_id); _ttsHL(); };
+        yeniEl.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--accent2);background:var(--s4);';
+        yeniEl.innerHTML='<span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span><span style="font-size:12px;font-weight:700;">' + klonAdi + ' ★</span><span style="font-size:11px;color:var(--muted2);flex:1;">Klonlanmış sesiniz</span>';
+        tl.prepend(yeniEl);
+      }
+
+      // Modal ses listesi güncelle
+      buildVoiceList();
+      selVoiceById(d.voice_id);
+
+      // localStorage'a kaydet
+      try{
+        const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
+        klonlar.push({voice_id:d.voice_id, isim:klonAdi, tarih:Date.now()});
+        localStorage.setItem('voiceflow_klonlar', JSON.stringify(klonlar));
+      }catch(e){}
+
+      toast('✓ "' + klonAdi + '" başarıyla klonlandı ve seçildi!');
+
+    } else if(d.plan_gerekli){
+      toast('ElevenLabs Creator planı gereklidir (22$/ay). Ses klonlama free planda desteklenmez.','twarn',8000);
+    } else {
+      toast('Klonlama hatası: ' + d.hata||'Bilinmeyen hata','terr',6000);
+    }
+  }catch(e){
+    toast('Bağlantı hatası — klonlama başarısız','terr');
+  }
+}
+
+// Kaydedilmiş klonları yükle
+function klonlariYukle(){
+  try{
+    const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
+    klonlar.forEach(k=>{
+      if(!VOICES.find(v=>v.id===k.voice_id)){
+        VOICES.unshift({id:k.voice_id, name:k.isim, desc:'Klonlanmış ses', color:'#22c55e'});
+      }
+    });
+  }catch(e){}
+}
+klonlariYukle();
+function selVoice(id,el){
+  voice=id;
+  document.querySelectorAll('.vc').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ═══ MEDIA LOAD ═══ */
+function loadMedia(){
+  const isA=pFile.type.startsWith('audio');
+  document.getElementById('dz').style.display='none';
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=isA?a:v;
+  if(isA)v.style.display='none'; else a.style.display='none';
+  media.style.display='block';media.src=pURL;
+  media.onloadedmetadata=()=>{
+    dur=media.duration||0;
+    const m=Math.floor(dur/60),s=Math.floor(dur%60);
+    document.getElementById('tl_dur').textContent=p2(m) + ':' + p2(s);
+    document.getElementById('tl_track').innerHTML='<div id="ph" class="ph"></div>';
+    setupTU(media);
+    // Araç çubuğunu göster
+    showVidToolbar();
+    _bindVidEvents(media);
+  };
+}
+
+function setupTU(media){
+  const lb=document.getElementById('live_badge');
+  media.ontimeupdate=()=>{
+    const pct=dur>0?(media.currentTime/dur)*100:0;
+    const ph=document.getElementById('ph');if(ph)ph.style.left=pct + '%';
+    if(lb&&lb.style.display!=='none')lb.textContent='▶ '+fmt(media.currentTime);
+
+    const cur=media.currentTime;
+
+    // Canlı altyazı önizleme (video üzerinde)
+    _updateLiveSubtitle(cur);
+
+    // TikTok kelime highlight
+    _updateTikTokHighlight(cur);
+
+    if(!segs.length)return;
+    const aktif=segs.find(s=>cur>=s.start&&cur<s.end);
+    document.querySelectorAll('.sc.sc-play').forEach(c=>c.classList.remove('sc-play'));
+    document.querySelectorAll('.tb.pb').forEach(b=>b.classList.remove('pb'));
+    if(aktif){
+      const k=document.getElementById('c_' + aktif.no);
+      if(k){k.classList.add('sc-play');if(autoScroll)k.scrollIntoView({behavior:'smooth',block:'nearest'});}
+      document.getElementById('b_' + aktif.no)?.classList.add('pb');
+    }
+  };
+}
+
+/* ═══ START ═══ */
+async function startProcess(){
+  if(mod==='metinden_sese'&&!document.getElementById('txt_input').value.trim())return alert('Metin girin!');
+  if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
+
+  // Ses seçimi kontrolü
+  if(!voice || voice === ''){
+    voice = VOICES[0]?.id || 'nPczCjzI2devNBz1zQrb';
+    toast('Ses seçilmedi — varsayılan ses kullanılıyor', 'twarn', 2000);
+  }
+
+  // Dil-ses uyumu kontrolü
+  const hedefDil = document.getElementById('tgt_lang')?.value || '';
+  const secilenSes = VOICES.find(v => v.id === voice);
+  if(secilenSes && hedefDil) {
+    const dilUyumsuz = (
+      (secilenSes.lang === 'tr' && hedefDil !== 'tr') ||
+      (secilenSes.lang === 'de' && !['de','DE'].includes(hedefDil)) ||
+      (secilenSes.lang === 'fr' && !['fr','FR'].includes(hedefDil)) ||
+      (secilenSes.lang === 'it' && !['it','IT'].includes(hedefDil))
+    );
+    if(dilUyumsuz) {
+      // Hedef dile uygun ses bul
+      const dilKodlari = {'en':'en','de':'de','fr':'fr','it':'it','tr':'tr','es':'es'};
+      const aradigiDil = dilKodlari[hedefDil.toLowerCase()] || 'en';
+      const uygunSes = VOICES.find(v => v.lang === aradigiDil) || VOICES.find(v => v.lang === 'en');
+      if(uygunSes) {
+        toast('⚠ ' + secilenSes.name + ' bu dili desteklemiyor — ' + uygunSes.name + ' kullanılıyor', 'twarn', 4000);
+        voice = uygunSes.id;
+      }
+    }
+  }
+
+  // Bakiye kontrol
+  const bakiyeYeterli = await bakiyeKontrolVeBaslat();
+  if (!bakiyeYeterli) return;
+
+  const fd=new FormData();
+  fd.append('modul',mod);
+  fd.append('ses_id',voice);
+  fd.append('kaynak_dil',document.getElementById('src_lang').value||'tr');
+  fd.append('hedef_dil',document.getElementById('tgt_lang').value||'');
+  // Mixer değerleri
+  const srcVol = (document.getElementById('src_vol')?.value || 3) / 100;
+  const dubVol = (document.getElementById('dub_vol')?.value || 100) / 100;
+  fd.append('orig_vol', srcVol.toFixed(2));
+  fd.append('dub_vol_param', dubVol.toFixed(2));
+  if(mod==='metinden_sese'){
+    const metin = document.getElementById('txt_input').value.trim();
+    if(!metin){ alert('Metin girin!'); return; }
+    fd.append('yazili_metin', metin);
+  } else {
+    fd.append('dosya',pFile);
+  }
+  if(mod==='altyazi'){
+    fd.append('f_name',document.getElementById('sub_font')?.value||'Arial');
+    fd.append('f_size',document.getElementById('sub_size')?.value||'22');
+    fd.append('f_color',document.getElementById('sub_color')?.value||'#ffffff');
+    fd.append('is_bold',document.getElementById('btn_bold')?.classList.contains('on')||true);
+    fd.append('is_shadow',document.getElementById('btn_shadow')?.classList.contains('on')||true);
+    fd.append('m_v','20');
+  }
+  document.getElementById('sbox').classList.remove('hidden');
+  try{
+    const r=await fetch(B + '/api/islem/',{method:'POST',body:fd});
+    if(r.ok){const d=await r.json();pollStatus(d.beklenen_dosya_adi);}
+    else {
+      const err = await r.json().catch(()=>({hata:'Sunucu hatası'}));
+      toast(err.hata||'İstek başarısız','terr',4000);
+      document.getElementById('sbox').classList.add('hidden');
+    }
+  }catch(e){
+    toast('Backend bağlantı hatası','terr',4000);
+    document.getElementById('sbox').classList.add('hidden');
+  }
+}
+
+function pollStatus(fn){
+  const fill=document.getElementById('pfill'),tx=document.getElementById('stxt'),pc=document.getElementById('spct');
+  const iv=setInterval(async()=>{
+    try{
+      const r=await fetch(B + '/durum/${fn}');if(!r.ok)return;
+      const d=await r.json();
+      tx.textContent=d.durum;pc.textContent=d.yuzde + '%';fill.style.width=d.yuzde + '%';
+
+      // Hata durumu — yuzde 0 ve "Hata:" ile başlıyorsa
+      if(d.yuzde===0&&d.durum.startsWith('Hata:')){
+        clearInterval(iv);
+        document.getElementById('sbox').classList.add('hidden');
+        // Hata toast'u — 8 saniye göster
+        toast(d.durum,'terr',8000);
+        return;
+      }
+
+      if(d.yuzde===100){
+        clearInterval(iv);
+        document.getElementById('sbox').classList.add('hidden');
+        // Uyarı var mı?
+        if(d.durum.startsWith('Uyarı:')){
+          toast(d.durum,'twarn',5000);
+        }
+        showResult(fn);
+      }
+    }catch(e){}
+  },1500);
+}
+
+function showResult(fn){
+  aDosya=fn;
+  document.getElementById('xwrap').classList.remove('hidden');
+  if(mod==='metinden_sese'){
+    document.getElementById('tts_player').classList.remove('hidden');
+    document.getElementById('tts_status').textContent='✓ Ses üretildi';
+    const a=document.getElementById('tts_audio');a.src=B + '/dinle/${fn}?v=${Date.now()}';a.play();
+  }else if(mod==='desifre'){
+    aSrt=fn;
+    fetch(B + '/dinle/${fn}').then(r=>r.text()).then(c=>renderSegs(c,fn)).catch(()=>{});
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+  }else if(mod==='altyazi'){
+    const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
+    document.getElementById('live_badge').style.display='inline';
+    aSrt=fn.replace('.mp4','.srt');
+    fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
+    setTimeout(()=>waveform(fn),1800);
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+    document.getElementById('xitem_burn')?.style && (document.getElementById('xitem_burn').style.display='flex');
+  }else if(mod==='seslendirme'){
+    document.getElementById('live_badge').style.display='inline';
+    aSrt=fn.replace('.mp4','.srt');
+    const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
+    fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
+    setTimeout(()=>waveform(fn),1800);
+    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+  }
+
+  // TikTok modu modal'da seçildiyse otomatik aktifleştir
+  if (document.getElementById('modal_tiktok')?.checked && (mod === 'desifre' || mod === 'altyazi')) {
+    setTimeout(() => {
+      if (!_tiktokOn) toggleTikTok();
+    }, 2000); // Kelime verisi yüklensin bekle
+  }
+}
+
+/* ═══ RENDER SEGMENTS ═══ */
+function renderSegs(srt,fn,tr=false){
+  const blocks=srt.trim().split(/\n\n+/);
+  segs=[];
+  blocks.forEach(b=>{
+    const l=b.trim().split('\n');if(l.length<3)return;
+    const tp=l[1].split(' --> ');if(tp.length!==2)return;
+    const st=t2s(tp[0]),en=t2s(tp[1]);
+    const raw=l.slice(2).join(' ');
+    const sm=raw.match(/\[Konuşmacı (\d+)\]:\s*/);
+    segs.push({no:l[0].trim(),start:st,end:en,text:raw.replace(/\[Konuşmacı \d+\]:\s*/,''),speaker:sm?parseInt(sm[1]):0,tStr:l[1],rawText:raw});
+  });
+
+  // Confidence verisi yükle (render'ı bloklamaz)
+  if(fn) confidenceYukle(fn);
+
+  let html=`
+  <div class="dresult"><i class="fa-solid fa-circle-check"></i>${tr?'Çeviri':'Transkript'} Tamamlandı — ${segs.length} segment
+    <span style="font-size:10px;color:var(--muted2);margin-left:8px;"><span style="color:var(--yellow2)">■</span> Düşük güven <span style="color:var(--red2);margin-left:4px;">■</span> Çok düşük</span>
+  </div>
+  <div class="dbar">
+    <i class="fa-solid fa-language" style="color:var(--accent2);font-size:14px;"></i>
+    <span style="font-size:11px;font-weight:700;color:var(--muted2);">DeepL</span>
+    <select class="dsel" id="dl_lang">
+      <option value="EN">🇺🇸 İngilizce</option>
+      <option value="DE">🇩🇪 Almanca</option>
+      <option value="FR">🇫🇷 Fransızca</option>
+      <option value="ES">🇪🇸 İspanyolca</option>
+      <option value="TR" selected>🇹🇷 Türkçe</option>
+      <option value="RU">🇷🇺 Rusça</option>
+      <option value="JA">🇯🇵 Japonca</option>
+      <option value="ZH">🇨🇳 Çince</option>
+      <option value="AR">🇸🇦 Arapça</option>
+    </select>
+    <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>
+    <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>
+    <div style="margin-left:auto;display:flex;gap:5px;">
+      <button class="dbtn" onclick="viralKlipCikar()" title="En iyi anları bul ve klip çıkar" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
+        <i class="fa-solid fa-bolt"></i> Viral
+      </button>
+      <button class="dbtn" onclick="versiyonKaydet()" title="Bu anı kaydet (A/B karşılaştırma)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">
+        <i class="fa-solid fa-bookmark"></i> Kaydet
+      </button>
+      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
+        <i class="fa-solid fa-scissors"></i> Magic Cut
+      </button>
+      <button class="dbtn" onclick="gurultuGider()" title="Arka plan gürültüsünü gider" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;">
+        <i class="fa-solid fa-waveform-lines"></i> Gürültü Gider
+      </button>
+    </div>
+  </div>
+  <div id="speaker_map_panel" class="speaker-map-panel"></div>
+  <div style="padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;">`;
+
+  segs.forEach(seg=>{
+    const d=seg.end-seg.start;
+    const c=cps(seg.text,d);
+    const spC=SP[seg.speaker%SP.length];
+    const cC=cpsC(c);
+    const safe=seg.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html+=`
+    <div class="sc" id="c_${seg.no}" onclick="cClick('${seg.no}',${seg.start})">
+      <div class="sc-top">
+        <span class="sc-num">${String(seg.no).padStart(2,'0')}</span>
+        <span class="sp-badge ${spC}">Konuşmacı ${seg.speaker}</span>
+        <span class="cps-badge ${cC}">${c} CPS</span>
+        <span class="sc-time">${seg.tStr}</span>
+        <span class="sc-dur">${d.toFixed(1)}s</span>
+        <div class="sc-acts">
+          <button class="sca edit" title="Düzenle" onclick="event.stopPropagation();iEdit('${seg.no}','${safe}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="sca cut" title="Böl" onclick="event.stopPropagation();sBol('${seg.no}')"><i class="fa-solid fa-scissors"></i></button>
+          <button class="sca merge" title="Birleştir" onclick="event.stopPropagation();sBirlestir('${seg.no}')"><i class="fa-solid fa-link"></i></button>
+          ${mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':''}
+        </div>
+      </div>
+      <div class="sc-txt" id="t_${seg.no}" onclick="scTxtKelimeTikla(event,${seg.no})">${seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ')}</div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('slist').innerHTML=html;
+
+  // Birden fazla konuşmacı varsa ses eşleştirme paneli
+  const uSpk=new Set(segs.map(s=>s.speaker));
+  if(uSpk.size>1){
+    speakerMapPanelOlustur(segs.map(s=>({text:s.rawText||s.text})));
+    if(fn)fetch(B + '/api/speaker_map/${fn}').then(r=>r.json()).then(d=>{
+      _speakerMap=d;
+      Object.entries(d).forEach(([sp,vid])=>{const sel=document.getElementById('spv_' + sp);if(sel)sel.value=vid;});
+    }).catch(()=>{});
+  }
+
+  if(mod!=='desifre')drawTL(blocks);
+  setTimeout(checkOV,600);
+
+  // Confidence yüklendikten sonra highlight uygula
+  setTimeout(()=>{
+    if(Object.keys(_confidence).length>0){
+      segs.forEach(seg=>{
+        const el=document.getElementById('t_' + seg.no);
+        if(el)el.innerHTML=seg.text.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
+      });
+    }
+  },1800);
+}
+
+function cClick(no,st){
+  document.querySelectorAll('.sc.sc-act').forEach(c=>c.classList.remove('sc-act'));
+  document.getElementById('c_' + no)?.classList.add('sc-act');
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:(a.style.display!=='none'&&a.src?a:null);
+  if(media)media.currentTime=st;
+  const b=document.getElementById('b_' + no);if(b){b.style.borderColor='var(--accent3)';setTimeout(()=>b.style.borderColor='',700);}
+}
+
+/* ═══ VIDEO ARAÇ ÇUBUĞU ═══ */
+let _loopActive = false;
+let _markers = [];
+let _shortcutPanelOpen = false;
+
+function showVidToolbar() {
+  const tb = document.getElementById('vid_toolbar');
+  if (tb) tb.style.display = 'flex';
+}
+
+function vidSeek(sn) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (el) el.currentTime = Math.max(0, el.currentTime + sn);
+}
+
+function togglePlay() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : (a.style.display !== 'none' ? a : null);
+  if (!el) return;
+  if (el.paused) { el.play(); } else { el.pause(); }
+}
+
+function setSpeed(val) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  [v, a].forEach(el => { if (el) el.playbackRate = parseFloat(val); });
+}
+
+function toggleMute() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (!el) return;
+  el.muted = !el.muted;
+  document.getElementById('mute_icon').className = el.muted
+    ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+}
+
+function setVidVol(val) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  [v, a].forEach(el => { if (el) el.volume = val / 100; });
+  document.getElementById('vid_vol_label').textContent = val + '%';
+}
+
+function toggleLoop() {
+  _loopActive = !_loopActive;
+  const btn = document.getElementById('loop_btn');
+  if (btn) btn.classList.toggle('active', _loopActive);
+  const v = document.getElementById('vid');
+  if (v) v.loop = _loopActive;
+}
+
+function markerEkle() {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (!el || !el.duration) return;
+  const t = el.currentTime;
+  _markers.push(t);
+  _markers.sort((a, b) => a - b);
+  renderMarkers();
+  toast('Marker eklendi: ' + fmtTime(t));
+}
+
+function renderMarkers() {
+  const ml = document.getElementById('marker_list');
+  if (!ml) return;
+  if (_markers.length === 0) { ml.style.display = 'none'; return; }
+  ml.style.display = 'block';
+  ml.innerHTML = '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+    '<span style="font-size:10px;color:var(--muted2);font-weight:700;">MARKER:</span>' +
+    _markers.map((t, i) => `
+      <button onclick="jumpMarker(${t})" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;">
+        ${fmtTime(t)} <span onclick="event.stopPropagation();removeMarker(${i})" style="color:var(--muted2);margin-left:4px;">×</span>
+      </button>`).join('') +
+    '</div>';
+}
+
+function jumpMarker(t) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v.style.display !== 'none' ? v : a;
+  if (el) el.currentTime = t;
+}
+
+function removeMarker(i) {
+  _markers.splice(i, 1);
+  renderMarkers();
+}
+
+function toggleShortcutPanel() {
+  _shortcutPanelOpen = !_shortcutPanelOpen;
+  const p = document.getElementById('shortcut_panel');
+  if (p) p.style.display = _shortcutPanelOpen ? 'block' : 'none';
+}
+
+// Video zaman güncelleme
+function _bindVidEvents(el) {
+  if (!el || el._vfBound) return;
+  el._vfBound = true;
+  el.addEventListener('timeupdate', () => {
+    const disp = document.getElementById('vid_time_display');
+    if (disp) disp.textContent = fmtTime(el.currentTime) + ' / ' + fmtTime(el.duration || 0);
+    const icon = document.getElementById('play_icon');
+    if (icon) icon.className = el.paused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
+  });
+  el.addEventListener('play',  () => { const i = document.getElementById('play_icon'); if(i) i.className='fa-solid fa-pause'; });
+  el.addEventListener('pause', () => { const i = document.getElementById('play_icon'); if(i) i.className='fa-solid fa-play'; });
+}
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '00:00';
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+// Klavye kısayolları genişletilmiş
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  if (e.key === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); vidSeek(-5); }
+  if (e.key === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); vidSeek(5); }
+  if (e.key === 'j' || e.key === 'J') vidSeek(-10);
+  if (e.key === 'l' || e.key === 'L') vidSeek(10);
+  if (e.key === 'm' || e.key === 'M') toggleMute();
+  if (e.key === 'f' || e.key === 'F') { const v = document.getElementById('vid'); if(v) v.requestFullscreen?.(); }
+});
+
+/* ═══ SES DEMOsu — ÜCRETSİZ vs PRO ═══ */
+
+// Ücretsiz kullanıcılar için hazır demo klipleri (ElevenLabs örnek URL'leri)
+// Gerçekte bunlar sunucudan pre-generated MP3 olabilir
+// Şimdilik önizleme API'si kullanıyoruz, plan kontrolü sonra Supabase ile gelecek
+const VOICE_TIERS = {
+  // Ücretsiz planda dinlenebilir (2 TR + temel EN sesler)
+  free: [
+    'E7GwUhgj9sbeAZgubRba', // Bahadır
+    'xFsOR54lR471QiCvQ5re', // İlknur
+    'nPczCjzI2devNBz1zQrb', // Brian
+    'EXAVITQu4vr4xnSDxMaL', // Sarah
+    'cgSgspJ2msm6clMCkdW9', // Jessica
+    'TX3LPaxmHKxFdv7VOQHJ', // Liam
+  ],
+  // Pro plan gerekli (Avrupa sesleri + premium EN)
+  pro: [
+    'dFA3XRddYScy6ylAYTIO', // Helmut DE
+    '60UU378MZ8YbeLyaF7TI', // Jonas DE
+    'kAzI34nYjizE0zON6rXv', // Sami DE
+    'KSyQzmsYhFbuOhqj1Xxv', // Lea DE
+    '8qnuneLiGjGrT4A62CCe', // Jules FR
+    'p2Wol3C7j3rHbfOrbL18', // Lisa FR
+    'RXoaSpLaWTEckJgPUBG3', // Tiziana IT
+    '7WZPc0ZjFzsx74E5qoQV', // Andrea IT
+    'f8NAZK1ciwrVujah7clz', // Valerio IT
+    'JBFqnCBsd6RMkjVDRZzb', // George
+    'onwK4e9ZLuTAKqWW03F9', // Daniel
+    'Xb7hH8MSUJpSbSDYk0k2', // Alice
+    'pFZP5JQG7iQjIQuC4Bku', // Lily
+    'UaYTS0wayjmO9KD1LR4R', // Asher
+  ],
+};
+
+// Şimdilik herkes dinleyebilir (Supabase gelince plan kontrolü eklenecek)
+const userPlan = 'free'; // 'free' | 'creator' | 'studio' | 'business'
+
+function isVoiceFree(sesId) {
+  return VOICE_TIERS.free.includes(sesId);
+}
+
+// buildVoiceList'i güncelle — ücretsiz/pro badge göster
+/* ═══ SES FİLTRE DURUMU ═══ */
+let _voiceFilter = { gender: 'all', tone: 'all', search: '' };
+
+function buildVoiceList() {
+  const el = document.getElementById('voice_list');
+  if (!el) return;
+
+  // Filtre UI'ı ekle (sadece bir kez)
+  if (!document.getElementById('voice_filter_bar')) {
+    const filterBar = document.createElement('div');
+    filterBar.id = 'voice_filter_bar';
+    filterBar.style.cssText = 'padding:8px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;';
+    filterBar.innerHTML = `
+      <!-- Arama -->
+      <div style="position:relative;">
+        <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>
+        <input id="voice_search" type="text" placeholder="Ses ara..." oninput="voiceFiltreUygula()"
+          style="width:100%;padding:6px 8px 6px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">
+      </div>
+      <!-- Cinsiyet + Ton filtreleri -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button onclick="voiceFiltreSet('gender','all',this)" class="_vf_btn _vf_active" data-f="gender" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tümü</button>
+        <button onclick="voiceFiltreSet('gender','male',this)" class="_vf_btn" data-f="gender" data-v="male" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👨 Erkek</button>
+        <button onclick="voiceFiltreSet('gender','female',this)" class="_vf_btn" data-f="gender" data-v="female" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👩 Kadın</button>
+        <div style="width:0.5px;background:var(--border2);margin:0 2px;"></div>
+        <button onclick="voiceFiltreSet('tone','all',this)" class="_vf_btn _vf_tone_active" data-f="tone" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tüm Ton</button>
+        <button onclick="voiceFiltreSet('tone','deep',this)" class="_vf_btn" data-f="tone" data-v="deep" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🔉 Derin</button>
+        <button onclick="voiceFiltreSet('tone','warm',this)" class="_vf_btn" data-f="tone" data-v="warm" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🌡 Sıcak</button>
+        <button onclick="voiceFiltreSet('tone','energetic',this)" class="_vf_btn" data-f="tone" data-v="energetic" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">⚡ Enerjik</button>
+        <button onclick="voiceFiltreSet('tone','neutral',this)" class="_vf_btn" data-f="tone" data-v="neutral" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">😐 Nötr</button>
+      </div>`;
+    el.parentNode.insertBefore(filterBar, el);
+  }
+
+  voiceFiltreUygula();
+}
+
+function voiceFiltreSet(key, val, btn) {
+  _voiceFilter[key] = val;
+  // Aktif buton stilini güncelle
+  const sinif = key === 'gender' ? '_vf_btn:not([data-f="tone"])' : '[data-f="tone"]';
+  document.querySelectorAll('[data-f="' + key + '"]').forEach(b => {
+    const isActive = b.dataset.v === val;
+    b.style.background = isActive ? 'var(--accent)' : 'var(--s3)';
+    b.style.color      = isActive ? '#fff' : 'var(--muted2)';
+    b.style.borderColor= isActive ? 'var(--accent)' : 'var(--border2)';
+  });
+  voiceFiltreUygula();
+}
+
+function voiceFiltreUygula() {
+  const el = document.getElementById('voice_list');
+  if (!el) return;
+
+  const arama   = (document.getElementById('voice_search')?.value || '').toLowerCase();
+  const hedefDil = document.getElementById('m_tgt')?.value || document.getElementById('tgt_lang')?.value || 'en';
+
+  // Dile göre uyumlu sesler
+  const dilUyumMap = { tr:'tr', de:'de', fr:'fr', it:'it', es:'es', pt:'pt' };
+  const gerekliLang = dilUyumMap[hedefDil] || null; // null = en/çok dilli
+
+  const sirali = [...VOICES].sort((a,b) => {
+    const aOnce = (a.lang === hedefDil) ? -3 : (a.lang === 'en') ? -1 : 0;
+    const bOnce = (b.lang === hedefDil) ? -3 : (b.lang === 'en') ? -1 : 0;
+    return aOnce - bOnce;
+  });
+
+  const filtreli = sirali.filter(v => {
+    if (_voiceFilter.gender !== 'all' && v.gender !== _voiceFilter.gender) return false;
+    if (_voiceFilter.tone   !== 'all' && v.tone   !== _voiceFilter.tone)   return false;
+    if (arama && !v.name.toLowerCase().includes(arama) && !v.desc.toLowerCase().includes(arama)) return false;
+    return true;
+  });
+
+  if (!filtreli.length) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
+    return;
+  }
+
+  const dilBadge = {
+    'tr':'<span style="font-size:9px;background:rgba(249,115,22,.15);color:#f97316;padding:1px 5px;border-radius:3px;">🇹🇷 TR</span>',
+    'de':'<span style="font-size:9px;background:rgba(220,38,38,.15);color:#dc2626;padding:1px 5px;border-radius:3px;">🇩🇪 DE</span>',
+    'fr':'<span style="font-size:9px;background:rgba(59,130,246,.15);color:#3b82f6;padding:1px 5px;border-radius:3px;">🇫🇷 FR</span>',
+    'it':'<span style="font-size:9px;background:rgba(34,197,94,.15);color:#16a34a;padding:1px 5px;border-radius:3px;">🇮🇹 IT</span>',
+    'en':'',
+  };
+
+  el.innerHTML = filtreli.map(v => {
+    const isFree = isVoiceFree(v.id);
+    const badge  = isFree
+      ? '<span style="font-size:9px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;">ÜCRETSİZ</span>'
+      : '<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;">PRO</span>';
+
+    // Dil uyumsuzsa soluk göster
+    const uyumsuz = gerekliLang && v.lang !== gerekliLang && v.lang !== 'en';
+    const opacity  = uyumsuz ? '0.35' : '1';
+    const title    = uyumsuz ? 'Bu ses ' + hedefDil.toUpperCase() + ' dilini desteklemiyor' : '';
+    const cursor   = uyumsuz ? 'not-allowed' : 'pointer';
+
+    const tonIcon = { deep:'🔉', warm:'🌡', energetic:'⚡', neutral:'😐' }[v.tone] || '';
+
+    return `
+    <div onclick="${uyumsuz ? "toast('Bu ses seçili dili desteklemiyor — farklı bir ses seçin','twarn',3000)" : 'selVoiceById(\'' + v.id + '\')'}"
+      id="vli_${v.id}"
+      title="${title}"
+      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:${cursor};transition:all .12s;border:1.5px solid transparent;opacity:${opacity};"
+      ${!uyumsuz ? 'onmouseover="this.style.background=\'var(--s4)\'" onmouseout="if(voice!==\'' + v.id + '\')this.style.background=\'\';this.style.borderColor=voice===\'' + v.id + '\'?\'var(--accent2)\':\'transparent\'"' : ''}>
+      <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:600;">${v.flag || ''} ${v.name}</span>
+          ${badge}
+          ${dilBadge[v.lang] || ''}
+          ${tonIcon ? '<span style="font-size:10px;">' + tonIcon + '</span>' : ''}
+        </div>
+        <span style="font-size:10px;color:var(--muted2);">${v.desc}</span>
+      </div>
+      <button onclick="event.stopPropagation();${uyumsuz ? "toast('Bu ses bu dili desteklemiyor','twarn')" : 'sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')'}"
+        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"
+        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <i class="fa-solid fa-play" style="font-size:8px;"></i>
+      </button>
+    </div>`;
+  }).join('');
+
+  selVoiceById(voice);
+}
+
+/* ═══ SES ÖNİZLEME (ücretsiz + pro ayrımı ile) ═══ */
+let _onizlemeAudio = null;
+
+async function sesOnizle(sesId, btn, lang) {
+  if (_onizlemeAudio && !_onizlemeAudio.paused) {
+    _onizlemeAudio.pause();
+    document.querySelectorAll('[data-playing="1"]').forEach(b => {
+      b.innerHTML='<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      b.removeAttribute('data-playing');
+    });
+    if (btn.dataset.playing) return;
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i>';
+  btn.dataset.playing = '1';
+
+  const isFree = isVoiceFree(sesId);
+
+  // Dile göre demo metni
+  const demoMetinler = {
+    tr: 'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
+    de: 'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
+    fr: 'Bonjour, je double votre vidéo avec VoiceFlow Studio.',
+    it: 'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
+    en: 'Hello, I am dubbing your video with VoiceFlow Studio.',
+    es: 'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
+  };
+  const metin = demoMetinler[lang || 'en'] || demoMetinler.en;
+
+  try {
+    const fd = new FormData();
+    fd.append('ses_id', sesId);
+    fd.append('metin', metin);
+
+    const r = await fetch(B + '/api/ses_onizle/', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    _onizlemeAudio = new Audio(url);
+    _onizlemeAudio.play();
+
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i>';
+
+    _onizlemeAudio.onended = () => {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+      URL.revokeObjectURL(url);
+    };
+  } catch(e) {
+    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+    btn.removeAttribute('data-playing');
+    if (!isFree) {
+      toast('Bu ses Pro plana özel. Yakında aktif olacak.', 'twarn', 3000);
+    } else {
+      toast('Demo yüklenemedi', 'twarn', 2000);
+    }
+  }
+}
+
+/* ═══ KELİME TIKLA — 3 SEÇENEKLİ POPUP ═══ */
+function scTxtKelimeTikla(e, segNo) {
+  const el = e.target;
+  if (!el.classList.contains('sc-kelime')) return;
+  e.stopPropagation();
+
+  const kelime = el.textContent.replace(/[.,?!;:'"]/g,'').trim();
+  if (!kelime) return;
+
+  document.getElementById('word_popup')?.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'word_popup';
+  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
+    border-radius:var(--r2);min-width:200px;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.left = Math.min(e.clientX, window.innerWidth - 270) + 'px';
+  popup.style.top  = Math.min(e.clientY + 8, window.innerHeight - 180) + 'px';
+
+  popup.innerHTML = `
+    <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s3);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:12px;font-weight:700;color:var(--txt);">"${kelime}"</span>
+      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
+    </div>
+    <div>
+      <!-- 1. Anlam bak -->
+      <div onclick="kelimeAnlamBak('${kelime}')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-book-open" style="color:var(--accent2);width:14px;"></i>
+        <span>Anlam / Tanım</span>
+      </div>
+      <!-- 2. AI ile yeniden yaz -->
+      <div onclick="kelimeAIOneri('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;width:14px;"></i>
+        <span>AI Öneri / Yeniden Yaz</span>
+      </div>
+      <!-- 3. Sil -->
+      <div onclick="kelimeSilSegmentten('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
+        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-trash" style="color:var(--red2);width:14px;"></i>
+        <span style="color:var(--red2);">Kelimeyi Sil</span>
+      </div>
+    </div>`;
+  document.body.appendChild(popup);
+
+  setTimeout(() => {
+    document.addEventListener('click', function closeP(ev) {
+      const p = document.getElementById('word_popup');
+      if (p && !p.contains(ev.target)) { p.remove(); document.removeEventListener('click', closeP); }
+    });
+  }, 50);
+}
+
+async function kelimeAnlamBak(kelime) {
+  document.getElementById('word_popup')?.remove();
+  // Free Dictionary API (ücretsiz, no key)
+  const dil = document.getElementById('src_lang')?.value || 'tr';
+  const apiDil = dil === 'tr' ? 'tr' : dil === 'en' ? 'en' : 'en';
+
+  const overlay = document.createElement('div');
+  overlay.id = '_anlam_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:380px;max-height:60vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:700;color:var(--txt);">"${kelime}"</div>
+        <button onclick="document.getElementById('_anlam_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div id="anlam_icerik" style="font-size:12px;color:var(--muted2);">
+        <i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  try {
+    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(kelime));
+    const d = await r.json();
+    const ic = document.getElementById('anlam_icerik');
+    if (!ic) return;
+    if (Array.isArray(d) && d.length) {
+      const entry = d[0];
+      let html = '';
+      entry.meanings?.slice(0,3).forEach(m => {
+        html += `<div style="margin-bottom:8px;">
+          <span style="background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 7px;border-radius:100px;font-size:10px;font-weight:600;">${m.partOfSpeech}</span>
+          ${m.definitions?.slice(0,2).map(def => `
+            <div style="margin-top:5px;color:var(--txt);">${def.definition}</div>
+            ${def.example ? '<div style="color:var(--muted2);font-style:italic;margin-top:2px;">"' + def.example + '"</div>' : ''}
+          `).join('')}
+        </div>`;
+      });
+      if (entry.phonetic) html = '<div style="color:var(--muted2);margin-bottom:8px;">' + entry.phonetic + '</div>' + html;
+      ic.innerHTML = html || '<div style="color:var(--red2);">Anlam bulunamadı</div>';
+    } else {
+      ic.innerHTML = '<div style="color:var(--muted2);">İngilizce sözlükte bulunamadı. <br><a href="https://sozluk.gov.tr/?ara=' + encodeURIComponent(kelime) + '" target="_blank" style="color:var(--accent3);">TDK\'da ara →</a></div>';
+    }
+  } catch(e) {
+    const ic = document.getElementById('anlam_icerik');
+    if (ic) ic.innerHTML = `<div style="color:var(--muted2);">
+      <a href="https://translate.google.com/?text=${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Google Translate'de aç →</a><br>
+      <a href="https://tureng.com/tr/turkce-ingilizce/${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Tureng'de ara →</a>
+    </div>`;
+  }
+}
+
+async function kelimeAIOneri(kelime, segNo) {
+  document.getElementById('word_popup')?.remove();
+  const seg = segs.find(s => s.no == segNo);
+  const baglam = seg ? seg.text.slice(0,120) : '';
+  const dil = document.getElementById('src_lang')?.value || 'tr';
+
+  // kelimeOneriAc gibi davran
+  const fakeEl = { dataset:{ word:kelime, conf:'0.5' }, id:'ai_' + segNo, closest:()=>null };
+  const fd = new FormData();
+  fd.append('kelime', kelime); fd.append('baglam', baglam); fd.append('dil', dil);
+  const r = await fetch(B + '/api/kelime_oneri/', {method:'POST', body:fd});
+  const d = await r.json();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:320px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;">🤖 AI Öneri: "${kelime}"</div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${(d.oneriler||[]).map(o=>`
+          <button onclick="kelimeSayfadaDegistir('${kelime}',${segNo},'${o.replace(/'/g,"\\'")}');this.closest('[style*=fixed]').remove()"
+            style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 12px;border-radius:var(--r);cursor:pointer;text-align:left;font-size:12px;font-family:inherit;transition:border .12s;"
+            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            → ${o}
+          </button>`).join('')}
+        ${!d.oneriler?.length ? '<div style="color:var(--muted2);font-size:12px;">Öneri bulunamadı</div>' : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function kelimeSilSegmentten(kelime, segNo) {
+  document.getElementById('word_popup')?.remove();
+  const seg = segs.find(s => s.no == segNo);
+  if (!seg) return;
+  undoPush();
+  const regex = new RegExp('\\b' + kelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i');
+  seg.text = seg.text.replace(regex, '').replace(/\s+/g,' ').trim();
+  seg.rawText = seg.text;
+  const el = document.getElementById('t_' + seg.no);
+  if (el) el.innerHTML = seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ');
+  toast('"' + kelime + '" silindi');
+}
+
+function kelimeSayfadaDegistir(eskiKelime, segNo, yeniKelime) {
+  const seg = segs.find(s => s.no == segNo);
+  if (!seg) return;
+  undoPush();
+  const regex = new RegExp('\\b' + eskiKelime.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i');
+  seg.text = seg.text.replace(regex, yeniKelime);
+  seg.rawText = seg.text;
+  const el = document.getElementById('t_' + seg.no);
+  if (el) el.innerHTML = seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ');
+  toast('✓ "' + eskiKelime + '" → "' + yeniKelime + '"');
+}
+
+/* ═══ ALTYAZI ŞABLON GALERİSİ ═══ */
+const SUB_TEMPLATES = [
+  { id:'tiktok_bold', name:'TikTok Bold', font:'Impact,sans-serif', size:'28', color:'#ffffff', bold:true, shadow:true, bg:'#000000', pos:'bottom', preview:'YAŞASINN' },
+  { id:'youtube', name:'YouTube', font:'Arial', size:'20', color:'#ffffff', bold:false, shadow:true, bg:'rgba(0,0,0,.7)', pos:'bottom', preview:'Örnek' },
+  { id:'netflix', name:'Netflix', font:'Arial', size:'22', color:'#ffff00', bold:false, shadow:true, bg:'transparent', pos:'bottom', preview:'Netflix' },
+  { id:'minimal', name:'Minimal', font:'DM Sans', size:'18', color:'#ffffff', bold:false, shadow:false, bg:'transparent', pos:'bottom', preview:'Minimal' },
+  { id:'instagram', name:'Instagram', font:'Georgia,serif', size:'24', color:'#ffffff', bold:true, shadow:true, bg:'transparent', pos:'center', preview:'Reels' },
+  { id:'podcast', name:'Podcast', font:'Courier New,monospace', size:'16', color:'#00ff88', bold:false, shadow:false, bg:'rgba(0,0,0,.5)', pos:'bottom', preview:'Podcast' },
+];
+
+function subSablonGalerisiOlustur() {
+  const sec = document.getElementById('sec_sub_design');
+  if (!sec || document.getElementById('sub_tmpl_gallery')) return;
+  const galDiv = document.createElement('div');
+  galDiv.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Hazır Şablonlar</div>
+    <div class="sub-template-grid">
+      ${SUB_TEMPLATES.map(t => `
+        <div class="sub-tmpl" id="tmpl_${t.id}" onclick="subSablonUygula('${t.id}')" title="${t.name}">
+          <div class="sub-tmpl-preview" style="background:${t.bg==='transparent'?'#1a1a2e':t.bg};color:${t.color};font-family:${t.font};font-size:${Math.min(parseInt(t.size),14)}px;font-weight:${t.bold?'700':'400'};">
+            ${t.preview}
+          </div>
+          <div style="font-size:9px;color:var(--muted2);">${t.name}</div>
+        </div>`).join('')}
+    </div>
+    <div style="height:0.5px;background:var(--border);margin:8px 0;"></div>`;
+  galDiv.id = 'sub_tmpl_gallery';
+  sec.insertBefore(galDiv, sec.querySelector('.frow'));
+}
+
+function subSablonUygula(tmplId) {
+  const t = SUB_TEMPLATES.find(x => x.id === tmplId);
+  if (!t) return;
+  document.querySelectorAll('.sub-tmpl').forEach(el => el.classList.remove('active'));
+  document.getElementById('tmpl_' + tmplId)?.classList.add('active');
+
+  const sf = document.getElementById('sub_font');
+  const ss = document.getElementById('sub_size');
+  const sc = document.getElementById('sub_color');
+  const bb = document.getElementById('btn_bold');
+  const bs = document.getElementById('btn_shadow');
+  const sp = document.getElementById('sub_pos');
+
+  if (sf) sf.value = t.font;
+  if (ss) ss.value = t.size;
+  if (sc) sc.value = t.color;
+  if (bb) t.bold ? bb.classList.add('on') : bb.classList.remove('on');
+  if (bs) t.shadow ? bs.classList.add('on') : bs.classList.remove('on');
+  if (sp) sp.value = t.pos;
+
+  updateSub();
+  toast('✓ "' + t.name + '" şablonu uygulandı');
+}
+let _batchQueue = [];
+let _batchRunning = false;
+
+function topluIslemAc() {
+  const overlay = document.createElement('div');
+  overlay.id = '_batch_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:480px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--txt);">📦 Toplu Video İşleme</div>
+        <button onclick="document.getElementById('_batch_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--s3);border:2px dashed var(--border2);border-radius:var(--r2);padding:20px;cursor:pointer;margin-bottom:12px;font-size:13px;color:var(--muted2);"
+        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <i class="fa-solid fa-folder-open" style="font-size:20px;color:var(--accent2);"></i>
+        Dosyaları Seç (çoklu seçim)
+        <input type="file" multiple accept="video/*,audio/*" hidden onchange="batchDosyaEkle(this)">
+      </label>
+      <div id="batch_list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">İşlem</div>
+          <select id="batch_modul" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            <option value="desifre">Deşifre</option>
+            <option value="altyazi">Altyazı Gömme</option>
+            <option value="seslendirme">AI Dublaj</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Hedef Dil</div>
+          <select id="batch_lang" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            <option value="EN">İngilizce</option><option value="DE">Almanca</option>
+            <option value="FR">Fransızca</option><option value="TR">Türkçe</option>
+          </select>
+        </div>
+      </div>
+      <div id="batch_progress" style="display:none;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="batch_status">Hazırlanıyor...</div>
+        <div style="background:var(--s3);border-radius:100px;height:5px;overflow:hidden;">
+          <div id="batch_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
+      <button onclick="batchBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:11px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
+        <i class="fa-solid fa-play"></i> Hepsini İşle
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function batchDosyaEkle(inp) {
+  const list = document.getElementById('batch_list');
+  if (!list) return;
+  Array.from(inp.files).forEach(f => {
+    _batchQueue.push(f);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--s3);padding:7px 10px;border-radius:var(--r);font-size:12px;';
+    row.innerHTML = `<i class="fa-solid fa-file-video" style="color:var(--accent2);"></i>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+      <span style="color:var(--muted2);">${(f.size/1024/1024).toFixed(1)}MB</span>
+      <span id="bs_${_batchQueue.length-1}" style="font-size:10px;color:var(--muted2);">Bekliyor</span>`;
+    list.appendChild(row);
+  });
+}
+
+async function batchBaslat() {
+  if (!_batchQueue.length) { toast('Dosya eklenmedi','twarn'); return; }
+  if (_batchRunning) { toast('Zaten çalışıyor','twarn'); return; }
+  _batchRunning = true;
+  const modul  = document.getElementById('batch_modul')?.value || 'desifre';
+  const lang   = document.getElementById('batch_lang')?.value  || 'EN';
+  const prog   = document.getElementById('batch_progress');
+  const bar    = document.getElementById('batch_bar');
+  const status = document.getElementById('batch_status');
+  if (prog) prog.style.display = 'block';
+  let tamamlanan = 0;
+  for (let i = 0; i < _batchQueue.length; i++) {
+    const dosya = _batchQueue[i];
+    const statusEl = document.getElementById('bs_' + i);
+    if (statusEl) { statusEl.textContent = '⏳'; statusEl.style.color = 'var(--yellow2)'; }
+    if (status) status.textContent = dosya.name + ' (' + i+1 + '/' + _batchQueue.length + ')';
+    try {
+      const fd = new FormData();
+      fd.append('modul', modul); fd.append('hedef_dil', lang);
+      fd.append('kaynak_dil', 'auto'); fd.append('ses_id', voice || 'nPczCjzI2devNBz1zQrb');
+      fd.append('dosya', dosya);
+      const r = await fetch(B + '/api/islem/', { method:'POST', body:fd });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      await new Promise((resolve, reject) => {
+        const iv = setInterval(async () => {
+          try {
+            const sr = await fetch(B + '/durum/${d.beklenen_dosya_adi}');
+            const sd = await sr.json();
+            if (sd.yuzde === 100) { clearInterval(iv); resolve(); }
+            else if (sd.yuzde === 0 && sd.durum?.startsWith('Hata')) { clearInterval(iv); reject(sd.durum); }
+          } catch(e) { clearInterval(iv); reject(e); }
+        }, 2000);
+      });
+      tamamlanan++;
+      if (statusEl) { statusEl.textContent = '✓'; statusEl.style.color = 'var(--green2)'; }
+    } catch(e) {
+      if (statusEl) { statusEl.textContent = '✗'; statusEl.style.color = 'var(--red2)'; }
+    }
+    if (bar) bar.style.width = ((i+1) / _batchQueue.length * 100) + '%';
+  }
+  _batchRunning = false;
+  if (status) status.textContent = '✓ Tamamlandı: ' + tamamlanan + '/' + _batchQueue.length;
+  toast('Toplu işlem: ' + tamamlanan + '/' + _batchQueue.length + ' tamamlandı');
+}
+
+/* ═══ SÜRÜM GEÇMİŞİ / A/B KARŞILAŞTIRMA ═══ */
+let _versiyonlar = [];
+
+function versiyonKaydet(etiket) {
+  if (!segs.length) { toast('Kaydedilecek segment yok','twarn'); return; }
+  const v = {
+    etiket: etiket || 'Versiyon ' + _versiyonlar.length + 1,
+    zaman: new Date().toLocaleTimeString('tr-TR'),
+    segmentler: JSON.parse(JSON.stringify(segs)),
+  };
+  _versiyonlar.push(v);
+  const btn = document.getElementById('versiyon_btn');
+  if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<i class="fa-solid fa-code-compare"></i> A/B (' + _versiyonlar.length + ')'; }
+  toast('✓ "' + v.etiket + '" kaydedildi');
+}
+
+function versiyonPaneliAc() {
+  if (!_versiyonlar.length) { toast('Henüz kaydedilmiş versiyon yok','twarn',4000); return; }
+  const overlay = document.createElement('div');
+  overlay.id = '_versiyon_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:520px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">🔀 Sürüm Geçmişi & A/B</div>
+        <button onclick="document.getElementById('_versiyon_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">A Versiyonu</div>
+          <select id="ver_a" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            ${_versiyonlar.map((v,i)=>'<option value="' + i + '">' + v.etiket + ' (' + v.zaman + ')</option>').join('')}
+          </select></div>
+        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">B Versiyonu</div>
+          <select id="ver_b" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
+            ${_versiyonlar.map((v,i)=>'<option value="' + i + '" ' + i===_versiyonlar.length-1?'selected':'' + '>' + v.etiket + ' (' + v.zaman + ')</option>').join('')}
+          </select></div>
+      </div>
+      <button onclick="abKarsilastir()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:8px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;margin-bottom:10px;">
+        <i class="fa-solid fa-arrows-left-right"></i> Karşılaştır
+      </button>
+      <div id="ab_result"></div>
+      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">
+        ${_versiyonlar.map((v,i) => `
+          <div style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);margin-bottom:5px;">
+            <span style="font-size:12px;flex:1;">${v.etiket} <span style="color:var(--muted2);font-size:10px;">${v.zaman}</span></span>
+            <button onclick="versiyonaGeriDon(${i})" style="background:var(--accent);border:none;color:#fff;padding:3px 9px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Geri Dön</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function abKarsilastir() {
+  const iA = parseInt(document.getElementById('ver_a')?.value);
+  const iB = parseInt(document.getElementById('ver_b')?.value);
+  if (isNaN(iA)||isNaN(iB)||iA===iB) { toast('İki farklı versiyon seçin','twarn'); return; }
+  const vA = _versiyonlar[iA], vB = _versiyonlar[iB];
+  const tA = vA.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
+  const tB = vB.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
+  const res = document.getElementById('ab_result');
+  if (res) res.innerHTML = `
+    <div style="background:var(--s3);border-radius:var(--r);padding:10px;font-size:12px;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+        <div style="background:rgba(99,102,241,.1);padding:7px;border-radius:5px;">
+          <div style="font-weight:700;color:var(--accent3);">A: ${vA.etiket}</div>
+          <div style="color:var(--muted2);">${vA.segmentler.length} segment · ${tA.toFixed(1)}s</div>
+        </div>
+        <div style="background:rgba(234,179,8,.1);padding:7px;border-radius:5px;">
+          <div style="font-weight:700;color:#eab308;">B: ${vB.etiket}</div>
+          <div style="color:var(--muted2);">${vB.segmentler.length} segment · ${tB.toFixed(1)}s</div>
+        </div>
+      </div>
+      <div style="color:var(--muted2);">Δ Segment: <b style="color:var(--txt);">${vB.segmentler.length-vA.segmentler.length>0?'+':''}${vB.segmentler.length-vA.segmentler.length}</b>
+        &nbsp; Δ Süre: <b style="color:var(--txt);">${(tB-tA)>=0?'+':''}${(tB-tA).toFixed(1)}s</b></div>
+    </div>`;
+}
+
+function versiyonaGeriDon(i) {
+  if (!confirm('"' + _versiyonlar[i].etiket + '" versiyonuna dönülsün mü?')) return;
+  undoPush();
+  segs = JSON.parse(JSON.stringify(_versiyonlar[i].segmentler));
+  const srt = segs.map(s=>s.no + '\n' + s.tStr||'00:00:00,000 --> 00:00:01,000' + '\n' + s.rawText||s.text).join('\n\n');
+  renderSegs(srt, aSrt);
+  document.getElementById('_versiyon_overlay')?.remove();
+  toast('"' + _versiyonlar[i].etiket + '" versiyonuna dönüldü');
+}
+
+function autoVersiyonKaydet() {
+  if (segs.length > 0 && _versiyonlar.length < 20) versiyonKaydet('Otomatik ' + new Date().toLocaleTimeString('tr-TR'));
+}
+
+/* ═══ VİRAL KLİP ÇIKARMA ═══ */
+async function viralKlipCikar() {
+  if (!segs.length) { toast('Önce transkript oluşturun','twarn'); return; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> En iyi anlar analiz ediliyor...','tok',8000);
+  const skorlar = segs.map(s => {
+    const metin = s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
+    const sure  = s.end - s.start;
+    const cps   = sure > 0 ? metin.split(/\s+/).length / sure : 0;
+    let skor = cps * 10;
+    if (/[!?]/.test(metin)) skor += 15;
+    if (/\b(inanılmaz|harika|incredible|amazing|wow|omg|ngl|fr|no cap)\b/i.test(metin)) skor += 20;
+    if (sure >= 3 && sure <= 30) skor += 10;
+    return { seg:s, skor, metin, sure };
+  });
+  const enIyi = [...skorlar].sort((a,b)=>b.skor-a.skor).slice(0,5);
+  const overlay = document.createElement('div');
+  overlay.id = '_viral_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">⚡ En İyi Anlar</div>
+        <button onclick="document.getElementById('_viral_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      ${enIyi.map((item,i)=>`
+        <div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="background:rgba(234,179,8,.2);color:#eab308;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;">#${i+1}</span>
+            <span style="font-size:11px;color:var(--muted2);">${fmt(item.seg.start)} → ${fmt(item.seg.end)} · ${item.sure.toFixed(1)}s</span>
+            <span style="margin-left:auto;font-size:10px;background:rgba(99,102,241,.15);color:var(--accent3);padding:2px 7px;border-radius:100px;">⭐ ${Math.round(item.skor)}</span>
+          </div>
+          <div style="font-size:12px;margin-bottom:8px;">"${item.metin.slice(0,100)}${item.metin.length>100?'...':''}"</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="vidAtla(${item.seg.start})" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-play"></i> Oynat</button>
+            <button onclick="klipIndir('${aDosya||''}',${item.seg.start},${item.seg.end})" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-scissors"></i> Klip İndir</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function klipIndir(dosyaAdi, baslangic, bitis) {
+  if (!dosyaAdi) { toast('Video dosyası yok','twarn'); return; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Klip kesiliyor...','tok',10000);
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', dosyaAdi);
+    fd.append('baslangic', baslangic.toFixed(2));
+    fd.append('bitis', bitis.toFixed(2));
+    const r = await fetch(B + '/api/klip_kes/', {method:'POST', body:fd});
+    const d = await r.json();
+    if (d.cikti) { window.open(B + '/indir/${d.cikti}','_blank'); toast('✓ Klip hazır!'); }
+    else toast(d.hata||'Klip kesilemedi','terr');
+  } catch(e) { toast('Bağlantı hatası','terr'); }
+}
+
+function vidAtla(sure) {
+  const v = document.getElementById('vid');
+  const a = document.getElementById('aud');
+  const el = v?.style.display!=='none' ? v : a;
+  if (el) { el.currentTime = sure; el.play(); }
+  document.getElementById('_viral_overlay')?.remove();
+}
+
+let aktifSeg = null;
+
+/* ═══ PROFİL MODALİ ═══ */
+function profilAc() {
+  document.getElementById('_profil_overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = '_profil_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  const plan     = _sbProfil?.plan || localStorage.getItem('vf_plan') || 'lite';
+  const kullanim = _sbProfil?.kullanim_dakika || parseFloat(localStorage.getItem('vf_kullanim_dk')||'0');
+  const limitler = { lite:10, creator:75, studio:200, business:600 };
+  const limit    = limitler[plan.toLowerCase()] || 10;
+  const yuzde    = Math.min(100, (kullanim / limit) * 100);
+  const renk     = yuzde > 85 ? '#ef4444' : yuzde > 60 ? '#f59e0b' : '#22c55e';
+  const email    = _sbUser?.email || 'Giriş yapılmadı';
+
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;">👤 Profil</div>
+        <button onclick="document.getElementById('_profil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+
+      <!-- Kullanıcı bilgisi -->
+      <div style="background:var(--s3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+          ${email[0]?.toUpperCase() || '?'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${email}</div>
+          <div style="font-size:11px;color:var(--muted2);">${_sbUser ? 'Aktif hesap' : 'Demo mod'}</div>
+        </div>
+        ${_sbUser ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Çıkış</button>' :
+        '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Giriş Yap</button>'}
+      </div>
+
+      <!-- Plan & kullanım -->
+      <div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:var(--muted2);">Aktif Plan</div>
+            <div style="font-size:18px;font-weight:700;color:var(--accent3);text-transform:capitalize;">${plan}</div>
+          </div>
+          <button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Yükselt ↑</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">${kullanim.toFixed(1)} / ${limit} dakika</div>
+        <div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">
+          <div style="height:100%;background:${renk};border-radius:100px;width:${yuzde}%;"></div>
+        </div>
+      </div>
+
+      <!-- Plan karşılaştırma -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        ${[['lite','$0','10 dk'],['creator','$9','75 dk'],['studio','$19','200 dk'],['business','$49','600 dk']].map(([p,f,d])=>`
+          <div style="background:${p===plan.toLowerCase()?'rgba(99,102,241,.1)':'var(--s3)'};border:1.5px solid ${p===plan.toLowerCase()?'var(--accent2)':'var(--border2)'};border-radius:var(--r);padding:8px 10px;">
+            <div style="font-size:11px;font-weight:700;color:${p===plan.toLowerCase()?'var(--accent3)':'var(--txt)'};">${p.charAt(0).toUpperCase()+p.slice(1)} ${p===plan.toLowerCase()?'✓':''}</div>
+            <div style="font-size:13px;font-weight:700;">${f}<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>
+            <div style="font-size:10px;color:var(--muted2);">${d}/ay</div>
+          </div>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="gizlilikAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">🔒 Gizlilik</button>
+        <button onclick="kullanımSartlariAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">📄 Şartlar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;">👤 Profil</div>
+        <button onclick="document.getElementById('_profil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+
+      <!-- Plan bilgisi -->
+      <div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <div style="font-size:12px;color:var(--muted2);">Aktif Plan</div>
+            <div style="font-size:18px;font-weight:700;color:var(--accent3);">${plan}</div>
+          </div>
+          <button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">
+            Yükselt ↑
+          </button>
+        </div>
+        <!-- Kullanım çubuğu -->
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">
+          ${parseFloat(kullanim).toFixed(1)} / ${limit} dakika kullanıldı
+        </div>
+        <div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">
+          <div style="height:100%;background:${renk};border-radius:100px;width:${yuzde}%;transition:width .5s;"></div>
+        </div>
+      </div>
+
+      <!-- Plan karşılaştırma -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        ${[['Lite','$0','10 dk'],['Creator','$9','75 dk'],['Studio','$19','200 dk'],['Business','$49','600 dk']].map(([p,f,d])=>`
+          <div style="background:${p===plan?'rgba(99,102,241,.1)':'var(--s3)'};border:1.5px solid ${p===plan?'var(--accent2)':'var(--border2)'};border-radius:var(--r);padding:8px 10px;">
+            <div style="font-size:11px;font-weight:700;color:${p===plan?'var(--accent3)':'var(--txt)'};">${p} ${p===plan?'✓':''}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--txt);">${f}<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>
+            <div style="font-size:10px;color:var(--muted2);">${d}/ay</div>
+          </div>`).join('')}
+      </div>
+
+function planYukselt() {
+  document.getElementById('_profil_overlay')?.remove();
+  toast('💳 Ödeme sistemi yakında aktif olacak — Stripe entegrasyonu hazırlanıyor','twarn', 4000);
+}
+
+/* ═══ GİZLİLİK POLİTİKASI ═══ */
+function gizlilikAc() {
+  document.getElementById('_gizlilik_overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_gizlilik_overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:600px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:16px;font-weight:700;">🔒 Gizlilik Politikası</div>'
+    + '<button onclick="document.getElementById(\'_gizlilik_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted2);line-height:1.8;">'
+    + '<p style="margin-bottom:8px;color:var(--txt);font-size:11px;">Son güncelleme: Mart 2026</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">1. Topladığımız Veriler</h3>'
+    + '<p>Video ve ses dosyalarınız yalnızca işleme sürecinde geçici olarak saklanır. İşlem sonrası <b>30 dakika</b> içinde otomatik silinir. Kalıcı veriler: e-posta, plan bilgisi, kullanım dakikası.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">2. Kullanım Amacı</h3>'
+    + '<p>İçerikleriniz yalnızca hizmet sunumu için kullanılır. Üçüncü taraflarla paylaşılmaz, reklam amaçlı kullanılmaz.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">3. Üçüncü Taraf Hizmetler</h3>'
+    + '<ul style="margin:6px 0 6px 16px;"><li><b>Deepgram</b> — Ses tanıma</li><li><b>ElevenLabs</b> — Ses sentezi</li><li><b>DeepL</b> — Çeviri</li></ul>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">4. GDPR (AB Kullanıcıları)</h3>'
+    + '<p>Verilerinize erişme, düzeltme, silme hakkına sahipsiniz. İletişim: <a href="mailto:privacy@voiceflow.studio" style="color:var(--accent3);">privacy@voiceflow.studio</a></p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">5. Çerezler</h3>'
+    + '<p>Yalnızca oturum ve tercih çerezleri kullanılır. Reklam çerezi yoktur.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">6. Güvenlik</h3>'
+    + '<p>Tüm bağlantılar HTTPS ile şifrelenir. Veriler Railway (EU West) altyapısında işlenir.</p>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+}
+
+/* ═══ KULLANIM ŞARTLARI ═══ */
+function kullanımSartlariAc() {
+  document.getElementById('_sartlar_overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_sartlar_overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:600px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:16px;font-weight:700;">📄 Kullanım Şartları</div>'
+    + '<button onclick="document.getElementById(\'_sartlar_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted2);line-height:1.8;">'
+    + '<p style="margin-bottom:8px;color:var(--txt);font-size:11px;">Son güncelleme: Mart 2026</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">1. Kabul</h3>'
+    + '<p>VoiceFlow Studio kullanarak bu şartları kabul etmiş sayılırsınız.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">2. Kullanım Hakları</h3>'
+    + '<p>Kişisel ve ticari kullanım için lisanslanmıştır. Telif hakkı ihlali yasaktır.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">3. Kota ve Limitler</h3>'
+    + '<p>Her plan belirli aylık dakika limitine sahiptir. Kullanılmayan dakikalar devredilmez.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">4. Yasaklı Kullanım</h3>'
+    + '<ul style="margin:6px 0 6px 16px;"><li>Telif hakkı ihlali</li><li>Manipülasyon amaçlı deepfake</li><li>Spam veya kötü amaçlı içerik</li><li>API izninsiz yeniden satış</li></ul>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">5. Sorumluluk Reddi</h3>'
+    + '<p>Hizmet olduğu gibi sunulur. AI çıktıları kontrol edilmeden kullanılmamalıdır.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">6. İletişim</h3>'
+    + '<p><a href="mailto:legal@voiceflow.studio" style="color:var(--accent3);">legal@voiceflow.studio</a></p>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+}
+
+/* ═══ AKILLI KREDİ MODALI ═══ */
+// Her modülün kredi maliyeti (dakika bazlı)
+const MODUL_MALIYET = {
+  desifre: 5,
+  altyazi: 8,
+  seslendirme: 20,
+  metinden_sese: 3,
+};
+
+async function bakiyeKontrolVeBaslat() {
+  const maliyet = MODUL_MALIYET[mod] || 5;
+
+  // Backend'den bakiye kontrol
+  try {
+    const r = await fetch(B + '/api/bakiye_kontrol/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modul: mod,
+        user_id: _sbUser?.id || null,
+      })
+    });
+    const d = await r.json();
+
+    if (!d.yeterli) {
+      krediBittiModalAc(d.bakiye || 0, maliyet);
+      return false;
+    }
+  } catch(e) {
+    // Backend erişilemiyorsa devam et
+    console.warn('Bakiye kontrol atlandı:', e);
+  }
+
+  return true;
+}
+
+function krediBittiModalAc(mevcutBakiye, gerekliKredi) {
+  document.getElementById('_kredi_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_kredi_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const modulAdi = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'Metin→Ses' }[mod] || mod;
+
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:480px;max-width:95vw;">'
+    + '<div style="text-align:center;margin-bottom:20px;">'
+    + '<div style="font-size:32px;margin-bottom:8px;">⚡</div>'
+    + '<div style="font-size:16px;font-weight:700;color:var(--txt);">Yeterli Krediniz Yok</div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-top:6px;">'
+    + modulAdi + ' için <b style="color:var(--txt);">' + gerekliKredi + ' kredi</b> gerekli, '
+    + 'mevcut bakiyeniz: <b style="color:var(--yellow2);">' + mevcutBakiye + ' kredi</b>'
+    + '</div></div>'
+    // İki seçenek yan yana
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">'
+    // Seçenek 1: Tek seferlik kredi
+    + '<div style="background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:16px;display:flex;flex-direction:column;gap:8px;">'
+    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent3);">⚡ Hızlı Çözüm</div>'
+    + '<div style="font-size:20px;font-weight:700;color:var(--txt);">+50 Kredi<span style="font-size:12px;font-weight:400;color:var(--muted2);"> / $5</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);flex:1;">İşlemlerinize hemen devam edin. Tek seferlik, abonelik yok.</div>'
+    + '<button onclick="kredinalAc(50,5)" style="background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Hemen Al →</button>'
+    + '</div>'
+    // Seçenek 2: Pro plan
+    + '<div style="background:var(--s3);border:1.5px solid var(--purple2);border-radius:var(--r2);padding:16px;display:flex;flex-direction:column;gap:8px;">'
+    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#a855f7;">👑 En İyi Değer</div>'
+    + '<div style="font-size:20px;font-weight:700;color:var(--txt);">Studio<span style="font-size:12px;font-weight:400;color:var(--muted2);"> / $19/ay</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);flex:1;">200 dk/ay + Ses Klonlama + öncelikli işlem. Sınırları kaldırın.</div>'
+    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Yükselt →</button>'
+    + '</div>'
+    + '</div>'
+    + '<div style="text-align:center;">'
+    + '<button onclick="document.getElementById(\'_kredi_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit;">Şimdi değil</button>'
+    + '</div>'
+    + '<div style="margin-top:12px;padding:10px;background:rgba(99,102,241,.08);border-radius:var(--r);font-size:11px;color:var(--muted2);text-align:center;">'
+    + '💡 <b style="color:var(--txt);">İpucu:</b> Küçük videolar (5 dk altı) çok daha az kredi harcar.'
+    + '</div>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+}
+
+function kredinalAc(kredi, fiyat) {
+  document.getElementById('_kredi_modal')?.remove();
+  toast('💳 Ödeme sayfası yakında — Stripe entegrasyonu hazırlanıyor', 'twarn', 4000);
+  // Stripe gelince: window.location.href = '/odeme?kredi=' + kredi + '&fiyat=' + fiyat;
+}
+const SUPABASE_URL  = 'https://scbnrgvpmdmmginezamj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjYm5yZ3ZwbWRtbWdpbmV6YW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjU5OTMsImV4cCI6MjA5MDIwMTk5M30.9KntnaEQvbzCjw6t3iUd-PUker2_vtf8XaEnCoo3R2k';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let _sbUser   = null;
+let _sbProfil = null;
+
+async function authBaslat() {
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session?.user) await authGirisYapildi(session.user);
+    _sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN'  && session?.user) await authGirisYapildi(session.user);
+      if (event === 'SIGNED_OUT') authCikisYapildi();
+    });
+  } catch(e) { console.warn('Supabase auth hatası:', e); }
+}
+
+async function authGirisYapildi(user) {
+  _sbUser = user;
+  document.getElementById('auth_modal')?.remove();
+  try {
+    const { data } = await _sb.from('profiles').select('*').eq('id', user.id).single();
+    _sbProfil = data;
+    if (data) {
+      localStorage.setItem('vf_plan', data.plan || 'lite');
+      localStorage.setItem('vf_kullanim_dk', data.kullanim_dakika || 0);
+    }
+  } catch(e) {}
+  const navName = document.getElementById('nav_user_name');
+  if (navName) { navName.textContent = user.email ? user.email.split('@')[0] : ''; navName.style.display = 'inline'; }
+  const isim = user.email ? user.email.split('@')[0] : 'Kullanıcı';
+  toast('✓ Hoş geldin, ' + isim + '!');
+}
+
+function authCikisYapildi() {
+  _sbUser = null; _sbProfil = null;
+  const navName = document.getElementById('nav_user_name');
+  if (navName) navName.style.display = 'none';
+}
+
+async function authCikis() {
+  await _sb.auth.signOut();
+  document.getElementById('_profil_overlay')?.remove();
+  toast('Çıkış yapıldı');
+}
+
+async function kotaKontrol(tahminiDk = 5) {
+  if (!_sbUser || !_sbProfil) return true;
+  const kalan = (_sbProfil.aylik_limit || 10) - (_sbProfil.kullanim_dakika || 0);
+  if (kalan <= 0) { toast('⚠ Aylık kotanız doldu! Planı yükseltmek için profilinize bakın.','terr',5000); return false; }
+  if (kalan < tahminiDk) toast('⚠ Yalnızca ' + kalan.toFixed(1) + ' dakika kaldı','twarn',3000);
+  return true;
+}
+
+async function kullanımGuncelle(dakika) {
+  if (!_sbUser || !_sbProfil) return;
+  const yeni = (_sbProfil.kullanim_dakika || 0) + dakika;
+  await _sb.from('profiles').update({ kullanim_dakika: yeni }).eq('id', _sbUser.id);
+  _sbProfil.kullanim_dakika = yeni;
+  localStorage.setItem('vf_kullanim_dk', yeni);
+}
+
+function loginModalAc(mesaj) {
+  document.getElementById('auth_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'auth_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  const msg = mesaj || 'Devam etmek icin giris yapin';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;width:380px;max-width:95vw;">'
+    + '<div style="text-align:center;margin-bottom:24px;">'
+    + '<div style="font-size:36px;margin-bottom:8px;">&#127897;</div>'
+    + '<div style="font-size:18px;font-weight:700;">VoiceFlow Studio</div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-top:4px;">' + msg + '</div>'
+    + '</div>'
+    + '<div style="display:flex;background:var(--s3);border-radius:var(--r);padding:3px;margin-bottom:20px;">'
+    + '<button id="tab_giris" onclick="authTabSec(\'giris\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Giris Yap</button>'
+    + '<button id="tab_kayit" onclick="authTabSec(\'kayit\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:transparent;color:var(--muted2);font-size:13px;cursor:pointer;font-family:inherit;">Kayit Ol</button>'
+    + '</div>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">E-posta</label>'
+    + '<input id="auth_email" type="email" placeholder="ornek@email.com" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;">'
+    + '</div>'
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Sifre</label>'
+    + '<input id="auth_pass" type="password" placeholder="..." onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;">'
+    + '</div>'
+    + '<div id="auth_err" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--red2);margin-bottom:12px;"></div>'
+    + '<button id="auth_btn" onclick="authGonder()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;margin-bottom:10px;">Giris Yap</button>'
+    + '<button onclick="authDevamEt()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Giris yapmadan devam et (Demo)</button>'
+    + '<div style="text-align:center;margin-top:14px;font-size:11px;color:var(--muted);">'
+    + '<button onclick="gizlilikAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:11px;font-family:inherit;">Gizlilik Politikasi</button>'
+    + ' &nbsp;&middot;&nbsp; '
+    + '<button onclick="kullanımSartlariAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:11px;font-family:inherit;">Kullanim Sartlari</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){ var e=document.getElementById('auth_email'); if(e) e.focus(); }, 100);
+}
+
+function authTabSec(mod) {
+  _authMod = mod;
+  ['giris','kayit'].forEach(m => {
+    const b = document.getElementById('tab_' + m);
+    if (b) { b.style.background = m===mod?'var(--accent)':'transparent'; b.style.color = m===mod?'#fff':'var(--muted2)'; }
+  });
+  const btn = document.getElementById('auth_btn');
+  if (btn) btn.textContent = mod==='giris'?'Giriş Yap':'Hesap Oluştur';
+}
+
+async function authGonder() {
+  const email = document.getElementById('auth_email')?.value?.trim();
+  const pass  = document.getElementById('auth_pass')?.value;
+  const errEl = document.getElementById('auth_err');
+  const btn   = document.getElementById('auth_btn');
+  const hataMesajlari = {
+    'Invalid login credentials':'E-posta veya şifre hatalı',
+    'Email not confirmed':'E-postanızı onaylayın — gelen kutunuzu kontrol edin',
+    'User already registered':'Bu e-posta zaten kayıtlı',
+    'Password should be at least 6 characters':'Şifre en az 6 karakter olmalı',
+  };
+  if (!email||!pass) { if(errEl){errEl.textContent='E-posta ve şifre gerekli';errEl.style.display='block';} return; }
+  if (btn) { btn.textContent='...'; btn.disabled=true; }
+  if (errEl) errEl.style.display='none';
+  let r;
+  if (_authMod==='giris') r = await _sb.auth.signInWithPassword({email, password:pass});
+  else                    r = await _sb.auth.signUp({email, password:pass});
+  if (btn) { btn.textContent=_authMod==='giris'?'Giriş Yap':'Hesap Oluştur'; btn.disabled=false; }
+  if (r.error) {
+    if (errEl) { errEl.textContent=hataMesajlari[r.error.message]||r.error.message; errEl.style.display='block'; }
+  } else if (_authMod==='kayit' && !r.data?.session) {
+    if (errEl) { errEl.style.cssText='display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;'; errEl.textContent='✓ Kayıt başarılı! E-postanızı onaylayın.'; }
+  }
+}
+
+function authDevamEt() {
+  document.getElementById('auth_modal')?.remove();
+  toast('Demo modunda devam ediyorsunuz','twarn',3000);
+}
+
+// Sayfa yüklenince auth başlat
+authBaslat();
+
+/* ═══ GDPR COOKIE BANNER ═══ */
+(function() {
+  if (localStorage.getItem('vf_cookie_ok')) return;
+  const banner = document.createElement('div');
+  banner.id = 'cookie_banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--s2);border-top:1px solid var(--border2);padding:12px 20px;display:flex;align-items:center;gap:12px;z-index:9998;flex-wrap:wrap;';
+  banner.innerHTML = '<div style="flex:1;font-size:12px;color:var(--muted2);min-width:200px;">'
+    + 'Bu site oturum cerezleri kullanir. Reklam cerezi yoktur. '
+    + '<button onclick="gizlilikAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:12px;font-family:inherit;padding:0;text-decoration:underline;">Gizlilik Politikasi</button>'
+    + '</div>'
+    + '<button onclick="localStorage.setItem(\'vf_cookie_ok\',\'1\');document.getElementById(\'cookie_banner\').remove()"'
+    + ' style="background:var(--accent);border:none;color:#fff;padding:7px 16px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;white-space:nowrap;">'
+    + 'Tamam, Anladim'
+    + '</button>'
+    + '<button onclick="document.getElementById(\'cookie_banner\').remove()"'
+    + ' style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">'
+    + 'Reddet'
+    + '</button>';
+  document.body.appendChild(banner);
+})();
+
+async function magicCut(){
+  if(!aSrt)return toast('Önce transkript tamamlayın','twarn');
+  const dil = document.getElementById('src_lang')?.value||'tr';
+  if(!confirm('Dolgu kelimeleri (hmm, sey, ii, um...) otomatik silinsin mi?\n\nBu islem geri alinabilir (Ctrl+Z)'))return;
+
+  try{
+    const fd=new FormData();
+    fd.append('srt_dosya_adi',aSrt);
+    fd.append('dil',dil);
+    fd.append('min_confidence','0.5');
+    const r=await fetch(B + '/api/magic_cut/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){
+      toast('✓ Magic Cut: ' + d.silinen_segment_sayisi + ' dolgu silindi, ' + d.kalan_segment_sayisi + ' segment kaldı');
+      await reload();
+    }else toast(d.hata||'Hata','terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
+
+/* ═══ GÜRÜLTÜ GİDERME ═══ */
+async function gurultuGider(){
+  if(!aDosya)return toast('Önce bir video/ses işleyin','twarn');
+
+  const seviye = prompt('Gürültü giderme seviyesi:\n\nhafif — hafif tıslama\norta — standart gürültü\nguclu — yoğun gürültü\n\n(hafif/orta/guclu yazın)','orta');
+  if(!seviye)return;
+  if(!['hafif','orta','guclu'].includes(seviye))return toast('Geçersiz seviye','terr');
+
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Gürültü gideriliyor (' + seviye + ')... Bu birkaç dakika sürebilir.','tok',60000);
+
+  try{
+    const fd=new FormData();
+    fd.append('dosya_adi',aDosya);
+    fd.append('seviye',seviye);
+    const r=await fetch(B + '/api/gurultu_gider/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.islem_id){
+      const iv=setInterval(async()=>{
+        const sr=await fetch(B + '/durum/${d.islem_id}');
+        const sd=await sr.json();
+        if(sd.yuzde===100){
+          clearInterval(iv);
+          aDosya=sd.cikti_dosya||d.beklenen_cikti;
+          toast('✓ Gürültü giderildi → ' + aDosya);
+          // Videoyu yenile
+          const v=document.getElementById('vid');
+          if(v.src) v.src=B + '/dinle/${aDosya}?v=${Date.now()}';
+        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
+          clearInterval(iv);
+          toast(sd.durum,'terr',5000);
+        }
+      },2000);
+    }else toast(d.hata||'Hata','terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
+async function deepL(){
+  if(!aSrt)return alert('Transkript tamamlayın!');
+  document.getElementById('dlbtn').style.display='none';
+  document.getElementById('dlload').style.display='flex';
+  const fd=new FormData();fd.append('srt_dosya_adi',aSrt);fd.append('hedef_dil',document.getElementById('dl_lang').value);
+  try{
+    const r=await fetch(B + '/api/cevir/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){aSrt=d.cevrilmis_dosya_adi;const sr=await fetch(B + '/dinle/${d.cevrilmis_dosya_adi}');renderSegs(await sr.text(),d.cevrilmis_dosya_adi,true);}
+    else toast('Çeviri hatası: ' + d.hata,'terr');
+  }catch(e){toast('Bağlantı hatası','terr');}
+  document.getElementById('dlbtn').style.display='';
+  document.getElementById('dlload').style.display='none';
+}
+
+/* ═══ INLINE EDIT ═══ */
+async function iEdit(no,old){
+  if(!aSrt)return;
+  const tx=document.getElementById('t_' + no);
+  if(!tx||tx.querySelector('textarea'))return;
+  const orig=tx.innerHTML;tx.innerHTML='';
+  const ta=document.createElement('textarea');ta.className='ita';ta.value=old;ta.rows=2;
+  const save=async()=>{
+    const nw=ta.value.trim();ta.disabled=true;
+    if(nw===old){tx.innerHTML=orig;return;}
+    try{
+      _pushUndo({undo:{type:'metin',no,metin:old},redo:{type:'metin',no,metin:nw}});
+      const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_metin',nw);
+      const r=await fetch(B + '/api/metin_guncelle/',{method:'POST',body:fd});
+      if(r.ok){
+        tx.innerHTML=nw.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
+        const c=document.getElementById('c_' + no);if(c){c.style.borderColor='var(--green2)';setTimeout(()=>c.style.borderColor='',900);}
+        const s=segs.find(x=>x.no==no);if(s){s.text=nw;s.rawText=nw;}
+        toast('✓ Kaydedildi');
+      }else tx.innerHTML=orig;
+    }catch(e){tx.innerHTML=orig;}
+  };
+  ta.addEventListener('blur',save);
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();save();}
+    if(e.key==='Escape'){ta.removeEventListener('blur',save);tx.innerHTML=orig;}
+  });
+  tx.appendChild(ta);ta.focus();ta.select();
+}
+
+/* ═══ SEG BOL / BİRLEŞTİR ═══ */
+async function sBol(no){
+  if(!aSrt)return;
+  const s=segs.find(x=>x.no==no);if(!s)return;
+  const k=s.start+(s.end-s.start)/2;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('kesim_saniye',k);
+  try{const r=await fetch(B + '/api/segment_bol/',{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Bölündü');}}catch(e){}
+}
+async function sBirlestir(no){
+  if(!aSrt)return;
+  if(!confirm('#' + no + ' ile #' + parseInt(no)+1 + ' birleştirilsin mi?'))return;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);
+  try{const r=await fetch(B + '/api/segment_birlestir/',{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Birleştirildi');}}catch(e){}
+}
+async function reload(){
+  if(!aSrt)return;
+  const r=await fetch(B + '/dinle/${aSrt}');
+  if(r.ok)renderSegs(await r.text(),aSrt,true);
+}
+
+/* ═══ SEGMENT YENİDEN SESLENDİR ═══ */
+async function segRedub(no){
+  if(!aDosya||!aSrt)return toast('Önce dublaj tamamlayın','twarn');
+  const seg=segs.find(s=>s.no==no);
+  if(!seg)return;
+  if(!confirm('#' + no + ' segmenti yeniden seslendir?\n"' + seg.text.substring(0,60) + '..."'))return;
+
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> #' + no + ' seslendiriliyor...','tok',8000);
+  try{
+    const fd=new FormData();
+    fd.append('video_dosya_adi',aDosya);
+    fd.append('srt_dosya_adi',aSrt);
+    fd.append('segment_no',no);
+    fd.append('ses_id',voice);
+    const r=await fetch(B + '/api/segment_yeniden_seslendir/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.islem_id){
+      // Durumu takip et
+      const iv=setInterval(async()=>{
+        const sr=await fetch(B + '/durum/${d.islem_id}');
+        const sd=await sr.json();
+        if(sd.yuzde===100){
+          clearInterval(iv);
+          toast('✓ #' + no + ' yeniden seslendirildi');
+          // Videoyu yenile
+          const v=document.getElementById('vid');
+          if(v.src)v.src=v.src.split('?')[0]+'?v='+Date.now();
+        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
+          clearInterval(iv);
+          toast(sd.durum,'terr',5000);
+        }
+      },1500);
+    }else{
+      toast(d.hata||'Hata','terr');
+    }
+  }catch(e){toast('Bağlantı hatası','terr');}
+}
+
+/* ═══ TIMELINE ═══ */
+function drawTL(blocks){
+  const track=document.getElementById('tl_track');if(!track)return;
+  Array.from(track.children).forEach(c=>{if(c.id!=='ph'&&c.id!=='wcv')c.remove();});
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:a;
+  const D=(media?.duration&&!isNaN(media.duration))?media.duration:(dur||100);
+  blocks.forEach(blk=>{
+    const l=blk.trim().split('\n');if(l.length<3)return;
+    const no=l[0].trim(),tp=l[1].split(' --> ');if(tp.length!==2)return;
+    const st=t2s(tp[0]),en=t2s(tp[1]);
+    const lp=(st/D)*100,wp=Math.max(((en-st)/D)*100,0.4);
+    const txt=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/,'');
+    const div=document.createElement('div');
+    div.className='tb';div.id='b_' + no;
+    div.style.left=lp + '%';div.style.width=wp + '%';
+    div.title='#' + no + ': ' + l[1] + '\n' + txt;
+    div.innerHTML='<div class="tb-id">' + no + '</div><div class="tb-txt">' + txt + '</div>';
+    div.addEventListener('mousedown',e=>{
+      if(e.target.classList.contains('rh'))return;
+      e.preventDefault();
+      const tw=track.clientWidth,sx=e.clientX,ol=lp;
+      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.left=Math.max(0,Math.min(100-wp,ol+dp)) + '%';};
+      const up=async()=>{
+        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+        const nl=parseFloat(div.style.left),ns=(nl/100)*D,ne=ns+(en-st);
+        await utTime(no,ns,ne,div);
+      };
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+    const rh=document.createElement('div');rh.className='rh';rh.title='Süreyi değiştir';
+    rh.addEventListener('mousedown',e=>{
+      e.stopPropagation();e.preventDefault();
+      const tw=track.clientWidth,sx=e.clientX,ow=wp;
+      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.width=Math.max(0.4,Math.min(100-lp,ow+dp)) + '%';};
+      const up=async()=>{
+        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+        const nw=parseFloat(div.style.width),ne=st+(nw/100)*D;
+        await utTime(no,st,ne,div);toast('#' + no + ' güncellendi');
+      };
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+    div.appendChild(rh);
+    div.addEventListener('click',e=>{if(e.target.classList.contains('rh'))return;cClick(no,st);});
+    track.appendChild(div);
+  });
+}
+
+async function utTime(no,ns,ne,blk){
+  if(!aSrt)return;
+  try{
+    const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_baslangic',ns);fd.append('yeni_bitis',ne);
+    const r=await fetch(B + '/api/zaman_guncelle/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(d.basari){
+      const s=segs.find(x=>x.no==no);if(s){s.start=ns;s.end=ne;}
+      const te=document.querySelector('#c_' + no + ' .sc-time');if(te)te.textContent=s2t(ns) + ' --> ' + s2t(ne);
+      if(blk){blk.style.borderColor='var(--green2)';setTimeout(()=>blk.style.borderColor='',700);}
+    }
+  }catch(e){}
+}
+
+/* ═══ WAVEFORM ═══ */
+async function waveform(dosya){
+  if(mod!=='altyazi'&&mod!=='seslendirme')return;
+  try{
+    const track=document.getElementById('tl_track');if(!track)return;
+    document.getElementById('wcv')?.remove();
+    const cv=document.createElement('canvas');cv.id='wcv';
+    cv.style.cssText='position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0.25;';
+    cv.width=track.clientWidth||800;cv.height=track.clientHeight||90;
+    track.insertBefore(cv,track.firstChild);
+    const r=await fetch(B + '/api/waveform/${dosya}?orneklem=600');if(!r.ok)return;
+    const d=await r.json();if(!d.waveform?.length)return;
+    const ctx=cv.getContext('2d'),step=cv.width/d.waveform.length,mid=cv.height/2;
+    ctx.fillStyle='#3b82f6';
+    d.waveform.forEach((v,i)=>{const h=Math.max(2,v*cv.height*.85);ctx.fillRect(i*step,mid-h/2,Math.max(step-.5,.5),h);});
+
+    // Timeline'a tıklayarak o ana atla
+    track.onclick = (e) => {
+      if (e.target === cv || e.target === track) {
+        const rect = track.getBoundingClientRect();
+        const oran = (e.clientX - rect.left) / rect.width;
+        const vid = document.getElementById('vid');
+        const aud = document.getElementById('aud');
+        const media = (vid?.style.display !== 'none' && vid?.src) ? vid : aud;
+        if (media && media.duration) {
+          media.currentTime = oran * media.duration;
+        }
+      }
+    };
+  }catch(e){}
+}
+
+/* ═══ ÇOKLU DİL EXPORT ═══ */
+async function cokluDilExport() {
+  if (!aSrt) { toast('Önce transkript oluşturun','twarn'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = '_multidil_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;">🌍 Çoklu Dil Export</div>
+        <button onclick="document.getElementById('_multidil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Seçilen dillere aynı anda çevir ve SRT indir:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        ${[['EN','🇺🇸 İngilizce'],['DE','🇩🇪 Almanca'],['FR','🇫🇷 Fransızca'],['ES','🇪🇸 İspanyolca'],['IT','🇮🇹 İtalyanca'],['PT','🇧🇷 Portekizce'],['RU','🇷🇺 Rusça'],['JA','🇯🇵 Japonca']].map(([k,l])=>`
+          <label style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;">
+            <input type="checkbox" value="${k}" class="_mdil_cb" style="accent-color:var(--accent2);">
+            ${l}
+          </label>`).join('')}
+      </div>
+      <div id="_mdil_progress" style="display:none;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="_mdil_status">Çevriliyor...</div>
+        <div style="background:var(--s3);border-radius:100px;height:4px;overflow:hidden;">
+          <div id="_mdil_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
+      <button onclick="cokluDilExportBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
+        <i class="fa-solid fa-download"></i> Hepsini İndir
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function cokluDilExportBaslat() {
+  const secili = [...document.querySelectorAll('._mdil_cb:checked')].map(cb => cb.value);
+  if (!secili.length) { toast('En az bir dil seçin','twarn'); return; }
+
+  const prog  = document.getElementById('_mdil_progress');
+  const bar   = document.getElementById('_mdil_bar');
+  const stat  = document.getElementById('_mdil_status');
+  if (prog) prog.style.display = 'block';
+
+  for (let i = 0; i < secili.length; i++) {
+    const dil = secili[i];
+    if (stat) stat.textContent = dil + ' diline çevriliyor... (' + i+1 + '/' + secili.length + ')';
+    if (bar)  bar.style.width = ((i / secili.length) * 100) + '%';
+    try {
+      const fd = new FormData();
+      fd.append('srt_dosya_adi', aSrt);
+      fd.append('hedef_dil', dil);
+      const r = await fetch(B + '/api/cevir/', { method:'POST', body:fd });
+      const d = await r.json();
+      if (d.cevrilmis_dosya_adi) {
+        // Otomatik indir
+        const a = document.createElement('a');
+        a.href = B + '/indir/${d.cevrilmis_dosya_adi}';
+        a.download = d.cevrilmis_dosya_adi;
+        a.click();
+        await new Promise(r => setTimeout(r, 800));
+      }
+    } catch(e) { toast(dil + ' çeviri hatası','terr'); }
+  }
+
+  if (bar)  bar.style.width = '100%';
+  if (stat) stat.textContent = '✓ ' + secili.length + ' dil tamamlandı';
+  toast('✓ ' + secili.length + ' dil SRT indirildi');
+  setTimeout(() => document.getElementById('_multidil_overlay')?.remove(), 2000);
+}
+
+/* ═══ OVERLAP ═══ */
+async function checkOV(){
+  if(!aSrt)return;
+  try{
+    const r=await fetch(B + '/api/cakisma_tespit/${aSrt}');if(!r.ok)return;
+    const d=await r.json();
+    document.getElementById('ov_banner')?.remove();
+    if(d.cakisma_sayisi>0){
+      d.cakismalar?.forEach(c=>document.getElementById('b_' + c.segment_a)?.classList.add('ov'));
+      const b=document.createElement('div');b.className='ovbanner';b.id='ov_banner';
+      b.innerHTML='<span><i class="fa-solid fa-triangle-exclamation"></i> ' + d.cakisma_sayisi + ' zaman çakışması</span><button class="fixbtn" onclick="fixOV()">Düzelt</button>';
+      document.getElementById('slist').insertBefore(b,document.getElementById('slist').firstChild);
+    }
+  }catch(e){}
+}
+async function fixOV(){
+  if(!aSrt)return;
+  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('bosluk_ms',80);
+  try{const r=await fetch(B + '/api/cakisma_duzelt/',{method:'POST',body:fd});const d=await r.json();if(d.basari){await reload();toast('✓ ' + d.duzeltilen_cakisma + ' çakışma düzeltildi');}}catch(e){}
+}
+
+/* ═══ KLAVYE ═══ */
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement?.tagName?.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
+  if(['input','textarea','select'].includes(tag))return;
+  const v=document.getElementById('vid'),a=document.getElementById('aud');
+  const media=(v.style.display!=='none'&&v.src)?v:(a.style.display!=='none'&&a.src?a:null);
+  if(!media)return;
+  if(e.code==='Space'){e.preventDefault();media.paused?media.play():media.pause();}
+  else if(e.code==='ArrowLeft'){e.preventDefault();media.currentTime=Math.max(0,media.currentTime-(e.shiftKey?1:5));}
+  else if(e.code==='ArrowRight'){e.preventDefault();media.currentTime=Math.min(media.duration||Infinity,media.currentTime+(e.shiftKey?1:5));}
+});
+
+/* ═══ PROJE KAYDETME (localStorage) ═══ */
+const PROJE_KEY = 'voiceflow_son_proje';
+
+function projeKaydet(){
+  if(!aSrt&&!aDosya)return;
+  try{
+    localStorage.setItem(PROJE_KEY, JSON.stringify({
+      aSrt, aDosya, mod,
+      src_lang: document.getElementById('src_lang')?.value,
+      tgt_lang: document.getElementById('tgt_lang')?.value,
+      zaman: Date.now()
+    }));
+  }catch(e){}
+}
+
+function projeYukle(){
+  try{
+    const kayit = JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
+    if(!kayit)return;
+    const gecenDakika = (Date.now()-kayit.zaman)/60000;
+    if(gecenDakika>480)return; // 8 saatten eski kayıtları yükleme
+
+    const banner=document.createElement('div');
+    banner.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--accent2);border-radius:var(--r2);padding:12px 18px;z-index:4000;display:flex;align-items:center;gap:12px;box-shadow:0 8px 22px rgba(0,0,0,.6);font-size:13px;';
+    banner.innerHTML=`
+      <i class="fa-solid fa-folder-open" style="color:var(--accent2)"></i>
+      <span>Son proje bulundu: <b>${kayit.aDosya||kayit.aSrt}</b> (${Math.round(gecenDakika)} dakika önce)</span>
+      <button onclick="projeGeriYukle()" style="background:var(--accent);border:none;color:#fff;padding:5px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;">Devam Et</button>
+      <button onclick="this.closest('div').remove()" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:0 4px;">×</button>
+    `;
+    banner.id='proje_banner';
+    document.body.appendChild(banner);
+    setTimeout(()=>banner.remove(),15000);
+  }catch(e){}
+}
+
+async function projeGeriYukle(){
+  document.getElementById('proje_banner')?.remove();
+  try{
+    const kayit=JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
+    if(!kayit)return;
+    aSrt=kayit.aSrt; aDosya=kayit.aDosya;
+    if(kayit.src_lang)document.getElementById('src_lang').value=kayit.src_lang;
+    if(kayit.tgt_lang)document.getElementById('tgt_lang').value=kayit.tgt_lang;
+
+    // Modü geç
+    sw(kayit.mod||'desifre');
+
+    // SRT varsa kartları yükle
+    if(aSrt){
+      const r=await fetch(B + '/dinle/${aSrt}');
+      if(r.ok){
+        const srt=await r.text();
+        renderSegs(srt,aSrt,true);
+        document.getElementById('xwrap').classList.remove('hidden');
+        toast('✓ Proje yüklendi');
+      }
+    }
+  }catch(e){toast('Proje yüklenemedi','terr');}
+}
+
+// Proje değişince otomatik kaydet
+setInterval(projeKaydet, 30000); // 30 saniyede bir
+window.addEventListener('beforeunload', projeKaydet); // Sayfa kapanırken
+
+/* ═══ SUNUCU BAĞLANTI KONTROLÜ ═══ */
+async function sunucuKontrol(){
+  try{
+    const r=await fetch(B + '/health',{signal:AbortSignal.timeout(3000)});
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+
+    const uyarilar=[];
+    if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY');
+    if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY');
+    if(!d.ffmpeg)uyarilar.push('FFmpeg');
+    if(uyarilar.length>0){
+      // Kalıcı banner — Railway'de env var eksikse göster
+      const banner = document.createElement('div');
+      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fed7aa;padding:8px 16px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+      banner.innerHTML='<span>⚠ Railway\'de eksik env variable: ' + uyarilar.join(', ') + ' — Variables sekmesinden ekleyin</span><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:#fed7aa;cursor:pointer;font-size:16px;line-height:1;">×</button>';
+      document.body.prepend(banner);
+    }
+
+    // ElevenLabs kota kontrolü
+    if(d.elevenlabs_key){
+      try{
+        const kota = await fetch(B + '/api/kota/').then(r=>r.json());
+        const badge = document.getElementById('kota_badge');
+        if(badge){
+          badge.style.display = 'block';
+          const renk = kota.yuzde > 90 ? '#ef4444' : kota.yuzde > 70 ? '#f59e0b' : '#22c55e';
+          badge.style.color = renk;
+          badge.textContent = kota.kalan.toLocaleString() + ' karakter kaldı';
+        }
+        if(kota.kalan < 500) toast('⚠ ElevenLabs kotanız dolmak üzere: ' + kota.kalan + ' karakter kaldı. Planınızı yükseltin.', 'twarn', 8000);
+        if(kota.klonlama_destekli){
+          const sub = document.getElementById('clone_card_sub');
+          if(sub) sub.textContent = 'MP3/WAV yükle — AI birebir kopyalar ✓ Klonlama aktif';
+        }
+      }catch(e){}
+    }
+
+    projeYukle();
+  }catch(e){
+    const banner=document.createElement('div');
+    banner.style.cssText='position:fixed;top:0;left:0;right:0;background:var(--red2);color:#fff;text-align:center;padding:10px;font-size:13px;font-weight:600;z-index:9999;';
+    banner.innerHTML='⚠ Backend bağlantısı yok — <code>uvicorn main:app --reload</code> komutunu çalıştırın';
+    document.body.prepend(banner);
+  }
+}
+
+// Sayfa yüklenince kontrol et
+setTimeout(sunucuKontrol, 500);
+
+/* ═══ SİHİRLİ MOD / PRO STÜDYO ═══ */
+let _appMod = 'pro'; // 'sihirli' | 'pro'
+
+function modGecis(yeniMod) {
+  _appMod = yeniMod;
+
+  // Toggle buton stillerini güncelle
+  document.getElementById('btn_sihirli')?.classList.toggle('active', yeniMod === 'sihirli');
+  document.getElementById('btn_pro')?.classList.toggle('active', yeniMod === 'pro');
+
+  if (yeniMod === 'sihirli') {
+    // Sihirli Mod: detayları gizle, magic aksiyonları göster
+    ['tl','mixer','sec_sub_design','sec_audio','sec_voice_btn'].forEach(id => {
+      document.getElementById(id)?.classList.add('hidden');
+    });
+    document.getElementById('magic_actions').style.display = 'flex';
+    document.getElementById('slist')?.classList.add('hidden');
+
+    // TikTok altyazı modunu otomatik aç (hormozi stili)
+    const subDesign = document.getElementById('sec_sub_design');
+    if (subDesign) subDesign.classList.add('hidden');
+
+    toast('✨ Sihirli Mod aktif — hızlı aksiyon seçin!');
+  } else {
+    // Pro Stüdyo: her şeyi geri getir
+    document.getElementById('magic_actions').style.display = 'none';
+    // sw() fonksiyonu zaten doğru panelleri açacak
+    sw(mod);
+    toast('🎛️ Pro Stüdyo modu aktif');
+  }
+}
+
+function magicAction(tip) {
+  if (!pFile && tip !== 'klonlama') {
+    toast('Önce video yükleyin!', 'twarn');
+    return;
+  }
+
+  if (tip === 'hormozi') {
+    // Hormozi stili: TikTok Bold altyazı
+    subSablonUygula('tiktok_bold');
+    sw('altyazi');
+    modGecis('pro');
+    // Modal aç ve TikTok modu seç
+    setTimeout(() => {
+      const cb = document.getElementById('modal_tiktok');
+      if (cb) { cb.checked = true; tiktokModalToggle(cb); }
+      openModal();
+    }, 100);
+
+  } else if (tip === 'klonlama') {
+    // Ses klonlama
+    modGecis('pro');
+    sw('seslendirme');
+    setTimeout(() => {
+      document.getElementById('clone_inp')?.click();
+    }, 300);
+
+  } else if (tip === 'magic_cut') {
+    // Magic Cut — sessiz boşluklar
+    if (segs.length === 0) {
+      // Önce transkript al
+      sw('desifre');
+      modGecis('pro');
+      toast('Önce transkript alın, sonra Magic Cut çalıştırın', 'twarn', 3000);
+    } else {
+      modGecis('pro');
+      magicCut();
+    }
+  }
+}
+
+/* ═══ ONBOARDING TOOLTIPS ═══ */
+let _obStep = 0;
+let _obEl = null;
+
+const OB_STEPS = [
+  {
+    target: 'vbox_empty',
+    text: '👉 1. Önce videonu buradan yükle',
+    pos: 'ob-top',
+    offset: { top: -55, left: 20 }
+  },
+  {
+    target: 'src_lang',
+    text: '👉 2. Çeviri veya Dublaj dilini seç',
+    pos: 'ob-right',
+    offset: { top: -10, left: 10 }
+  },
+  {
+    target: 'btn_run',
+    text: '👉 3. Sihri Başlat! 🚀',
+    pos: 'ob-top',
+    offset: { top: -55, left: 0 }
+  }
+];
+
+function onboardingBaslat() {
+  // Daha önce gördü mü?
+  if (localStorage.getItem('vf_ob_done')) return;
+  _obStep = 0;
+  obAdimGoster();
+}
+
+function obAdimGoster() {
+  // Önceki tooltip'i kaldır
+  document.getElementById('_ob_tip')?.remove();
+
+  if (_obStep >= OB_STEPS.length) {
+    localStorage.setItem('vf_ob_done', '1');
+    return;
+  }
+
+  const step = OB_STEPS[_obStep];
+  const target = document.getElementById(step.target);
+  if (!target) { _obStep++; obAdimGoster(); return; }
+
+  const rect = target.getBoundingClientRect();
+
+  const tip = document.createElement('div');
+  tip.id = '_ob_tip';
+  tip.className = 'ob-tip ' + step.pos;
+  tip.style.cssText = 'left:' + (rect.left + step.offset.left) + 'px;top:' + (rect.top + step.offset.top) + 'px;';
+  tip.innerHTML = '<span style="flex:1;">' + step.text + '</span>'
+    + '<button class="ob-close" onclick="obKapat()">×</button>'
+    + '<div class="ob-progress">'
+    + OB_STEPS.map((_,i) => '<div class="ob-dot' + (i===_obStep?' on':'') + '"></div>').join('')
+    + '</div>';
+
+  // Tıkla ilerle
+  tip.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('ob-close')) obIleri();
+  });
+
+  document.body.appendChild(tip);
+  _obEl = tip;
+}
+
+function obIleri() {
+  _obStep++;
+  obAdimGoster();
+}
+
+function obKapat() {
+  document.getElementById('_ob_tip')?.remove();
+  localStorage.setItem('vf_ob_done', '1');
+}
+
+/* ═══ VIDEO YÜKLEME SONRASI CENTER STAGE GÜNCELLEMESİ ═══ */
+// Mevcut pFile set fonksiyonunu override et
+const _origFileSet = window.pFileSet;
+function vboxGuncelle() {
+  const empty = document.getElementById('vbox_empty');
+  const magic = document.getElementById('magic_actions');
+  if (pFile) {
+    if (empty) empty.style.display = 'none';
+    // Magic mode aktifse aksiyonları göster
+    if (_appMod === 'sihirli' && magic) magic.style.display = 'flex';
+  } else {
+    if (empty) empty.style.display = 'flex';
+    if (magic) magic.style.display = 'none';
+  }
+}
+
+/* ═══ PENCERE BOYUTU DEĞİŞİNCE OB GÜNCELLE ═══ */
+window.addEventListener('resize', function() {
+  if (_obEl && _obStep < OB_STEPS.length) obAdimGoster();
+});
+
+/* ═══ SÜRÜKLE BIRAK — CENTER STAGE'E ═══ */
+document.addEventListener('DOMContentLoaded', function() {
+  const vbox = document.getElementById('vbox');
+  if (!vbox) return;
+
+  vbox.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const empty = document.getElementById('vbox_empty');
+    if (empty) empty.style.background = 'rgba(99,102,241,.1)';
+  });
+
+  vbox.addEventListener('dragleave', function() {
+    const empty = document.getElementById('vbox_empty');
+    if (empty) empty.style.background = '';
+  });
+
+  vbox.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const empty = document.getElementById('vbox_empty');
+    if (empty) empty.style.background = '';
+    const files = e.dataTransfer?.files;
+    if (files && files[0]) {
+      const input = document.getElementById('finput');
+      if (input) {
+        // DataTransfer aracılığıyla dosyayı set et
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    }
+  });
+
+  // Sayfa yüklenince onboarding başlat (500ms gecikme)
+  setTimeout(onboardingBaslat, 1500);
+});
