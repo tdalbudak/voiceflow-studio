@@ -176,8 +176,13 @@ footer a:hover{color:var(--accent3);}
     <button class="lang-btn" onclick="setLang('es')">ES</button>
     <button class="lang-btn" onclick="setLang('de')">DE</button>
     <button class="lang-btn" onclick="setLang('fr')">FR</button>
+    <button onclick="googleGiris()" id="nav_google_btn" style="display:flex;align-items:center;gap:8px;background:#fff;color:#1a1a1a;border:none;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
+      onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Google ile Giriş
+    </button>
     <a href="/app" class="nav-cta" id="nav-cta-btn">
-      <span id="nav-cta-txt">Ücretsiz Başla</span> →
+      <span id="nav-cta-txt">Uygulamayı Aç</span> →
     </a>
   </div>
 </nav>
@@ -191,11 +196,36 @@ footer a:hover{color:var(--accent3);}
   </div>
   <h1 id="h1-txt">Videonuzu<br><span class="h1-accent" id="h1-accent">Dünyaya Açın</span></h1>
   <p class="hero-sub" id="hero-sub">Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.</p>
-  <div class="hero-btns">
-    <button onclick="modalAc('sihirli')" class="btn-primary" id="hero-cta1" style="cursor:pointer;border:none;">⚡ <span id="cta1-txt">Ücretsiz Dene</span></button>
-    <button onclick="modalAc('pro')" class="btn-secondary" id="hero-cta2" style="cursor:pointer;border:none;"><span id="cta2-txt">Pro Stüdyo</span> →</button>
+
+  <!-- MOD SEÇİCİ — HERO İÇİNDE -->
+  <div style="margin:32px auto 0;max-width:600px;">
+    <p style="font-size:13px;color:#71717a;margin-bottom:14px;">Ne yapmak istiyorsun?</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="modalAc('sihirli')"
+        style="background:linear-gradient(135deg,#ec4899,#a855f7);border:none;color:#fff;padding:16px 28px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;box-shadow:0 4px 20px rgba(168,85,247,.4);display:flex;flex-direction:column;align-items:center;gap:4px;"
+        onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
+        <span style="font-size:24px;">✨</span>
+        Sihirli Mod
+        <span style="font-size:11px;font-weight:400;opacity:.8;">TikTok · Reels · Hızlı</span>
+      </button>
+      <button onclick="modalAc('pro')"
+        style="background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.15);color:#fff;padding:16px 28px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;"
+        onmouseover="this.style.borderColor='var(--accent2)';this.style.background='rgba(99,102,241,.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.background='rgba(255,255,255,.06)'">
+        <span style="font-size:24px;">🎛️</span>
+        Pro Stüdyo
+        <span style="font-size:11px;font-weight:400;opacity:.8;">Timeline · Mikser · Tam Kontrol</span>
+      </button>
+      <button onclick="window.location='/app'"
+        style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#a1a1aa;padding:16px 20px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;"
+        onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='#a1a1aa'">
+        <span style="font-size:24px;">🚀</span>
+        Direkt Aç
+        <span style="font-size:11px;font-weight:400;opacity:.8;">Editörü direkt başlat</span>
+      </button>
+    </div>
   </div>
-  <div class="stats">
+
+  <div class="stats" style="margin-top:48px;">
     <div class="stat"><div class="stat-num">60+</div><div class="stat-lbl" id="stat1">Desteklenen Dil</div></div>
     <div class="stat"><div class="stat-num">~2dk</div><div class="stat-lbl" id="stat2">Ortalama İşlem Süresi</div></div>
     <div class="stat"><div class="stat-num">4</div><div class="stat-lbl" id="stat3">AI Motor</div></div>
@@ -480,17 +510,72 @@ footer a:hover{color:var(--accent3);}
   </div>
 </div>
 
+<!-- HIZLI FİYATLANDIRMA — influencer bölümünün hemen altında -->
+<div class="divider"></div>
+<section style="padding:60px 24px;max-width:900px;margin:0 auto;text-align:center;">
+  <div class="reveal">
+    <div class="section-tag">Şeffaf Fiyatlar</div>
+    <h2 class="section-title" style="font-size:32px;">Kredini Seç, Başla</h2>
+    <p style="color:#71717a;font-size:14px;margin-bottom:40px;">Kredi kartı gerekmez. İstediğin zaman yükselt.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:800px;margin:0 auto;" class="reveal">
+    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 14px;text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Lite</div>
+      <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;">$0</div>
+      <div style="font-size:11px;color:#71717a;margin:4px 0 14px;">/ay</div>
+      <div style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">10 dk/ay</div>
+      <button onclick="modalAc('sihirli')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Başla</button>
+    </div>
+    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 14px;text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Creator</div>
+      <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;">$9</div>
+      <div style="font-size:11px;color:#71717a;margin:4px 0 14px;">/ay</div>
+      <div style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">75 dk/ay</div>
+      <button onclick="modalAc('sihirli')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Seç</button>
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.1));border:1.5px solid rgba(99,102,241,.5);border-radius:16px;padding:20px 14px;text-align:center;position:relative;">
+      <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">POPÜLER</div>
+      <div style="font-size:11px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Studio</div>
+      <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;">$19</div>
+      <div style="font-size:11px;color:#71717a;margin:4px 0 14px;">/ay</div>
+      <div style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">200 dk/ay</div>
+      <button onclick="modalAc('pro')" style="width:100%;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Seç</button>
+    </div>
+    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 14px;text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Business</div>
+      <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;">$49</div>
+      <div style="font-size:11px;color:#71717a;margin:4px 0 14px;">/ay</div>
+      <div style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">600 dk/ay</div>
+      <button onclick="window.open('mailto:hello@voiceflow.studio')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">İletişim</button>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#52525b;margin-top:20px;">+50 Kredi tek seferlik satın alma: <strong style="color:#a1a1aa;">$5</strong> · Abonelik zorunlu değil</p>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <p style="margin-bottom:12px;">
     <strong style="font-family:'Syne',sans-serif;font-size:16px;">VoiceFlow Studio</strong>
   </p>
   <p id="footer-txt" style="margin-bottom:16px;">AI destekli dublaj ve altyazı platformu</p>
-  <p><a href="/app" id="footer-app">Uygulamayı Aç</a> · <a href="mailto:hello@voiceflow.studio">İletişim</a> · <a href="#pricing" id="footer-price">Fiyatlar</a></p>
+  <p>
+    <a href="/app" id="footer-app">Uygulamayı Aç</a> ·
+    <a href="mailto:hello@voiceflow.studio">İletişim</a> ·
+    <a href="#pricing" id="footer-price">Fiyatlar</a> ·
+    <a href="/app#gizlilik" onclick="window.location='/app';setTimeout(function(){if(typeof gizlilikAc==='function')gizlilikAc();},1000);return false;">Gizlilik Politikası</a> ·
+    <a href="/app#sartlar" onclick="window.location='/app';setTimeout(function(){if(typeof kullanımSartlariAc==='function')kullanımSartlariAc();},1000);return false;">Kullanım Şartları</a>
+  </p>
   <p style="margin-top:20px;font-size:12px;color:#3f3f46;">© 2026 VoiceFlow Studio. Tüm hakları saklıdır.</p>
 </footer>
 
 <script>
+/* ═══ GOOGLE GİRİŞ ═══ */
+function googleGiris() {
+  // Supabase Google OAuth — editöre yönlendir, orada login modal açılır
+  localStorage.setItem('vf_google_giris', '1');
+  window.location.href = '/app';
+}
+
 /* ═══ MOD SEÇİM MODALI ═══ */
 let _secilenMod = 'sihirli';
 
