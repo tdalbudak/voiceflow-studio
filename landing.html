@@ -27,6 +27,13 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _sbLanding = supabase.createClient(
+  'https://scbnrgvpmdmmginezamj.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjYm5yZ3ZwbWRtbWdpbmV6YW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjU5OTMsImV4cCI6MjA5MDIwMTk5M30.9KntnaEQvbzCjw6t3iUd-PUker2_vtf8XaEnCoo3R2k'
+);
+</script>
 <style>
 :root {
   --bg: #09090b;
@@ -544,20 +551,13 @@ footer a:hover{color:var(--accent3);}
 /* ═══ GOOGLE GİRİŞ ═══ */
 async function googleOAuthBaslat() {
   try {
-    // Supabase Google OAuth
-    const SUPABASE_URL  = 'https://scbnrgvpmdmmginezamj.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjYm5yZ3ZwbWRtbWdpbmV6YW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjU5OTMsImV4cCI6MjA5MDIwMTk5M30.9KntnaEQvbzCjw6t3iUd-PUker2_vtf8XaEnCoo3R2k';
-    if (typeof supabase !== 'undefined') {
-      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-      await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + '/app' } });
-    } else {
-      // Supabase yüklenmediyse editöre git
-      localStorage.setItem('vf_baslangic_mod','pro');
-      window.location.href = '/app';
-    }
+    const { error } = await _sbLanding.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/app' }
+    });
+    if (error) alert('Google giriş hatası: ' + error.message);
   } catch(e) {
-    localStorage.setItem('vf_baslangic_mod','pro');
-    window.location.href = '/app';
+    alert('Google giriş hatası: ' + e.message);
   }
 }
 
