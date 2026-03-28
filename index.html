@@ -609,28 +609,46 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <button onclick="txt_inputTemizle()" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--muted)'">Temizle</button>
       </div>
 
-      <!-- Ses seçimi — büyük, belirgin buton -->
+      <!-- Ses seçimi — büyük, belirgin, demo dinle butonu -->
       <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--s2);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Ses Aktörü</span>
-          <button onclick="ttsSesDegistir()" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:var(--accent3);padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">
-            <i class="fa-solid fa-headset"></i> Değiştir
-          </button>
-        </div>
-        <!-- Seçili ses göster -->
-        <div id="tts_selected_voice" onclick="ttsSesDegistir()" style="display:flex;align-items:center;gap:10px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:border .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <span id="tts_voice_dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></span>
-          <div style="flex:1;">
-            <div id="tts_voice_name" style="font-size:13px;font-weight:600;">Ses seçilmedi</div>
-            <div id="tts_voice_desc" style="font-size:11px;color:var(--muted2);">Tıklayarak ses aktörü seçin</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <!-- Cinsiyet filtresi -->
+            <select id="tts_gender_filter" onchange="ttsSesListesiGuncelle()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;">
+              <option value="all">Tümü</option>
+              <option value="male">👨 Erkek</option>
+              <option value="female">👩 Kadın</option>
+            </select>
+            <!-- Dil filtresi -->
+            <select id="tts_lang_filter" onchange="ttsSesListesiGuncelle()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;">
+              <option value="all">Tüm Dil</option>
+              <option value="tr">🇹🇷 TR</option>
+              <option value="en">🇺🇸 EN</option>
+              <option value="de">🇩🇪 DE</option>
+              <option value="fr">🇫🇷 FR</option>
+              <option value="it">🇮🇹 IT</option>
+            </select>
           </div>
-          <i class="fa-solid fa-chevron-down" style="color:var(--muted2);font-size:12px;"></i>
         </div>
-        <!-- Kompakt ses listesi — dropdown -->
-        <div id="tts_voice_dropdown" style="display:none;margin-top:6px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);max-height:220px;overflow-y:auto;">
-          <div id="tts_voice_list" style="display:flex;flex-direction:column;gap:2px;padding:4px;">
-            <!-- JS ile doldurulacak -->
-          </div>
+
+        <!-- Arama -->
+        <div style="position:relative;margin-bottom:8px;">
+          <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>
+          <input id="tts_ses_ara" type="text" placeholder="Ses ara..." oninput="ttsSesListesiGuncelle()"
+            style="width:100%;padding:7px 8px 7px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">
+        </div>
+
+        <!-- Ses listesi — grid kartlar -->
+        <div id="tts_voice_grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;">
+          <!-- JS ile doldurulacak -->
+        </div>
+
+        <!-- Seçili ses özeti -->
+        <div id="tts_secili_ozet" style="display:none;margin-top:8px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:8px;">
+          <span id="tts_secili_dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></span>
+          <span id="tts_secili_isim" style="font-size:12px;font-weight:700;flex:1;">Ses seçilmedi</span>
+          <span id="tts_secili_desc" style="font-size:10px;color:var(--muted2);"></span>
         </div>
       </div>
 
@@ -2187,34 +2205,115 @@ function voiceSecildi(sel) { selVoiceById(sel.value); }
 
 /* ═══ TTS SES DEĞİŞTİR — dropdown aç/kapat ═══ */
 function ttsSesDegistir() {
-  const dd  = document.getElementById('tts_voice_dropdown');
-  const lst = document.getElementById('tts_voice_list');
-  if (!dd || !lst) return;
+  // Artık grid otomatik gösteriliyor, bu fonksiyon sadece grid'i günceller
+  ttsSesListesiGuncelle();
+}
 
-  if (dd.style.display === 'none' || !dd.style.display) {
-    // Listeyi doldur (eğer boşsa)
-    if (!lst.children.length) {
-      lst.innerHTML = VOICES.map(v => {
-        const isFree  = isVoiceFree(v.id);
-        const badge   = !isFree ? '<span style="font-size:9px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 5px;border-radius:3px;">PRO</span>' : '';
-        return '<div onclick="selVoiceById(\'' + v.id + '\')" id="tvli_' + v.id + '"'
-    + '          style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;"'
-    + '          onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'' + v.id===voice?'var(--s4)':'' + '\'">'
-    + '          <span style="width:8px;height:8px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
-    + '          <span style="font-size:12px;font-weight:600;flex:1;">' + v.name + '</span>'
-    + '          ' + badge
-    + '          <button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')"'
-    + '            style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"'
-    + '            onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
-    + '            <i class="fa-solid fa-play" style="font-size:7px;"></i>'
-    + '          </button>'
-    + '        </div>';
-      }).join('');
-      _ttsHL();
-    }
-    dd.style.display = 'block';
-  } else {
-    dd.style.display = 'none';
+/* ═══ TTS SES GRID — Demo Dinle ═══ */
+function ttsSesListesiGuncelle() {
+  const grid = document.getElementById('tts_voice_grid');
+  if (!grid) return;
+
+  const ara    = (document.getElementById('tts_ses_ara')?.value || '').toLowerCase();
+  const gender = document.getElementById('tts_gender_filter')?.value || 'all';
+  const lang   = document.getElementById('tts_lang_filter')?.value || 'all';
+
+  const filtreli = VOICES.filter(function(v) {
+    if (gender !== 'all' && v.gender !== gender) return false;
+    if (lang !== 'all' && v.lang !== lang) return false;
+    if (ara && !v.name.toLowerCase().includes(ara) && !(v.desc||'').toLowerCase().includes(ara)) return false;
+    return true;
+  });
+
+  if (!filtreli.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
+    return;
+  }
+
+  grid.innerHTML = filtreli.map(function(v) {
+    const aktif = voice === v.id;
+    const flagMap = {tr:'🇹🇷',de:'🇩🇪',fr:'🇫🇷',it:'🇮🇹',es:'🇪🇸',en:''};
+    const flag = flagMap[v.lang] || '';
+    return '<div onclick="ttsSesKart(\'' + v.id + '\')" id="ttsgrd_' + v.id + '"'
+      + ' style="background:' + (aktif?'rgba(99,102,241,.12)':'var(--s3)') + ';'
+      + 'border:1.5px solid ' + (aktif?'var(--accent2)':'var(--border2)') + ';'
+      + 'border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;">'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
+      + '<span style="font-size:12px;font-weight:700;flex:1;">' + flag + ' ' + v.name + '</span>'
+      + (aktif ? '<i class="fa-solid fa-check" style="color:var(--accent2);font-size:10px;"></i>' : '')
+      + '</div>'
+      + '<div style="font-size:10px;color:var(--muted2);margin-bottom:7px;line-height:1.4;">' + (v.desc||'') + '</div>'
+      + '<button onclick="event.stopPropagation();ttsDemo(\'' + v.id + '\',this,\'' + v.lang + '\')" id="ttsdemo_' + v.id + '"'
+      + ' style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;">'
+      + '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle'
+      + '</button>'
+      + '</div>';
+  }).join('');
+}
+
+function ttsSesKart(sesId) {
+  voice = sesId;
+  const v = VOICES.find(function(x){ return x.id === sesId; });
+  if (!v) return;
+
+  // Özet güncelle
+  const ozet = document.getElementById('tts_secili_ozet');
+  const dot   = document.getElementById('tts_secili_dot');
+  const isim  = document.getElementById('tts_secili_isim');
+  const desc  = document.getElementById('tts_secili_desc');
+  if (ozet) ozet.style.display = 'flex';
+  if (dot)  dot.style.background = v.color;
+  if (isim) isim.textContent = v.name;
+  if (desc) desc.textContent = v.desc || '';
+
+  // Grid border güncelle
+  ttsSesListesiGuncelle();
+  toast(v.name + ' secildi');
+}
+
+let _ttsDemoAudio = null;
+async function ttsDemo(sesId, btn, lang) {
+  if (_ttsDemoAudio && !_ttsDemoAudio.paused) {
+    _ttsDemoAudio.pause();
+    document.querySelectorAll('[data-tts-demo]').forEach(function(b) {
+      b.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+      b.removeAttribute('data-tts-demo');
+    });
+    if (btn.dataset.ttsDemo) return;
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i> Yukleniyor...';
+  btn.dataset.ttsDemo = '1';
+
+  const demoMetin = {
+    tr:'Merhaba, bu sesle videonuzu seslendiriyorum.',
+    de:'Hallo, mit dieser Stimme vertone ich Ihr Video.',
+    fr:'Bonjour, je double votre video avec cette voix.',
+    it:'Ciao, sto doppiando il tuo video con questa voce.',
+    en:'Hello, I am dubbing your video with this voice.'
+  }[lang||'en'] || 'Hello, this is a voice preview.';
+
+  try {
+    const fd = new FormData();
+    fd.append('ses_id', sesId);
+    fd.append('metin', demoMetin);
+    const r = await fetch(B + '/api/ses_onizle/', { method:'POST', body:fd });
+    if (!r.ok) throw new Error('Demo yuklenemedi');
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    _ttsDemoAudio = new Audio(url);
+    _ttsDemoAudio.play();
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i> Durdur';
+    _ttsDemoAudio.onended = function() {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+      btn.removeAttribute('data-tts-demo');
+      URL.revokeObjectURL(url);
+    };
+  } catch(e) {
+    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+    btn.removeAttribute('data-tts-demo');
+    toast('Demo yuklenemedi','twarn',3000);
   }
 }
 
@@ -2528,8 +2627,11 @@ function sw(m){
     document.getElementById('tts_wrap')?.classList.remove('hidden');
     document.getElementById('sec_voice_btn')?.classList.remove('hidden');
     document.getElementById('rp')?.classList.add('hidden');
-    if(btn) btn.innerHTML='<span class="run-dot"></span> Sese Çevir';
+    if(btn) btn.innerHTML='<span class="run-dot"></span> Sese Cevir';
     if(title) title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
+
+    // TTS ses grid'ini doldur
+    setTimeout(function(){ ttsSesListesiGuncelle(); }, 100);
 
     // TTS ses listesini doldur (boşsa)
     const tl = document.getElementById('tts_voice_list');
@@ -2818,33 +2920,50 @@ async function startProcess(){
 }
 
 function pollStatus(fn){
-  const fill=document.getElementById('pfill'),tx=document.getElementById('stxt'),pc=document.getElementById('spct');
-  const iv=setInterval(async()=>{
-    try{
-      const r=await fetch(B + '/durum/${fn}');if(!r.ok)return;
-      const d=await r.json();
-      tx.textContent=d.durum;pc.textContent=d.yuzde + '%';fill.style.width=d.yuzde + '%';
+  const fill = document.getElementById('pfill');
+  const tx   = document.getElementById('stxt');
+  const pc   = document.getElementById('spct');
+  let errorCount = 0;
 
-      // Hata durumu — yuzde 0 ve "Hata:" ile başlıyorsa
-      if(d.yuzde===0&&d.durum.startsWith('Hata:')){
+  const iv = setInterval(async function(){
+    try {
+      const r = await fetch(B + '/durum/' + fn);
+      if (!r.ok) { errorCount++; if(errorCount>5) clearInterval(iv); return; }
+      errorCount = 0;
+      const d = await r.json();
+
+      if(tx) tx.textContent = d.durum || '...';
+      if(pc) pc.textContent = (d.yuzde || 0) + '%';
+      if(fill) fill.style.width = (d.yuzde || 0) + '%';
+
+      // Animasyon rengi
+      if(fill) {
+        fill.style.background = d.yuzde >= 100 ? 'var(--green2)' :
+          d.yuzde > 60 ? 'var(--accent2)' : 'var(--accent)';
+      }
+
+      if(d.yuzde === 0 && d.durum && d.durum.startsWith('Hata:')) {
         clearInterval(iv);
         document.getElementById('sbox')?.classList.add('hidden');
-        // Hata toast'u — 8 saniye göster
-        toast(d.durum,'terr',8000);
+        toast(d.durum, 'terr', 8000);
         return;
       }
 
-      if(d.yuzde===100){
+      if(d.yuzde >= 100) {
         clearInterval(iv);
         document.getElementById('sbox')?.classList.add('hidden');
-        // Uyarı var mı?
-        if(d.durum.startsWith('Uyarı:')){
-          toast(d.durum,'twarn',5000);
-        }
+        if(d.durum && d.durum.startsWith('Uyarı:')) toast(d.durum,'twarn',5000);
         showResult(fn);
       }
-    }catch(e){}
-  },1500);
+    } catch(e) {
+      errorCount++;
+      if(errorCount > 10) {
+        clearInterval(iv);
+        toast('Sunucu bağlantısı kesildi','terr');
+        document.getElementById('sbox')?.classList.add('hidden');
+      }
+    }
+  }, 1500);
 }
 
 function showResult(fn){
