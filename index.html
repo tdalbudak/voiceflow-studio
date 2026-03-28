@@ -350,6 +350,31 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 .ob-dot.on{background:#fff;}
 @keyframes ob-pulse{0%,100%{box-shadow:0 4px 24px rgba(99,102,241,.5);}50%{box-shadow:0 4px 32px rgba(99,102,241,.9),0 0 0 5px rgba(99,102,241,.15);}}
 
+/* ── Mobile ── */
+@media(max-width:768px){
+  .nav-tabs{display:none;}
+  .lp{width:100%;min-width:0;max-width:100%;}
+  .rp{width:100%;border-left:none;border-top:1px solid var(--border);}
+  .ws{flex-direction:column;}
+  .vbox{aspect-ratio:16/9;}
+  .mod-toggle .mod-toggle-btn span{display:none;}
+  .mod-toggle-btn{padding:5px 8px;font-size:10px;}
+  .magic-btn-desc{display:none;}
+  .magic-btn{padding:12px 14px;}
+}
+
+/* ── Progress bar animasyonu ── */
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.progress-shimmer{background:linear-gradient(90deg,var(--accent) 25%,rgba(99,102,241,.5) 50%,var(--accent) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+
+/* ── Toast iyileştirmesi ── */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast-item{background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--txt);box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:all;animation:toast-in .2s ease;max-width:320px;}
+.toast-item.tok{border-color:rgba(99,102,241,.4);background:rgba(99,102,241,.1);}
+.toast-item.twarn{border-color:rgba(234,179,8,.4);background:rgba(234,179,8,.08);color:#fbbf24;}
+.toast-item.terr{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);color:var(--red2);}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
 </style>
 </head>
 <body>
@@ -2524,34 +2549,38 @@ function showResult(fn){
   document.getElementById('xwrap')?.classList.remove('hidden');
   if(mod==='metinden_sese'){
     document.getElementById('tts_player')?.classList.remove('hidden');
-    (function(){var _oa=document.getElementById('tts_status');if(_oa)_oa.textContent='✓ Ses üretildi';})();
-    const a=document.getElementById('tts_audio');a.src=B + '/dinle/${fn}?v=${Date.now()}';a.play();
+    (function(){var _oa=document.getElementById('tts_status');if(_oa)_oa.textContent='Ses uretildi';})();
+    const a=document.getElementById('tts_audio');
+    if(a){a.src=B+'/dinle/'+fn+'?v='+Date.now();a.play();}
   }else if(mod==='desifre'){
     aSrt=fn;
-    fetch(B + '/dinle/${fn}').then(r=>r.text()).then(c=>renderSegs(c,fn)).catch(()=>{});
+    fetch(B+'/dinle/'+fn).then(function(r){return r.text();}).then(function(c){renderSegs(c,fn);}).catch(function(){});
     var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }else if(mod==='altyazi'){
-    const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
+    const v=document.getElementById('vid');
+    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play();}
+    const empty=document.getElementById('vbox_empty'); if(empty) empty.style.display='none';
     (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
-    fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
-    setTimeout(()=>waveform(fn),1800);
+    fetch(B+'/dinle/'+aSrt).then(function(r){return r.text();}).then(function(c){renderSegs(c,aSrt);}).catch(function(){});
+    setTimeout(function(){waveform(fn);},1800);
     var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
     var _xb=document.getElementById('xitem_burn'); if(_xb) _xb.style.display='flex';
   }else if(mod==='seslendirme'){
     (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
-    const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
-    fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
-    setTimeout(()=>waveform(fn),1800);
+    const v=document.getElementById('vid');
+    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play();}
+    const empty=document.getElementById('vbox_empty'); if(empty) empty.style.display='none';
+    fetch(B+'/dinle/'+aSrt).then(function(r){return r.text();}).then(function(c){renderSegs(c,aSrt);}).catch(function(){});
+    setTimeout(function(){waveform(fn);},1800);
     var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }
 
-  // TikTok modu modal'da seçildiyse otomatik aktifleştir
-  if (document.getElementById('modal_tiktok')?.checked && (mod === 'desifre' || mod === 'altyazi')) {
-    setTimeout(() => {
-      if (!_tiktokOn) toggleTikTok();
-    }, 2000); // Kelime verisi yüklensin bekle
+  // TikTok modu
+  const tikMod = document.getElementById('modal_tiktok');
+  if(tikMod && tikMod.checked && (mod==='desifre'||mod==='altyazi')){
+    setTimeout(function(){if(!_tiktokOn) toggleTikTok();},2000);
   }
 }
 
