@@ -1376,48 +1376,45 @@ async function cloudUpload(svc){
 }
 
 function kaliteSecimGoster() {
-  return new Promise(resolve => {
+  return new Promise(function(resolve) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = `
-      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:290px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt);">📥 İndirme Kalitesi Seç</div>
-        <div style="display:flex;flex-direction:column;gap:5px;" id="_kl_list">
-          ${[
-            ['best','En Yüksek (4K/1080p+)','En iyi kalite, büyük dosya','🔥'],
-            ['1080','1080p Full HD','Standart yüksek kalite','📺'],
-            ['720','720p HD','Dengeli kalite / boyut','⚡'],
-            ['480','480p','Küçük dosya','📱'],
-            ['360','360p','En küçük dosya','💾'],
-            ['audio_only','Yalnızca Ses','Sadece ses, video yok','🎵'],
-          ].map(([v,l,d,ic]) => `
-            <button data-val="${v}" class="_klbtn"
-              onclick="document.querySelectorAll('._klbtn').forEach(b=>b.style.borderColor='var(--border2)');this.style.borderColor='var(--accent2)';window._kalite='${v}'"
-              style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--txt);display:flex;align-items:center;gap:8px;transition:border .12s;">
-              <span style="font-size:16px;">${ic}</span>
-              <div><div style="font-size:12px;font-weight:600;">${l}</div><div style="font-size:10px;color:var(--muted2);">${d}</div></div>
-            </button>`).join('')}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(window._kalite||'best')"
-            style="flex:1;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">
-            İndir
-          </button>
-          <button onclick="document.body.removeChild(document.getElementById('_kl_overlay'));window._kaliteResolve(null)"
-            style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">
-            İptal
-          </button>
-        </div>
-      </div>`;
     overlay.id = '_kl_overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+    const secenekler = [
+      ['best','En Yüksek (4K/1080p+)','En iyi kalite, büyük dosya','🔥'],
+      ['1080','1080p Full HD','Standart yüksek kalite','📺'],
+      ['720','720p HD','Dengeli kalite / boyut','⚡'],
+      ['480','480p','Küçük dosya','📱'],
+      ['360','360p','En küçük dosya','💾'],
+      ['audio_only','Yalnızca Ses','Sadece ses, video yok','🎵'],
+    ];
+
+    const butonlar = secenekler.map(function(s) {
+      return '<button data-val="' + s[0] + '" class="_klbtn"'
+        + ' onclick="document.querySelectorAll(\'._klbtn\').forEach(function(b){b.style.borderColor=\'var(--border2)\'});this.style.borderColor=\'var(--accent2)\';window._kalite=\'' + s[0] + '\'"'
+        + ' style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;cursor:pointer;text-align:left;font-family:inherit;color:var(--txt);display:flex;align-items:center;gap:8px;transition:border .12s;">'
+        + '<span style="font-size:16px;">' + s[3] + '</span>'
+        + '<div><div style="font-size:12px;font-weight:600;">' + s[1] + '</div>'
+        + '<div style="font-size:10px;color:var(--muted2);">' + s[2] + '</div></div>'
+        + '</button>';
+    }).join('');
+
+    overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:290px;">'
+      + '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt);">İndirme Kalitesi Seç</div>'
+      + '<div style="display:flex;flex-direction:column;gap:5px;" id="_kl_list">' + butonlar + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:12px;">'
+      + '<button onclick="document.body.removeChild(document.getElementById(\'_kl_overlay\'));window._kaliteResolve(window._kalite||\'best\')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">Indir</button>'
+      + '<button onclick="document.body.removeChild(document.getElementById(\'_kl_overlay\'));window._kaliteResolve(null)" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Iptal</button>'
+      + '</div></div>';
+
     window._kalite = 'best';
     window._kaliteResolve = resolve;
     document.body.appendChild(overlay);
-    // Varsayılan seçili göster
-    setTimeout(()=>{
+    setTimeout(function(){
       const first = document.querySelector('._klbtn');
       if(first) first.style.borderColor='var(--accent2)';
-    },50);
+    }, 50);
   });
 }
 
@@ -1444,20 +1441,7 @@ function xport(fmt_){
 
     }else if(fmt_==='ass'){
       // Advanced SubStation Alpha — video player'larda en iyi kalite
-      const assHeader=`[Script Info]
-Title: ${base}
-ScriptType: v4.00+
-WrapStyle: 0
-PlayResX: 1920
-PlayResY: 1080
-
-[V4+ Styles]
-Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1
-
-[Events]
-Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
-`;
+      const assHeader='[Script Info]\nTitle: ${base}\nScriptType: v4.00+\nWrapStyle: 0\nPlayResX: 1920\nPlayResY: 1080\n\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,Arial,52,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,30,1\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n';
       const assTime=s=>{
         const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),cs=Math.round((s-Math.floor(s))*100);
         return h + ':' + String(m).padStart(2,'0') + ':' + String(sc).padStart(2,'0') + '.' + String(cs).padStart(2,'0');
@@ -1583,19 +1567,19 @@ function kelimeHtml(kelime, segNo) {
   // Jargon kelime — sarı ama farklı stil (normal confidence olabilir ama dikkat çek)
   if (isJargon) {
     const uid = 'w_' + segNo + '_' + Math.random().toString(36).substr(2,5);
-    return `<span class="w-jargon" id="${uid}" data-word="${kelime}" data-conf="${conf||1}" data-jargon="1"
-      onclick="kelimeOneriAc(event,this)" title="Jargon/kısaltma — doğru okunuyor mu?">${kelime}<sup style="font-size:7px;opacity:.6">🔤</sup></span>`;
+    return '<span class="w-jargon" id="' + uid + '" data-word="' + kelime + '" data-conf="' + conf||1 + '" data-jargon="1"'
+    + '      onclick="kelimeOneriAc(event,this)" title="Jargon/kısaltma — doğru okunuyor mu?">' + kelime + '<sup style="font-size:7px;opacity:.6">🔤</sup></span>';
   }
 
   if (conf === undefined || conf >= 0.85) return kelime;
 
   const uid = 'w_' + segNo + '_' + Math.random().toString(36).substr(2,5);
   if (conf >= 0.70) {
-    return `<span class="w-low" id="${uid}" data-word="${kelime}" data-conf="${conf}"
-      onclick="kelimeOneriAc(event,this)" title="Düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+    return '<span class="w-low" id="' + uid + '" data-word="' + kelime + '" data-conf="' + conf + '"'
+    + '      onclick="kelimeOneriAc(event,this)" title="Düşük güven: ' + Math.round(conf*100) + '%">' + kelime + '<sup style="font-size:7px;opacity:.7">' + Math.round(conf*100) + '%</sup></span>';
   }
-  return `<span class="w-bad" id="${uid}" data-word="${kelime}" data-conf="${conf}"
-    onclick="kelimeOneriAc(event,this)" title="Çok düşük güven: ${Math.round(conf*100)}%">${kelime}<sup style="font-size:7px;opacity:.7">${Math.round(conf*100)}%</sup></span>`;
+  return '<span class="w-bad" id="' + uid + '" data-word="' + kelime + '" data-conf="' + conf + '"'
+    + '    onclick="kelimeOneriAc(event,this)" title="Çok düşük güven: ' + Math.round(conf*100) + '%">' + kelime + '<sup style="font-size:7px;opacity:.7">' + Math.round(conf*100) + '%</sup></span>';
 }
 
 async function kelimeOneriAc(e, el) {
@@ -1612,8 +1596,7 @@ async function kelimeOneriAc(e, el) {
 
   const popup = document.createElement('div');
   popup.id = 'word_popup';
-  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
-    border-radius:var(--r2);padding:0;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.cssText = 'position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);    border-radius:var(--r2);padding:0;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;';
   popup.style.left = Math.min(e.clientX, window.innerWidth-290) + 'px';
   popup.style.top  = Math.min(e.clientY + 10, window.innerHeight-200) + 'px';
 
@@ -1622,30 +1605,30 @@ async function kelimeOneriAc(e, el) {
     ? '<i class="fa-solid fa-hashtag" style="color:var(--yellow2)"></i> Jargon / Kısaltma'
     : '<i class="fa-solid fa-triangle-exclamation" style="color:' + renk + '"></i> Düşük Güven: ' + Math.round(conf*100) + '%';
 
-  popup.innerHTML = `
-    <div style="padding:10px 12px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:11px;font-weight:700;color:var(--muted2);">${baslik}</div>
-      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
-    </div>
-    <div style="padding:6px 8px;background:var(--s3);font-size:12px;color:var(--txt);">
-      <span style="opacity:.6;">Kelime: </span><b>"${kelime}"</b>
-      ${jargon ? '<span style="margin-left:6px;font-size:10px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 6px;border-radius:3px;">Jargon</span>' : ''}
-    </div>
-    <div id="popup_items" style="padding:4px 0;">
-      <div style="padding:10px 12px;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;">
-        <i class="fa-solid fa-spinner fa-spin"></i> AI öneri yükleniyor...
-      </div>
-    </div>
-    <div style="padding:6px 8px;border-top:1px solid var(--border);">
-      <div onclick="manuelDuzelt(event,'${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-pen" style="color:var(--accent2)"></i> Manuel Düzenle
-      </div>
-      <div onclick="kelimeAtla('${el.id}')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-check" style="color:var(--green2)"></i> Doğru, geç
-      </div>
-    </div>`;
+  popup.innerHTML = ''
+    + '    <div style="padding:10px 12px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">'
+    + '      <div style="font-size:11px;font-weight:700;color:var(--muted2);">' + baslik + '</div>'
+    + '      <button onclick="document.getElementById(\'word_popup\')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>'
+    + '    </div>'
+    + '    <div style="padding:6px 8px;background:var(--s3);font-size:12px;color:var(--txt);">'
+    + '      <span style="opacity:.6;">Kelime: </span><b>"' + kelime + '"</b>'
+    + '      ' + jargon ? '<span style="margin-left:6px;font-size:10px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 6px;border-radius:3px;">Jargon</span>' : ''
+    + '    </div>'
+    + '    <div id="popup_items" style="padding:4px 0;">'
+    + '      <div style="padding:10px 12px;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;">'
+    + '        <i class="fa-solid fa-spinner fa-spin"></i> AI öneri yükleniyor...'
+    + '      </div>'
+    + '    </div>'
+    + '    <div style="padding:6px 8px;border-top:1px solid var(--border);">'
+    + '      <div onclick="manuelDuzelt(event,\'' + el.id + '\')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-pen" style="color:var(--accent2)"></i> Manuel Düzenle'
+    + '      </div>'
+    + '      <div onclick="kelimeAtla(\'' + el.id + '\')" style="padding:6px 8px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:6px;transition:background .12s;"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-check" style="color:var(--green2)"></i> Doğru, geç'
+    + '      </div>'
+    + '    </div>';
   document.body.appendChild(popup);
 
   // Önerileri yükle
@@ -1664,14 +1647,14 @@ async function kelimeOneriAc(e, el) {
       return;
     }
 
-    items.innerHTML = d.oneriler.map((o,i) => `
-      <div onclick="kelimeUygula('${el.id}','${o.replace(/'/g,"\\'")}',this)"
-        style="padding:7px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-radius:var(--r);"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:10px;font-weight:700;color:var(--muted);min-width:16px;">${i===0&&d.jargon?'🤖':'→'}</span>
-        <span style="color:var(--txt);">${o}</span>
-        ${i===0&&d.jargon?'<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;margin-left:auto;">AI</span>':''}
-      </div>`).join('');
+    items.innerHTML = d.oneriler.map((o,i) => ''
+    + '      <div onclick="kelimeUygula(\'' + el.id + '\',\'' + o.replace(/'/g,"\\'") + '\',this)"'
+    + '        style="padding:7px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-radius:var(--r);"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <span style="font-size:10px;font-weight:700;color:var(--muted);min-width:16px;">' + i===0&&d.jargon?'🤖':'→' + '</span>'
+    + '        <span style="color:var(--txt);">' + o + '</span>'
+    + '        ' + i===0&&d.jargon?'<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;margin-left:auto;">AI</span>':''
+    + '      </div>').join('');
   } catch(err) {
     const items = document.getElementById('popup_items');
     if (items) items.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--red2);">Öneri alınamadı</div>';
@@ -1736,7 +1719,6 @@ function kelimeAtla(elId) {
 let _speakerMap = {};
 
 function speakerMapPanelOlustur(segmentler) {
-  // Benzersiz konuşmacıları bul
   const speakers = new Set();
   segmentler.forEach(s => {
     const m = s.text?.match(/\[Konuşmacı (\d+)\]/);
@@ -1750,20 +1732,23 @@ function speakerMapPanelOlustur(segmentler) {
   panel.style.display = 'block';
   const voiceOpts = VOICES.map(v => '<option value="' + v.id + '">' + v.name + '</option>').join('');
 
-  panel.innerHTML = `
-    <div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>
-    ${[...speakers].sort().map((sp, i) => `
-      <div class="speaker-map-row">
-        <span class="sp-dot-big" style="background:${SP_COLORS[parseInt(sp)%SP_COLORS.length]};"></span>
-        <span class="sp-label">Konuşmacı ${sp}</span>
-        <select class="sp-voice-sel" id="spv_${sp}" onchange="speakerSesGuncelle()">
-          <option value="${voice}">— Varsayılan Ses —</option>
-          ${voiceOpts}
-        </select>
-      </div>`).join('')}
-    <button onclick="speakerMapKaydet()" style="margin-top:6px;width:100%;padding:7px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
-      <i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet
-    </button>`;
+  const rows = [...speakers].sort().map(function(sp) {
+    const renk = SP_COLORS[parseInt(sp) % SP_COLORS.length];
+    return '<div class="speaker-map-row">'
+      + '<span class="sp-dot-big" style="background:' + renk + ';"></span>'
+      + '<span class="sp-label">Konuşmacı ' + sp + '</span>'
+      + '<select class="sp-voice-sel" id="spv_' + sp + '" onchange="speakerSesGuncelle()">'
+      + '<option value="' + voice + '">— Varsayılan Ses —</option>'
+      + voiceOpts
+      + '</select>'
+      + '</div>';
+  }).join('');
+
+  panel.innerHTML = '<div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>'
+    + rows
+    + '<button onclick="speakerMapKaydet()" style="margin-top:6px;width:100%;padding:7px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet'
+    + '</button>';
 }
 
 function speakerSesGuncelle() {
@@ -1882,18 +1867,18 @@ function ttsSesDegistir() {
       lst.innerHTML = VOICES.map(v => {
         const isFree  = isVoiceFree(v.id);
         const badge   = !isFree ? '<span style="font-size:9px;background:rgba(234,179,8,.15);color:#eab308;padding:1px 5px;border-radius:3px;">PRO</span>' : '';
-        return `<div onclick="selVoiceById('${v.id}')" id="tvli_${v.id}"
-          style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;"
-          onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='${v.id===voice?'var(--s4)':''}'">
-          <span style="width:8px;height:8px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
-          <span style="font-size:12px;font-weight:600;flex:1;">${v.name}</span>
-          ${badge}
-          <button onclick="event.stopPropagation();sesOnizle('${v.id}',this,'${v.lang}')"
-            style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
-            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-            <i class="fa-solid fa-play" style="font-size:7px;"></i>
-          </button>
-        </div>`;
+        return '<div onclick="selVoiceById(\'' + v.id + '\')" id="tvli_' + v.id + '"'
+    + '          style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;"'
+    + '          onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'' + v.id===voice?'var(--s4)':'' + '\'">'
+    + '          <span style="width:8px;height:8px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
+    + '          <span style="font-size:12px;font-weight:600;flex:1;">' + v.name + '</span>'
+    + '          ' + badge
+    + '          <button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')"'
+    + '            style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"'
+    + '            onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
+    + '            <i class="fa-solid fa-play" style="font-size:7px;"></i>'
+    + '          </button>'
+    + '        </div>';
       }).join('');
       _ttsHL();
     }
@@ -2208,14 +2193,14 @@ function sw(m){
     // TTS ses listesini doldur (boşsa)
     const tl = document.getElementById('tts_voice_list');
     if(tl && !tl.children.length){
-      tl.innerHTML = VOICES.map(v=>`
-        <div onclick="selVoiceById('${v.id}');_ttsHL()" id="tvli_${v.id}"
-          style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid transparent;transition:all .12s;"
-          onmouseover="this.style.background='var(--s4)'" onmouseout="if(voice!=='${v.id}'){this.style.background='';this.style.borderColor='transparent';}">
-          <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
-          <span style="font-size:12px;font-weight:600;">${v.name}</span>
-          <span style="font-size:11px;color:var(--muted2);flex:1;">${v.desc}</span>
-        </div>`).join('');
+      tl.innerHTML = VOICES.map(v=>''
+    + '        <div onclick="selVoiceById(\'' + v.id + '\');_ttsHL()" id="tvli_' + v.id + '"'
+    + '          style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid transparent;transition:all .12s;"'
+    + '          onmouseover="this.style.background=\'var(--s4)\'" onmouseout="if(voice!==\'' + v.id + '\'){this.style.background=\'\';this.style.borderColor=\'transparent\';}">'
+    + '          <span style="width:9px;height:9px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
+    + '          <span style="font-size:12px;font-weight:600;">' + v.name + '</span>'
+    + '          <span style="font-size:11px;color:var(--muted2);flex:1;">' + v.desc + '</span>'
+    + '        </div>').join('');
       _ttsHL();
     }
 
@@ -2573,43 +2558,43 @@ function renderSegs(srt,fn,tr=false){
   // Confidence verisi yükle (render'ı bloklamaz)
   if(fn) confidenceYukle(fn);
 
-  let html=`
-  <div class="dresult"><i class="fa-solid fa-circle-check"></i>${tr?'Çeviri':'Transkript'} Tamamlandı — ${segs.length} segment
-    <span style="font-size:10px;color:var(--muted2);margin-left:8px;"><span style="color:var(--yellow2)">■</span> Düşük güven <span style="color:var(--red2);margin-left:4px;">■</span> Çok düşük</span>
-  </div>
-  <div class="dbar">
-    <i class="fa-solid fa-language" style="color:var(--accent2);font-size:14px;"></i>
-    <span style="font-size:11px;font-weight:700;color:var(--muted2);">DeepL</span>
-    <select class="dsel" id="dl_lang">
-      <option value="EN">🇺🇸 İngilizce</option>
-      <option value="DE">🇩🇪 Almanca</option>
-      <option value="FR">🇫🇷 Fransızca</option>
-      <option value="ES">🇪🇸 İspanyolca</option>
-      <option value="TR" selected>🇹🇷 Türkçe</option>
-      <option value="RU">🇷🇺 Rusça</option>
-      <option value="JA">🇯🇵 Japonca</option>
-      <option value="ZH">🇨🇳 Çince</option>
-      <option value="AR">🇸🇦 Arapça</option>
-    </select>
-    <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>
-    <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>
-    <div style="margin-left:auto;display:flex;gap:5px;">
-      <button class="dbtn" onclick="viralKlipCikar()" title="En iyi anları bul ve klip çıkar" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
-        <i class="fa-solid fa-bolt"></i> Viral
-      </button>
-      <button class="dbtn" onclick="versiyonKaydet()" title="Bu anı kaydet (A/B karşılaştırma)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">
-        <i class="fa-solid fa-bookmark"></i> Kaydet
-      </button>
-      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">
-        <i class="fa-solid fa-scissors"></i> Magic Cut
-      </button>
-      <button class="dbtn" onclick="gurultuGider()" title="Arka plan gürültüsünü gider" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;">
-        <i class="fa-solid fa-waveform-lines"></i> Gürültü Gider
-      </button>
-    </div>
-  </div>
-  <div id="speaker_map_panel" class="speaker-map-panel"></div>
-  <div style="padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;">`;
+  let html=''
+    + '  <div class="dresult"><i class="fa-solid fa-circle-check"></i>' + tr?'Çeviri':'Transkript' + ' Tamamlandı — ' + segs.length + ' segment'
+    + '    <span style="font-size:10px;color:var(--muted2);margin-left:8px;"><span style="color:var(--yellow2)">■</span> Düşük güven <span style="color:var(--red2);margin-left:4px;">■</span> Çok düşük</span>'
+    + '  </div>'
+    + '  <div class="dbar">'
+    + '    <i class="fa-solid fa-language" style="color:var(--accent2);font-size:14px;"></i>'
+    + '    <span style="font-size:11px;font-weight:700;color:var(--muted2);">DeepL</span>'
+    + '    <select class="dsel" id="dl_lang">'
+    + '      <option value="EN">🇺🇸 İngilizce</option>'
+    + '      <option value="DE">🇩🇪 Almanca</option>'
+    + '      <option value="FR">🇫🇷 Fransızca</option>'
+    + '      <option value="ES">🇪🇸 İspanyolca</option>'
+    + '      <option value="TR" selected>🇹🇷 Türkçe</option>'
+    + '      <option value="RU">🇷🇺 Rusça</option>'
+    + '      <option value="JA">🇯🇵 Japonca</option>'
+    + '      <option value="ZH">🇨🇳 Çince</option>'
+    + '      <option value="AR">🇸🇦 Arapça</option>'
+    + '    </select>'
+    + '    <button class="dbtn" onclick="deepL()" id="dlbtn"><i class="fa-solid fa-bolt"></i> Çevir</button>'
+    + '    <div id="dlload" style="display:none;color:var(--accent2);font-size:11px;font-weight:700;align-items:center;gap:4px;"><i class="fa-solid fa-spinner fa-spin"></i> İşliyor</div>'
+    + '    <div style="margin-left:auto;display:flex;gap:5px;">'
+    + '      <button class="dbtn" onclick="viralKlipCikar()" title="En iyi anları bul ve klip çıkar" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">'
+    + '        <i class="fa-solid fa-bolt"></i> Viral'
+    + '      </button>'
+    + '      <button class="dbtn" onclick="versiyonKaydet()" title="Bu anı kaydet (A/B karşılaştırma)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">'
+    + '        <i class="fa-solid fa-bookmark"></i> Kaydet'
+    + '      </button>'
+    + '      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">'
+    + '        <i class="fa-solid fa-scissors"></i> Magic Cut'
+    + '      </button>'
+    + '      <button class="dbtn" onclick="gurultuGider()" title="Arka plan gürültüsünü gider" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;">'
+    + '        <i class="fa-solid fa-waveform-lines"></i> Gürültü Gider'
+    + '      </button>'
+    + '    </div>'
+    + '  </div>'
+    + '  <div id="speaker_map_panel" class="speaker-map-panel"></div>'
+    + '  <div style="padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;">';
 
   segs.forEach(seg=>{
     const d=seg.end-seg.start;
@@ -2617,23 +2602,23 @@ function renderSegs(srt,fn,tr=false){
     const spC=SP[seg.speaker%SP.length];
     const cC=cpsC(c);
     const safe=seg.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html+=`
-    <div class="sc" id="c_${seg.no}" onclick="cClick('${seg.no}',${seg.start})">
-      <div class="sc-top">
-        <span class="sc-num">${String(seg.no).padStart(2,'0')}</span>
-        <span class="sp-badge ${spC}">Konuşmacı ${seg.speaker}</span>
-        <span class="cps-badge ${cC}">${c} CPS</span>
-        <span class="sc-time">${seg.tStr}</span>
-        <span class="sc-dur">${d.toFixed(1)}s</span>
-        <div class="sc-acts">
-          <button class="sca edit" title="Düzenle" onclick="event.stopPropagation();iEdit('${seg.no}','${safe}')"><i class="fa-solid fa-pen"></i></button>
-          <button class="sca cut" title="Böl" onclick="event.stopPropagation();sBol('${seg.no}')"><i class="fa-solid fa-scissors"></i></button>
-          <button class="sca merge" title="Birleştir" onclick="event.stopPropagation();sBirlestir('${seg.no}')"><i class="fa-solid fa-link"></i></button>
-          ${mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':''}
-        </div>
-      </div>
-      <div class="sc-txt" id="t_${seg.no}" onclick="scTxtKelimeTikla(event,${seg.no})">${seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ')}</div>
-    </div>`;
+    html+=''
+    + '    <div class="sc" id="c_' + seg.no + '" onclick="cClick(\'' + seg.no + '\',' + seg.start + ')">'
+    + '      <div class="sc-top">'
+    + '        <span class="sc-num">' + String(seg.no).padStart(2,'0') + '</span>'
+    + '        <span class="sp-badge ' + spC + '">Konuşmacı ' + seg.speaker + '</span>'
+    + '        <span class="cps-badge ' + cC + '">' + c + ' CPS</span>'
+    + '        <span class="sc-time">' + seg.tStr + '</span>'
+    + '        <span class="sc-dur">' + d.toFixed(1) + 's</span>'
+    + '        <div class="sc-acts">'
+    + '          <button class="sca edit" title="Düzenle" onclick="event.stopPropagation();iEdit(\'' + seg.no + '\',\'' + safe + '\')"><i class="fa-solid fa-pen"></i></button>'
+    + '          <button class="sca cut" title="Böl" onclick="event.stopPropagation();sBol(\'' + seg.no + '\')"><i class="fa-solid fa-scissors"></i></button>'
+    + '          <button class="sca merge" title="Birleştir" onclick="event.stopPropagation();sBirlestir(\'' + seg.no + '\')"><i class="fa-solid fa-link"></i></button>'
+    + '          ' + mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':''
+    + '        </div>'
+    + '      </div>'
+    + '      <div class="sc-txt" id="t_' + seg.no + '" onclick="scTxtKelimeTikla(event,' + seg.no + ')">' + seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ') + '</div>'
+    + '    </div>';
   });
   html+='</div>';
   document.getElementById('slist').innerHTML=html;
@@ -2746,10 +2731,10 @@ function renderMarkers() {
   ml.style.display = 'block';
   ml.innerHTML = '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
     '<span style="font-size:10px;color:var(--muted2);font-weight:700;">MARKER:</span>' +
-    _markers.map((t, i) => `
-      <button onclick="jumpMarker(${t})" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;">
-        ${fmtTime(t)} <span onclick="event.stopPropagation();removeMarker(${i})" style="color:var(--muted2);margin-left:4px;">×</span>
-      </button>`).join('') +
+    _markers.map((t, i) => ''
+    + '      <button onclick="jumpMarker(' + t + ')" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:\'DM Mono\',monospace;">'
+    + '        ' + fmtTime(t) + ' <span onclick="event.stopPropagation();removeMarker(' + i + ')" style="color:var(--muted2);margin-left:4px;">×</span>'
+    + '      </button>').join('') +
     '</div>';
 }
 
@@ -2858,25 +2843,25 @@ function buildVoiceList() {
     const filterBar = document.createElement('div');
     filterBar.id = 'voice_filter_bar';
     filterBar.style.cssText = 'padding:8px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;';
-    filterBar.innerHTML = `
-      <!-- Arama -->
-      <div style="position:relative;">
-        <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>
-        <input id="voice_search" type="text" placeholder="Ses ara..." oninput="voiceFiltreUygula()"
-          style="width:100%;padding:6px 8px 6px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">
-      </div>
-      <!-- Cinsiyet + Ton filtreleri -->
-      <div style="display:flex;gap:4px;flex-wrap:wrap;">
-        <button onclick="voiceFiltreSet('gender','all',this)" class="_vf_btn _vf_active" data-f="gender" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tümü</button>
-        <button onclick="voiceFiltreSet('gender','male',this)" class="_vf_btn" data-f="gender" data-v="male" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👨 Erkek</button>
-        <button onclick="voiceFiltreSet('gender','female',this)" class="_vf_btn" data-f="gender" data-v="female" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👩 Kadın</button>
-        <div style="width:0.5px;background:var(--border2);margin:0 2px;"></div>
-        <button onclick="voiceFiltreSet('tone','all',this)" class="_vf_btn _vf_tone_active" data-f="tone" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tüm Ton</button>
-        <button onclick="voiceFiltreSet('tone','deep',this)" class="_vf_btn" data-f="tone" data-v="deep" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🔉 Derin</button>
-        <button onclick="voiceFiltreSet('tone','warm',this)" class="_vf_btn" data-f="tone" data-v="warm" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🌡 Sıcak</button>
-        <button onclick="voiceFiltreSet('tone','energetic',this)" class="_vf_btn" data-f="tone" data-v="energetic" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">⚡ Enerjik</button>
-        <button onclick="voiceFiltreSet('tone','neutral',this)" class="_vf_btn" data-f="tone" data-v="neutral" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">😐 Nötr</button>
-      </div>`;
+    filterBar.innerHTML = ''
+    + '      <!-- Arama -->'
+    + '      <div style="position:relative;">'
+    + '        <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>'
+    + '        <input id="voice_search" type="text" placeholder="Ses ara..." oninput="voiceFiltreUygula()"'
+    + '          style="width:100%;padding:6px 8px 6px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">'
+    + '      </div>'
+    + '      <!-- Cinsiyet + Ton filtreleri -->'
+    + '      <div style="display:flex;gap:4px;flex-wrap:wrap;">'
+    + '        <button onclick="voiceFiltreSet(\'gender\',\'all\',this)" class="_vf_btn _vf_active" data-f="gender" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tümü</button>'
+    + '        <button onclick="voiceFiltreSet(\'gender\',\'male\',this)" class="_vf_btn" data-f="gender" data-v="male" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👨 Erkek</button>'
+    + '        <button onclick="voiceFiltreSet(\'gender\',\'female\',this)" class="_vf_btn" data-f="gender" data-v="female" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👩 Kadın</button>'
+    + '        <div style="width:0.5px;background:var(--border2);margin:0 2px;"></div>'
+    + '        <button onclick="voiceFiltreSet(\'tone\',\'all\',this)" class="_vf_btn _vf_tone_active" data-f="tone" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tüm Ton</button>'
+    + '        <button onclick="voiceFiltreSet(\'tone\',\'deep\',this)" class="_vf_btn" data-f="tone" data-v="deep" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🔉 Derin</button>'
+    + '        <button onclick="voiceFiltreSet(\'tone\',\'warm\',this)" class="_vf_btn" data-f="tone" data-v="warm" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🌡 Sıcak</button>'
+    + '        <button onclick="voiceFiltreSet(\'tone\',\'energetic\',this)" class="_vf_btn" data-f="tone" data-v="energetic" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">⚡ Enerjik</button>'
+    + '        <button onclick="voiceFiltreSet(\'tone\',\'neutral\',this)" class="_vf_btn" data-f="tone" data-v="neutral" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">😐 Nötr</button>'
+    + '      </div>';
     el.parentNode.insertBefore(filterBar, el);
   }
 
@@ -2947,28 +2932,28 @@ function voiceFiltreUygula() {
 
     const tonIcon = { deep:'🔉', warm:'🌡', energetic:'⚡', neutral:'😐' }[v.tone] || '';
 
-    return `
-    <div onclick="${uyumsuz ? "toast('Bu ses seçili dili desteklemiyor — farklı bir ses seçin','twarn',3000)" : 'selVoiceById(\'' + v.id + '\')'}"
-      id="vli_${v.id}"
-      title="${title}"
-      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:${cursor};transition:all .12s;border:1.5px solid transparent;opacity:${opacity};"
-      ${!uyumsuz ? 'onmouseover="this.style.background=\'var(--s4)\'" onmouseout="if(voice!==\'' + v.id + '\')this.style.background=\'\';this.style.borderColor=voice===\'' + v.id + '\'?\'var(--accent2)\':\'transparent\'"' : ''}>
-      <span style="width:9px;height:9px;border-radius:50%;background:${v.color};flex-shrink:0;"></span>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-          <span style="font-size:12px;font-weight:600;">${v.flag || ''} ${v.name}</span>
-          ${badge}
-          ${dilBadge[v.lang] || ''}
-          ${tonIcon ? '<span style="font-size:10px;">' + tonIcon + '</span>' : ''}
-        </div>
-        <span style="font-size:10px;color:var(--muted2);">${v.desc}</span>
-      </div>
-      <button onclick="event.stopPropagation();${uyumsuz ? "toast('Bu ses bu dili desteklemiyor','twarn')" : 'sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')'}"
-        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"
-        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-        <i class="fa-solid fa-play" style="font-size:8px;"></i>
-      </button>
-    </div>`;
+    return ''
+    + '    <div onclick="' + uyumsuz ? "toast('Bu ses seçili dili desteklemiyor — farklı bir ses seçin','twarn',3000)" : 'selVoiceById(\'' + v.id + '\')' + '"'
+    + '      id="vli_' + v.id + '"'
+    + '      title="' + title + '"'
+    + '      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:' + cursor + ';transition:all .12s;border:1.5px solid transparent;opacity:' + opacity + ';"'
+    + '      ' + !uyumsuz ? 'onmouseover="this.style.background=\'var(--s4)\'" onmouseout="if(voice!==\'' + v.id + '\')this.style.background=\'\';this.style.borderColor=voice===\'' + v.id + '\'?\'var(--accent2)\':\'transparent\'"' : '' + '>'
+    + '      <span style="width:9px;height:9px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
+    + '      <div style="flex:1;min-width:0;">'
+    + '        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'
+    + '          <span style="font-size:12px;font-weight:600;">' + v.flag || '' + ' ' + v.name + '</span>'
+    + '          ' + badge
+    + '          ' + dilBadge[v.lang] || ''
+    + '          ' + tonIcon ? '<span style="font-size:10px;">' + tonIcon + '</span>' : ''
+    + '        </div>'
+    + '        <span style="font-size:10px;color:var(--muted2);">' + v.desc + '</span>'
+    + '      </div>'
+    + '      <button onclick="event.stopPropagation();' + uyumsuz ? "toast('Bu ses bu dili desteklemiyor','twarn')" : 'sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')' + '"'
+    + '        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"'
+    + '        onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
+    + '        <i class="fa-solid fa-play" style="font-size:8px;"></i>'
+    + '      </button>'
+    + '    </div>';
   }).join('');
 
   selVoiceById(voice);
@@ -3047,36 +3032,35 @@ function scTxtKelimeTikla(e, segNo) {
 
   const popup = document.createElement('div');
   popup.id = 'word_popup';
-  popup.style.cssText = `position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);
-    border-radius:var(--r2);min-width:200px;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;`;
+  popup.style.cssText = 'position:fixed;z-index:9999;background:var(--s2);border:1px solid var(--border2);    border-radius:var(--r2);min-width:200px;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;';
   popup.style.left = Math.min(e.clientX, window.innerWidth - 270) + 'px';
   popup.style.top  = Math.min(e.clientY + 8, window.innerHeight - 180) + 'px';
 
-  popup.innerHTML = `
-    <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s3);display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:12px;font-weight:700;color:var(--txt);">"${kelime}"</span>
-      <button onclick="document.getElementById('word_popup')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>
-    </div>
-    <div>
-      <!-- 1. Anlam bak -->
-      <div onclick="kelimeAnlamBak('${kelime}')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-book-open" style="color:var(--accent2);width:14px;"></i>
-        <span>Anlam / Tanım</span>
-      </div>
-      <!-- 2. AI ile yeniden yaz -->
-      <div onclick="kelimeAIOneri('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;width:14px;"></i>
-        <span>AI Öneri / Yeniden Yaz</span>
-      </div>
-      <!-- 3. Sil -->
-      <div onclick="kelimeSilSegmentten('${kelime}',${segNo})" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"
-        onmouseover="this.style.background='var(--s4)'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-trash" style="color:var(--red2);width:14px;"></i>
-        <span style="color:var(--red2);">Kelimeyi Sil</span>
-      </div>
-    </div>`;
+  popup.innerHTML = ''
+    + '    <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s3);display:flex;align-items:center;justify-content:space-between;">'
+    + '      <span style="font-size:12px;font-weight:700;color:var(--txt);">"' + kelime + '"</span>'
+    + '      <button onclick="document.getElementById(\'word_popup\')?.remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;">×</button>'
+    + '    </div>'
+    + '    <div>'
+    + '      <!-- 1. Anlam bak -->'
+    + '      <div onclick="kelimeAnlamBak(\'' + kelime + '\')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-book-open" style="color:var(--accent2);width:14px;"></i>'
+    + '        <span>Anlam / Tanım</span>'
+    + '      </div>'
+    + '      <!-- 2. AI ile yeniden yaz -->'
+    + '      <div onclick="kelimeAIOneri(\'' + kelime + '\',' + segNo + ')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;width:14px;"></i>'
+    + '        <span>AI Öneri / Yeniden Yaz</span>'
+    + '      </div>'
+    + '      <!-- 3. Sil -->'
+    + '      <div onclick="kelimeSilSegmentten(\'' + kelime + '\',' + segNo + ')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-trash" style="color:var(--red2);width:14px;"></i>'
+    + '        <span style="color:var(--red2);">Kelimeyi Sil</span>'
+    + '      </div>'
+    + '    </div>';
   document.body.appendChild(popup);
 
   setTimeout(() => {
@@ -3096,16 +3080,16 @@ async function kelimeAnlamBak(kelime) {
   const overlay = document.createElement('div');
   overlay.id = '_anlam_overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:380px;max-height:60vh;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:15px;font-weight:700;color:var(--txt);">"${kelime}"</div>
-        <button onclick="document.getElementById('_anlam_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      <div id="anlam_icerik" style="font-size:12px;color:var(--muted2);">
-        <i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...
-      </div>
-    </div>`;
+  overlay.innerHTML = ''
+    + '    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:380px;max-height:60vh;overflow-y:auto;">'
+    + '      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+    + '        <div style="font-size:15px;font-weight:700;color:var(--txt);">"' + kelime + '"</div>'
+    + '        <button onclick="document.getElementById(\'_anlam_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '      </div>'
+    + '      <div id="anlam_icerik" style="font-size:12px;color:var(--muted2);">'
+    + '        <i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...'
+    + '      </div>'
+    + '    </div>';
   document.body.appendChild(overlay);
 
   try {
@@ -3117,13 +3101,14 @@ async function kelimeAnlamBak(kelime) {
       const entry = d[0];
       let html = '';
       entry.meanings?.slice(0,3).forEach(m => {
-        html += `<div style="margin-bottom:8px;">
-          <span style="background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 7px;border-radius:100px;font-size:10px;font-weight:600;">${m.partOfSpeech}</span>
-          ${m.definitions?.slice(0,2).map(def => `
-            <div style="margin-top:5px;color:var(--txt);">${def.definition}</div>
-            ${def.example ? '<div style="color:var(--muted2);font-style:italic;margin-top:2px;">"' + def.example + '"</div>' : ''}
-          `).join('')}
-        </div>`;
+        const defHtml = (m.definitions || []).slice(0,2).map(function(def) {
+          return '<div style="margin-top:5px;color:var(--txt);">' + (def.definition||'') + '</div>'
+            + (def.example ? '<div style="color:var(--muted2);font-style:italic;margin-top:2px;">"' + def.example + '"</div>' : '');
+        }).join('');
+        html += '<div style="margin-bottom:8px;">'
+          + '<span style="background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 7px;border-radius:100px;font-size:10px;font-weight:600;">' + (m.partOfSpeech||'') + '</span>'
+          + defHtml
+          + '</div>';
       });
       if (entry.phonetic) html = '<div style="color:var(--muted2);margin-bottom:8px;">' + entry.phonetic + '</div>' + html;
       ic.innerHTML = html || '<div style="color:var(--red2);">Anlam bulunamadı</div>';
@@ -3132,10 +3117,10 @@ async function kelimeAnlamBak(kelime) {
     }
   } catch(e) {
     const ic = document.getElementById('anlam_icerik');
-    if (ic) ic.innerHTML = `<div style="color:var(--muted2);">
-      <a href="https://translate.google.com/?text=${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Google Translate'de aç →</a><br>
-      <a href="https://tureng.com/tr/turkce-ingilizce/${encodeURIComponent(kelime)}" target="_blank" style="color:var(--accent3);">Tureng'de ara →</a>
-    </div>`;
+    if (ic) ic.innerHTML = '<div style="color:var(--muted2);">'
+    + '      <a href="https://translate.google.com/?text=' + encodeURIComponent(kelime) + '" target="_blank" style="color:var(--accent3);">Google Translate\'de aç →</a><br>'
+    + '      <a href="https://tureng.com/tr/turkce-ingilizce/' + encodeURIComponent(kelime) + '" target="_blank" style="color:var(--accent3);">Tureng\'de ara →</a>'
+    + '    </div>';
   }
 }
 
@@ -3152,24 +3137,25 @@ async function kelimeAIOneri(kelime, segNo) {
   const r = await fetch(B + '/api/kelime_oneri/', {method:'POST', body:fd});
   const d = await r.json();
 
+  const butonlar = (d.oneriler||[]).map(function(o) {
+    const safe = o.replace(/'/g,"\\'");
+    return '<button onclick="kelimeSayfadaDegistir(\'' + kelime + '\',' + segNo + ',\'' + safe + '\');this.closest(\'[style*=fixed]\').remove()"'
+      + ' style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 12px;border-radius:var(--r);cursor:pointer;text-align:left;font-size:12px;font-family:inherit;transition:border .12s;"'
+      + ' onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
+      + '→ ' + o
+      + '</button>';
+  }).join('');
+
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:320px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;">🤖 AI Öneri: "${kelime}"</div>
-        <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        ${(d.oneriler||[]).map(o=>`
-          <button onclick="kelimeSayfadaDegistir('${kelime}',${segNo},'${o.replace(/'/g,"\\'")}');this.closest('[style*=fixed]').remove()"
-            style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 12px;border-radius:var(--r);cursor:pointer;text-align:left;font-size:12px;font-family:inherit;transition:border .12s;"
-            onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-            → ${o}
-          </button>`).join('')}
-        ${!d.oneriler?.length ? '<div style="color:var(--muted2);font-size:12px;">Öneri bulunamadı</div>' : ''}
-      </div>
-    </div>`;
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:320px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+    + '<div style="font-size:13px;font-weight:700;">AI Öneri: "' + kelime + '"</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:5px;">'
+    + (butonlar || '<div style="color:var(--muted2);font-size:12px;">Öneri bulunamadı</div>')
+    + '</div></div>';
   document.body.appendChild(overlay);
 }
 
@@ -3212,19 +3198,23 @@ function subSablonGalerisiOlustur() {
   const sec = document.getElementById('sec_sub_design');
   if (!sec || document.getElementById('sub_tmpl_gallery')) return;
   const galDiv = document.createElement('div');
-  galDiv.innerHTML = `
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Hazır Şablonlar</div>
-    <div class="sub-template-grid">
-      ${SUB_TEMPLATES.map(t => `
-        <div class="sub-tmpl" id="tmpl_${t.id}" onclick="subSablonUygula('${t.id}')" title="${t.name}">
-          <div class="sub-tmpl-preview" style="background:${t.bg==='transparent'?'#1a1a2e':t.bg};color:${t.color};font-family:${t.font};font-size:${Math.min(parseInt(t.size),14)}px;font-weight:${t.bold?'700':'400'};">
-            ${t.preview}
-          </div>
-          <div style="font-size:9px;color:var(--muted2);">${t.name}</div>
-        </div>`).join('')}
-    </div>
-    <div style="height:0.5px;background:var(--border);margin:8px 0;"></div>`;
   galDiv.id = 'sub_tmpl_gallery';
+
+  const tmplHtml = SUB_TEMPLATES.map(function(t) {
+    const bg = t.bg === 'transparent' ? '#1a1a2e' : t.bg;
+    const fs = Math.min(parseInt(t.size), 14) + 'px';
+    const fw = t.bold ? '700' : '400';
+    return '<div class="sub-tmpl" id="tmpl_' + t.id + '" onclick="subSablonUygula(\'' + t.id + '\')" title="' + t.name + '">'
+      + '<div class="sub-tmpl-preview" style="background:' + bg + ';color:' + t.color + ';font-family:' + t.font + ';font-size:' + fs + ';font-weight:' + fw + ';">'
+      + t.preview
+      + '</div>'
+      + '<div style="font-size:9px;color:var(--muted2);">' + t.name + '</div>'
+      + '</div>';
+  }).join('');
+
+  galDiv.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Hazır Şablonlar</div>'
+    + '<div class="sub-template-grid">' + tmplHtml + '</div>'
+    + '<div style="height:0.5px;background:var(--border);margin:8px 0;"></div>';
   sec.insertBefore(galDiv, sec.querySelector('.frow'));
 }
 
@@ -3258,46 +3248,46 @@ function topluIslemAc() {
   const overlay = document.createElement('div');
   overlay.id = '_batch_overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:480px;max-height:80vh;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;color:var(--txt);">📦 Toplu Video İşleme</div>
-        <button onclick="document.getElementById('_batch_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--s3);border:2px dashed var(--border2);border-radius:var(--r2);padding:20px;cursor:pointer;margin-bottom:12px;font-size:13px;color:var(--muted2);"
-        onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-        <i class="fa-solid fa-folder-open" style="font-size:20px;color:var(--accent2);"></i>
-        Dosyaları Seç (çoklu seçim)
-        <input type="file" multiple accept="video/*,audio/*" hidden onchange="batchDosyaEkle(this)">
-      </label>
-      <div id="batch_list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-        <div>
-          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">İşlem</div>
-          <select id="batch_modul" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
-            <option value="desifre">Deşifre</option>
-            <option value="altyazi">Altyazı Gömme</option>
-            <option value="seslendirme">AI Dublaj</option>
-          </select>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Hedef Dil</div>
-          <select id="batch_lang" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
-            <option value="EN">İngilizce</option><option value="DE">Almanca</option>
-            <option value="FR">Fransızca</option><option value="TR">Türkçe</option>
-          </select>
-        </div>
-      </div>
-      <div id="batch_progress" style="display:none;margin-bottom:10px;">
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="batch_status">Hazırlanıyor...</div>
-        <div style="background:var(--s3);border-radius:100px;height:5px;overflow:hidden;">
-          <div id="batch_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
-        </div>
-      </div>
-      <button onclick="batchBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:11px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
-        <i class="fa-solid fa-play"></i> Hepsini İşle
-      </button>
-    </div>`;
+  overlay.innerHTML = ''
+    + '    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:480px;max-height:80vh;overflow-y:auto;">'
+    + '      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    + '        <div style="font-size:14px;font-weight:700;color:var(--txt);">📦 Toplu Video İşleme</div>'
+    + '        <button onclick="document.getElementById(\'_batch_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '      </div>'
+    + '      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--s3);border:2px dashed var(--border2);border-radius:var(--r2);padding:20px;cursor:pointer;margin-bottom:12px;font-size:13px;color:var(--muted2);"'
+    + '        onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
+    + '        <i class="fa-solid fa-folder-open" style="font-size:20px;color:var(--accent2);"></i>'
+    + '        Dosyaları Seç (çoklu seçim)'
+    + '        <input type="file" multiple accept="video/*,audio/*" hidden onchange="batchDosyaEkle(this)">'
+    + '      </label>'
+    + '      <div id="batch_list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>'
+    + '      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+    + '        <div>'
+    + '          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">İşlem</div>'
+    + '          <select id="batch_modul" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">'
+    + '            <option value="desifre">Deşifre</option>'
+    + '            <option value="altyazi">Altyazı Gömme</option>'
+    + '            <option value="seslendirme">AI Dublaj</option>'
+    + '          </select>'
+    + '        </div>'
+    + '        <div>'
+    + '          <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Hedef Dil</div>'
+    + '          <select id="batch_lang" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">'
+    + '            <option value="EN">İngilizce</option><option value="DE">Almanca</option>'
+    + '            <option value="FR">Fransızca</option><option value="TR">Türkçe</option>'
+    + '          </select>'
+    + '        </div>'
+    + '      </div>'
+    + '      <div id="batch_progress" style="display:none;margin-bottom:10px;">'
+    + '        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="batch_status">Hazırlanıyor...</div>'
+    + '        <div style="background:var(--s3);border-radius:100px;height:5px;overflow:hidden;">'
+    + '          <div id="batch_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>'
+    + '        </div>'
+    + '      </div>'
+    + '      <button onclick="batchBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:11px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">'
+    + '        <i class="fa-solid fa-play"></i> Hepsini İşle'
+    + '      </button>'
+    + '    </div>';
   document.body.appendChild(overlay);
 }
 
@@ -3308,10 +3298,10 @@ function batchDosyaEkle(inp) {
     _batchQueue.push(f);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--s3);padding:7px 10px;border-radius:var(--r);font-size:12px;';
-    row.innerHTML = `<i class="fa-solid fa-file-video" style="color:var(--accent2);"></i>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
-      <span style="color:var(--muted2);">${(f.size/1024/1024).toFixed(1)}MB</span>
-      <span id="bs_${_batchQueue.length-1}" style="font-size:10px;color:var(--muted2);">Bekliyor</span>`;
+    row.innerHTML = '<i class="fa-solid fa-file-video" style="color:var(--accent2);"></i>'
+    + '      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.name + '</span>'
+    + '      <span style="color:var(--muted2);">' + (f.size/1024/1024).toFixed(1) + 'MB</span>'
+    + '      <span id="bs_' + _batchQueue.length-1 + '" style="font-size:10px;color:var(--muted2);">Bekliyor</span>';
     list.appendChild(row);
   });
 }
@@ -3383,34 +3373,33 @@ function versiyonPaneliAc() {
   const overlay = document.createElement('div');
   overlay.id = '_versiyon_overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:520px;max-height:80vh;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;">🔀 Sürüm Geçmişi & A/B</div>
-        <button onclick="document.getElementById('_versiyon_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">A Versiyonu</div>
-          <select id="ver_a" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
-            ${_versiyonlar.map((v,i)=>'<option value="' + i + '">' + v.etiket + ' (' + v.zaman + ')</option>').join('')}
-          </select></div>
-        <div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">B Versiyonu</div>
-          <select id="ver_b" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">
-            ${_versiyonlar.map((v,i)=>'<option value="' + i + '" ' + i===_versiyonlar.length-1?'selected':'' + '>' + v.etiket + ' (' + v.zaman + ')</option>').join('')}
-          </select></div>
-      </div>
-      <button onclick="abKarsilastir()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:8px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;margin-bottom:10px;">
-        <i class="fa-solid fa-arrows-left-right"></i> Karşılaştır
-      </button>
-      <div id="ab_result"></div>
-      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">
-        ${_versiyonlar.map((v,i) => `
-          <div style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);margin-bottom:5px;">
-            <span style="font-size:12px;flex:1;">${v.etiket} <span style="color:var(--muted2);font-size:10px;">${v.zaman}</span></span>
-            <button onclick="versiyonaGeriDon(${i})" style="background:var(--accent);border:none;color:#fff;padding:3px 9px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Geri Dön</button>
-          </div>`).join('')}
-      </div>
-    </div>`;
+
+  const verOpts = _versiyonlar.map(function(v,i) {
+    return '<option value="' + i + '">' + v.etiket + ' (' + v.zaman + ')</option>';
+  }).join('');
+
+  const verListesi = _versiyonlar.map(function(v,i) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);margin-bottom:5px;">'
+      + '<span style="font-size:12px;flex:1;">' + v.etiket + ' <span style="color:var(--muted2);font-size:10px;">' + v.zaman + '</span></span>'
+      + '<button onclick="versiyonaGeriDon(' + i + ')" style="background:var(--accent);border:none;color:#fff;padding:3px 9px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Geri Dön</button>'
+      + '</div>';
+  }).join('');
+
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:520px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    + '<div style="font-size:14px;font-weight:700;">Sürüm Geçmişi & A/B</div>'
+    + '<button onclick="document.getElementById(\'_versiyon_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+    + '<div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">A Versiyonu</div>'
+    + '<select id="ver_a" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">' + verOpts + '</select></div>'
+    + '<div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">B Versiyonu</div>'
+    + '<select id="ver_b" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:7px;border-radius:var(--r);font-size:12px;">' + verOpts + '</select></div>'
+    + '</div>'
+    + '<button onclick="abKarsilastir()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:8px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;margin-bottom:10px;">Karşılaştır</button>'
+    + '<div id="ab_result"></div>'
+    + '<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">' + verListesi + '</div>'
+    + '</div>';
   document.body.appendChild(overlay);
 }
 
@@ -3422,21 +3411,21 @@ function abKarsilastir() {
   const tA = vA.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
   const tB = vB.segmentler.reduce((a,s)=>a+(s.end-s.start),0);
   const res = document.getElementById('ab_result');
-  if (res) res.innerHTML = `
-    <div style="background:var(--s3);border-radius:var(--r);padding:10px;font-size:12px;margin-top:4px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
-        <div style="background:rgba(99,102,241,.1);padding:7px;border-radius:5px;">
-          <div style="font-weight:700;color:var(--accent3);">A: ${vA.etiket}</div>
-          <div style="color:var(--muted2);">${vA.segmentler.length} segment · ${tA.toFixed(1)}s</div>
-        </div>
-        <div style="background:rgba(234,179,8,.1);padding:7px;border-radius:5px;">
-          <div style="font-weight:700;color:#eab308;">B: ${vB.etiket}</div>
-          <div style="color:var(--muted2);">${vB.segmentler.length} segment · ${tB.toFixed(1)}s</div>
-        </div>
-      </div>
-      <div style="color:var(--muted2);">Δ Segment: <b style="color:var(--txt);">${vB.segmentler.length-vA.segmentler.length>0?'+':''}${vB.segmentler.length-vA.segmentler.length}</b>
-        &nbsp; Δ Süre: <b style="color:var(--txt);">${(tB-tA)>=0?'+':''}${(tB-tA).toFixed(1)}s</b></div>
-    </div>`;
+  if (res) res.innerHTML = ''
+    + '    <div style="background:var(--s3);border-radius:var(--r);padding:10px;font-size:12px;margin-top:4px;">'
+    + '      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">'
+    + '        <div style="background:rgba(99,102,241,.1);padding:7px;border-radius:5px;">'
+    + '          <div style="font-weight:700;color:var(--accent3);">A: ' + vA.etiket + '</div>'
+    + '          <div style="color:var(--muted2);">' + vA.segmentler.length + ' segment · ' + tA.toFixed(1) + 's</div>'
+    + '        </div>'
+    + '        <div style="background:rgba(234,179,8,.1);padding:7px;border-radius:5px;">'
+    + '          <div style="font-weight:700;color:#eab308;">B: ' + vB.etiket + '</div>'
+    + '          <div style="color:var(--muted2);">' + vB.segmentler.length + ' segment · ' + tB.toFixed(1) + 's</div>'
+    + '        </div>'
+    + '      </div>'
+    + '      <div style="color:var(--muted2);">Δ Segment: <b style="color:var(--txt);">' + vB.segmentler.length-vA.segmentler.length>0?'+':'' + vB.segmentler.length-vA.segmentler.length + '</b>'
+    + '        &nbsp; Δ Süre: <b style="color:var(--txt);">' + (tB-tA)>=0?'+':'' + (tB-tA).toFixed(1) + 's</b></div>'
+    + '    </div>';
 }
 
 function versiyonaGeriDon(i) {
@@ -3453,10 +3442,9 @@ function autoVersiyonKaydet() {
   if (segs.length > 0 && _versiyonlar.length < 20) versiyonKaydet('Otomatik ' + new Date().toLocaleTimeString('tr-TR'));
 }
 
-/* ═══ VİRAL KLİP ÇIKARMA ═══ */
 async function viralKlipCikar() {
   if (!segs.length) { toast('Önce transkript oluşturun','twarn'); return; }
-  toast('<i class="fa-solid fa-spinner fa-spin"></i> En iyi anlar analiz ediliyor...','tok',8000);
+  toast('En iyi anlar analiz ediliyor...','tok',8000);
   const skorlar = segs.map(s => {
     const metin = s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
     const sure  = s.end - s.start;
@@ -3468,29 +3456,33 @@ async function viralKlipCikar() {
     return { seg:s, skor, metin, sure };
   });
   const enIyi = [...skorlar].sort((a,b)=>b.skor-a.skor).slice(0,5);
+
+  const itemHtml = enIyi.map(function(item, i) {
+    const metin100 = item.metin.slice(0,100) + (item.metin.length>100?'...':'');
+    const dosya = aDosya || '';
+    return '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+      + '<span style="background:rgba(234,179,8,.2);color:#eab308;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;">#' + (i+1) + '</span>'
+      + '<span style="font-size:11px;color:var(--muted2);">' + fmt(item.seg.start) + ' → ' + fmt(item.seg.end) + ' · ' + item.sure.toFixed(1) + 's</span>'
+      + '<span style="margin-left:auto;font-size:10px;background:rgba(99,102,241,.15);color:var(--accent3);padding:2px 7px;border-radius:100px;">⭐ ' + Math.round(item.skor) + '</span>'
+      + '</div>'
+      + '<div style="font-size:12px;margin-bottom:8px;">"' + metin100 + '"</div>'
+      + '<div style="display:flex;gap:6px;">'
+      + '<button onclick="vidAtla(' + item.seg.start + ')" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Oynat</button>'
+      + '<button onclick="klipIndir(\'' + dosya + '\',' + item.seg.start + ',' + item.seg.end + ')" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Klip İndir</button>'
+      + '</div></div>';
+  }).join('');
+
   const overlay = document.createElement('div');
   overlay.id = '_viral_overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;">⚡ En İyi Anlar</div>
-        <button onclick="document.getElementById('_viral_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      ${enIyi.map((item,i)=>`
-        <div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <span style="background:rgba(234,179,8,.2);color:#eab308;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;">#${i+1}</span>
-            <span style="font-size:11px;color:var(--muted2);">${fmt(item.seg.start)} → ${fmt(item.seg.end)} · ${item.sure.toFixed(1)}s</span>
-            <span style="margin-left:auto;font-size:10px;background:rgba(99,102,241,.15);color:var(--accent3);padding:2px 7px;border-radius:100px;">⭐ ${Math.round(item.skor)}</span>
-          </div>
-          <div style="font-size:12px;margin-bottom:8px;">"${item.metin.slice(0,100)}${item.metin.length>100?'...':''}"</div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="vidAtla(${item.seg.start})" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-play"></i> Oynat</button>
-            <button onclick="klipIndir('${aDosya||''}',${item.seg.start},${item.seg.end})" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-scissors"></i> Klip İndir</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    + '<div style="font-size:14px;font-weight:700;">En İyi Anlar</div>'
+    + '<button onclick="document.getElementById(\'_viral_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + itemHtml
+    + '</div>';
   document.body.appendChild(overlay);
 }
 
@@ -3526,107 +3518,68 @@ function profilAc() {
   overlay.id = '_profil_overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
 
-  const plan     = _sbProfil?.plan || localStorage.getItem('vf_plan') || 'lite';
-  const kullanim = _sbProfil?.kullanim_dakika || parseFloat(localStorage.getItem('vf_kullanim_dk')||'0');
+  const plan     = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
+  const kullanim = (_sbProfil && _sbProfil.kullanim_dakika) || parseFloat(localStorage.getItem('vf_kullanim_dk')||'0');
   const limitler = { lite:10, creator:75, studio:200, business:600 };
   const limit    = limitler[plan.toLowerCase()] || 10;
   const yuzde    = Math.min(100, (kullanim / limit) * 100);
   const renk     = yuzde > 85 ? '#ef4444' : yuzde > 60 ? '#f59e0b' : '#22c55e';
-  const email    = _sbUser?.email || 'Giriş yapılmadı';
+  const email    = (_sbUser && _sbUser.email) ? _sbUser.email : 'Giriş yapılmadı';
+  const ilk      = email[0] ? email[0].toUpperCase() : '?';
+  const hesapTxt = _sbUser ? 'Aktif hesap' : 'Demo mod';
+  const girisBtn = _sbUser
+    ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Çıkış</button>'
+    : '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Giriş Yap</button>';
 
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <div style="font-size:15px;font-weight:700;">👤 Profil</div>
-        <button onclick="document.getElementById('_profil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
+  const planlar = [['lite','$0','10 dk'],['creator','$9','75 dk'],['studio','$19','200 dk'],['business','$49','600 dk']];
+  const planHtml = planlar.map(function(pfd) {
+    const p = pfd[0], f = pfd[1], d = pfd[2];
+    const aktif = p === plan.toLowerCase();
+    const bg = aktif ? 'rgba(99,102,241,.1)' : 'var(--s3)';
+    const border = aktif ? 'var(--accent2)' : 'var(--border2)';
+    const color = aktif ? 'var(--accent3)' : 'var(--txt)';
+    const isim = p.charAt(0).toUpperCase() + p.slice(1) + (aktif ? ' ✓' : '');
+    return '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:var(--r);padding:8px 10px;">'
+      + '<div style="font-size:11px;font-weight:700;color:' + color + ';">' + isim + '</div>'
+      + '<div style="font-size:13px;font-weight:700;">' + f + '<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>'
+      + '<div style="font-size:10px;color:var(--muted2);">' + d + '/ay</div>'
+      + '</div>';
+  }).join('');
 
-      <!-- Kullanıcı bilgisi -->
-      <div style="background:var(--s3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
-          ${email[0]?.toUpperCase() || '?'}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${email}</div>
-          <div style="font-size:11px;color:var(--muted2);">${_sbUser ? 'Aktif hesap' : 'Demo mod'}</div>
-        </div>
-        ${_sbUser ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Çıkış</button>' :
-        '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Giriş Yap</button>'}
-      </div>
-
-      <!-- Plan & kullanım -->
-      <div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div>
-            <div style="font-size:11px;color:var(--muted2);">Aktif Plan</div>
-            <div style="font-size:18px;font-weight:700;color:var(--accent3);text-transform:capitalize;">${plan}</div>
-          </div>
-          <button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Yükselt ↑</button>
-        </div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">${kullanim.toFixed(1)} / ${limit} dakika</div>
-        <div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">
-          <div style="height:100%;background:${renk};border-radius:100px;width:${yuzde}%;"></div>
-        </div>
-      </div>
-
-      <!-- Plan karşılaştırma -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
-        ${[['lite','$0','10 dk'],['creator','$9','75 dk'],['studio','$19','200 dk'],['business','$49','600 dk']].map(([p,f,d])=>`
-          <div style="background:${p===plan.toLowerCase()?'rgba(99,102,241,.1)':'var(--s3)'};border:1.5px solid ${p===plan.toLowerCase()?'var(--accent2)':'var(--border2)'};border-radius:var(--r);padding:8px 10px;">
-            <div style="font-size:11px;font-weight:700;color:${p===plan.toLowerCase()?'var(--accent3)':'var(--txt)'};">${p.charAt(0).toUpperCase()+p.slice(1)} ${p===plan.toLowerCase()?'✓':''}</div>
-            <div style="font-size:13px;font-weight:700;">${f}<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>
-            <div style="font-size:10px;color:var(--muted2);">${d}/ay</div>
-          </div>`).join('')}
-      </div>
-
-      <div style="display:flex;gap:8px;">
-        <button onclick="gizlilikAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">🔒 Gizlilik</button>
-        <button onclick="kullanımSartlariAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">📄 Şartlar</button>
-      </div>
-    </div>`;
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:15px;font-weight:700;">Profil</div>'
+    + '<button onclick="document.getElementById(\'_profil_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + '<div style="background:var(--s3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">'
+    + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">' + ilk + '</div>'
+    + '<div style="flex:1;min-width:0;">'
+    + '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + email + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">' + hesapTxt + '</div>'
+    + '</div>'
+    + girisBtn
+    + '</div>'
+    + '<div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    + '<div><div style="font-size:11px;color:var(--muted2);">Aktif Plan</div>'
+    + '<div style="font-size:18px;font-weight:700;color:var(--accent3);text-transform:capitalize;">' + plan + '</div></div>'
+    + '<button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Yükselt ↑</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + kullanim.toFixed(1) + ' / ' + limit + ' dakika</div>'
+    + '<div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">'
+    + '<div style="height:100%;background:' + renk + ';border-radius:100px;width:' + yuzde + '%;"></div>'
+    + '</div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">' + planHtml + '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="gizlilikAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Gizlilik</button>'
+    + '<button onclick="kullanımSartlariAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Sartlar</button>'
+    + '</div></div>';
   document.body.appendChild(overlay);
 }
 
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <div style="font-size:15px;font-weight:700;">👤 Profil</div>
-        <button onclick="document.getElementById('_profil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-
-      <!-- Plan bilgisi -->
-      <div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div>
-            <div style="font-size:12px;color:var(--muted2);">Aktif Plan</div>
-            <div style="font-size:18px;font-weight:700;color:var(--accent3);">${plan}</div>
-          </div>
-          <button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">
-            Yükselt ↑
-          </button>
-        </div>
-        <!-- Kullanım çubuğu -->
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">
-          ${parseFloat(kullanim).toFixed(1)} / ${limit} dakika kullanıldı
-        </div>
-        <div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">
-          <div style="height:100%;background:${renk};border-radius:100px;width:${yuzde}%;transition:width .5s;"></div>
-        </div>
-      </div>
-
-      <!-- Plan karşılaştırma -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
-        ${[['Lite','$0','10 dk'],['Creator','$9','75 dk'],['Studio','$19','200 dk'],['Business','$49','600 dk']].map(([p,f,d])=>`
-          <div style="background:${p===plan?'rgba(99,102,241,.1)':'var(--s3)'};border:1.5px solid ${p===plan?'var(--accent2)':'var(--border2)'};border-radius:var(--r);padding:8px 10px;">
-            <div style="font-size:11px;font-weight:700;color:${p===plan?'var(--accent3)':'var(--txt)'};">${p} ${p===plan?'✓':''}</div>
-            <div style="font-size:13px;font-weight:700;color:var(--txt);">${f}<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>
-            <div style="font-size:10px;color:var(--muted2);">${d}/ay</div>
-          </div>`).join('')}
-      </div>
-
 function planYukselt() {
   document.getElementById('_profil_overlay')?.remove();
-  toast('💳 Ödeme sistemi yakında aktif olacak — Stripe entegrasyonu hazırlanıyor','twarn', 4000);
+  toast('Odeme sistemi yakin zamanda aktif olacak — Stripe entegrasyonu hazırlanıyor','twarn', 4000);
 }
 
 /* ═══ GİZLİLİK POLİTİKASI ═══ */
@@ -3637,23 +3590,19 @@ function gizlilikAc() {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:600px;max-height:80vh;overflow-y:auto;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div style="font-size:16px;font-weight:700;">🔒 Gizlilik Politikası</div>'
-    + '<button onclick="document.getElementById(\'_gizlilik_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '<div style="font-size:16px;font-weight:700;">Gizlilik Politikasi</div>'
+    + '<button onclick="document.getElementById(\'_gizlilik_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">x</button>'
     + '</div>'
     + '<div style="font-size:12px;color:var(--muted2);line-height:1.8;">'
-    + '<p style="margin-bottom:8px;color:var(--txt);font-size:11px;">Son güncelleme: Mart 2026</p>'
+    + '<p>Son guncelleme: Mart 2026</p>'
     + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">1. Topladığımız Veriler</h3>'
-    + '<p>Video ve ses dosyalarınız yalnızca işleme sürecinde geçici olarak saklanır. İşlem sonrası <b>30 dakika</b> içinde otomatik silinir. Kalıcı veriler: e-posta, plan bilgisi, kullanım dakikası.</p>'
+    + '<p>Video ve ses dosyalarınız yalnızca işleme sürecinde geçici saklanır. 30 dakika içinde otomatik silinir.</p>'
     + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">2. Kullanım Amacı</h3>'
-    + '<p>İçerikleriniz yalnızca hizmet sunumu için kullanılır. Üçüncü taraflarla paylaşılmaz, reklam amaçlı kullanılmaz.</p>'
+    + '<p>İçerikleriniz yalnızca hizmet sunumu için kullanılır. Reklam amaçlı kullanılmaz.</p>'
     + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">3. Üçüncü Taraf Hizmetler</h3>'
-    + '<ul style="margin:6px 0 6px 16px;"><li><b>Deepgram</b> — Ses tanıma</li><li><b>ElevenLabs</b> — Ses sentezi</li><li><b>DeepL</b> — Çeviri</li></ul>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">4. GDPR (AB Kullanıcıları)</h3>'
-    + '<p>Verilerinize erişme, düzeltme, silme hakkına sahipsiniz. İletişim: <a href="mailto:privacy@voiceflow.studio" style="color:var(--accent3);">privacy@voiceflow.studio</a></p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">5. Çerezler</h3>'
-    + '<p>Yalnızca oturum ve tercih çerezleri kullanılır. Reklam çerezi yoktur.</p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">6. Güvenlik</h3>'
-    + '<p>Tüm bağlantılar HTTPS ile şifrelenir. Veriler Railway (EU West) altyapısında işlenir.</p>'
+    + '<p>Deepgram (ses tanıma), ElevenLabs (ses sentezi), DeepL (çeviri).</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">4. İletişim</h3>'
+    + '<p><a href="mailto:privacy@voiceflow.studio" style="color:var(--accent3);">privacy@voiceflow.studio</a></p>'
     + '</div></div>';
   document.body.appendChild(ov);
 }
@@ -3666,60 +3615,35 @@ function kullanımSartlariAc() {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:600px;max-height:80vh;overflow-y:auto;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div style="font-size:16px;font-weight:700;">📄 Kullanım Şartları</div>'
-    + '<button onclick="document.getElementById(\'_sartlar_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '<div style="font-size:16px;font-weight:700;">Kullanim Sartlari</div>'
+    + '<button onclick="document.getElementById(\'_sartlar_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">x</button>'
     + '</div>'
     + '<div style="font-size:12px;color:var(--muted2);line-height:1.8;">'
-    + '<p style="margin-bottom:8px;color:var(--txt);font-size:11px;">Son güncelleme: Mart 2026</p>'
+    + '<p>Son guncelleme: Mart 2026</p>'
     + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">1. Kabul</h3>'
-    + '<p>VoiceFlow Studio kullanarak bu şartları kabul etmiş sayılırsınız.</p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">2. Kullanım Hakları</h3>'
-    + '<p>Kişisel ve ticari kullanım için lisanslanmıştır. Telif hakkı ihlali yasaktır.</p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">3. Kota ve Limitler</h3>'
-    + '<p>Her plan belirli aylık dakika limitine sahiptir. Kullanılmayan dakikalar devredilmez.</p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">4. Yasaklı Kullanım</h3>'
-    + '<ul style="margin:6px 0 6px 16px;"><li>Telif hakkı ihlali</li><li>Manipülasyon amaçlı deepfake</li><li>Spam veya kötü amaçlı içerik</li><li>API izninsiz yeniden satış</li></ul>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">5. Sorumluluk Reddi</h3>'
-    + '<p>Hizmet olduğu gibi sunulur. AI çıktıları kontrol edilmeden kullanılmamalıdır.</p>'
-    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">6. İletişim</h3>'
+    + '<p>VoiceFlow Studio kullanarak bu sartları kabul etmis sayılırsınız.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">2. Yasaklı Kullanım</h3>'
+    + '<p>Telif hakkı ihlali, deepfake, spam, API izninsiz satışı yasaktır.</p>'
+    + '<h3 style="color:var(--txt);font-size:13px;margin:12px 0 6px;">3. İletişim</h3>'
     + '<p><a href="mailto:legal@voiceflow.studio" style="color:var(--accent3);">legal@voiceflow.studio</a></p>'
     + '</div></div>';
   document.body.appendChild(ov);
 }
 
 /* ═══ AKILLI KREDİ MODALI ═══ */
-// Her modülün kredi maliyeti (dakika bazlı)
-const MODUL_MALIYET = {
-  desifre: 5,
-  altyazi: 8,
-  seslendirme: 20,
-  metinden_sese: 3,
-};
+const MODUL_MALIYET = { desifre:5, altyazi:8, seslendirme:20, metinden_sese:3 };
 
 async function bakiyeKontrolVeBaslat() {
   const maliyet = MODUL_MALIYET[mod] || 5;
-
-  // Backend'den bakiye kontrol
   try {
     const r = await fetch(B + '/api/bakiye_kontrol/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        modul: mod,
-        user_id: _sbUser?.id || null,
-      })
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ modul:mod, user_id:_sbUser ? _sbUser.id : null })
     });
     const d = await r.json();
-
-    if (!d.yeterli) {
-      krediBittiModalAc(d.bakiye || 0, maliyet);
-      return false;
-    }
-  } catch(e) {
-    // Backend erişilemiyorsa devam et
-    console.warn('Bakiye kontrol atlandı:', e);
-  }
-
+    if (!d.yeterli) { krediBittiModalAc(d.bakiye || 0, maliyet); return false; }
+  } catch(e) { console.warn('Bakiye kontrol atlandı:', e); }
   return true;
 }
 
@@ -3728,63 +3652,48 @@ function krediBittiModalAc(mevcutBakiye, gerekliKredi) {
   const ov = document.createElement('div');
   ov.id = '_kredi_modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
-
-  const modulAdi = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'Metin→Ses' }[mod] || mod;
-
+  const modulAdi = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'Metin>Ses' }[mod] || mod;
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:480px;max-width:95vw;">'
     + '<div style="text-align:center;margin-bottom:20px;">'
     + '<div style="font-size:32px;margin-bottom:8px;">⚡</div>'
-    + '<div style="font-size:16px;font-weight:700;color:var(--txt);">Yeterli Krediniz Yok</div>'
-    + '<div style="font-size:12px;color:var(--muted2);margin-top:6px;">'
-    + modulAdi + ' için <b style="color:var(--txt);">' + gerekliKredi + ' kredi</b> gerekli, '
-    + 'mevcut bakiyeniz: <b style="color:var(--yellow2);">' + mevcutBakiye + ' kredi</b>'
-    + '</div></div>'
-    // İki seçenek yan yana
+    + '<div style="font-size:16px;font-weight:700;">Yeterli Krediniz Yok</div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-top:6px;">' + modulAdi + ' icin <b>' + gerekliKredi + ' kredi</b> gerekli, mevcut: <b style="color:var(--yellow2);">' + mevcutBakiye + ' kredi</b></div>'
+    + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">'
-    // Seçenek 1: Tek seferlik kredi
-    + '<div style="background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:16px;display:flex;flex-direction:column;gap:8px;">'
-    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent3);">⚡ Hızlı Çözüm</div>'
-    + '<div style="font-size:20px;font-weight:700;color:var(--txt);">+50 Kredi<span style="font-size:12px;font-weight:400;color:var(--muted2);"> / $5</span></div>'
-    + '<div style="font-size:11px;color:var(--muted2);flex:1;">İşlemlerinize hemen devam edin. Tek seferlik, abonelik yok.</div>'
-    + '<button onclick="kredinalAc(50,5)" style="background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Hemen Al →</button>'
+    + '<div style="background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:16px;">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--accent3);">Hızlı Cozum</div>'
+    + '<div style="font-size:20px;font-weight:700;">+50 Kredi <span style="font-size:12px;color:var(--muted2);">$5</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin:6px 0;">Tek seferlik, abonelik yok.</div>'
+    + '<button onclick="kredinalAc(50,5)" style="background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Hemen Al</button>'
     + '</div>'
-    // Seçenek 2: Pro plan
-    + '<div style="background:var(--s3);border:1.5px solid var(--purple2);border-radius:var(--r2);padding:16px;display:flex;flex-direction:column;gap:8px;">'
-    + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#a855f7;">👑 En İyi Değer</div>'
-    + '<div style="font-size:20px;font-weight:700;color:var(--txt);">Studio<span style="font-size:12px;font-weight:400;color:var(--muted2);"> / $19/ay</span></div>'
-    + '<div style="font-size:11px;color:var(--muted2);flex:1;">200 dk/ay + Ses Klonlama + öncelikli işlem. Sınırları kaldırın.</div>'
-    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Yükselt →</button>'
-    + '</div>'
-    + '</div>'
-    + '<div style="text-align:center;">'
-    + '<button onclick="document.getElementById(\'_kredi_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit;">Şimdi değil</button>'
-    + '</div>'
-    + '<div style="margin-top:12px;padding:10px;background:rgba(99,102,241,.08);border-radius:var(--r);font-size:11px;color:var(--muted2);text-align:center;">'
-    + '💡 <b style="color:var(--txt);">İpucu:</b> Küçük videolar (5 dk altı) çok daha az kredi harcar.'
-    + '</div>'
+    + '<div style="background:var(--s3);border:1.5px solid var(--purple2);border-radius:var(--r2);padding:16px;">'
+    + '<div style="font-size:10px;font-weight:700;color:#a855f7;">En İyi Deger</div>'
+    + '<div style="font-size:20px;font-weight:700;">Studio <span style="font-size:12px;color:var(--muted2);">$19/ay</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin:6px 0;">200 dk/ay + Ses Klonlama.</div>'
+    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Yukselt</button>'
+    + '</div></div>'
+    + '<div style="text-align:center;"><button onclick="document.getElementById(\'_kredi_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;">Simdi degil</button></div>'
     + '</div>';
-
   document.body.appendChild(ov);
 }
 
 function kredinalAc(kredi, fiyat) {
   document.getElementById('_kredi_modal')?.remove();
-  toast('💳 Ödeme sayfası yakında — Stripe entegrasyonu hazırlanıyor', 'twarn', 4000);
-  // Stripe gelince: window.location.href = '/odeme?kredi=' + kredi + '&fiyat=' + fiyat;
+  toast('Odeme sayfası yakında — Stripe entegrasyonu hazırlanıyor','twarn',4000);
 }
+
+/* ═══ SUPABASE AUTH ═══ */
 const SUPABASE_URL  = 'https://scbnrgvpmdmmginezamj.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjYm5yZ3ZwbWRtbWdpbmV6YW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjU5OTMsImV4cCI6MjA5MDIwMTk5M30.9KntnaEQvbzCjw6t3iUd-PUker2_vtf8XaEnCoo3R2k';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-let _sbUser   = null;
-let _sbProfil = null;
+let _sbUser = null, _sbProfil = null;
 
 async function authBaslat() {
   try {
     const { data: { session } } = await _sb.auth.getSession();
-    if (session?.user) await authGirisYapildi(session.user);
-    _sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN'  && session?.user) await authGirisYapildi(session.user);
+    if (session && session.user) await authGirisYapildi(session.user);
+    _sb.auth.onAuthStateChange(async function(event, session) {
+      if (event === 'SIGNED_IN' && session && session.user) await authGirisYapildi(session.user);
       if (event === 'SIGNED_OUT') authCikisYapildi();
     });
   } catch(e) { console.warn('Supabase auth hatası:', e); }
@@ -3802,9 +3711,12 @@ async function authGirisYapildi(user) {
     }
   } catch(e) {}
   const navName = document.getElementById('nav_user_name');
-  if (navName) { navName.textContent = user.email ? user.email.split('@')[0] : ''; navName.style.display = 'inline'; }
+  if (navName) {
+    navName.textContent = user.email ? user.email.split('@')[0] : '';
+    navName.style.display = 'inline';
+  }
   const isim = user.email ? user.email.split('@')[0] : 'Kullanıcı';
-  toast('✓ Hoş geldin, ' + isim + '!');
+  toast('Hos geldin, ' + isim + '!');
 }
 
 function authCikisYapildi() {
@@ -3816,23 +3728,7 @@ function authCikisYapildi() {
 async function authCikis() {
   await _sb.auth.signOut();
   document.getElementById('_profil_overlay')?.remove();
-  toast('Çıkış yapıldı');
-}
-
-async function kotaKontrol(tahminiDk = 5) {
-  if (!_sbUser || !_sbProfil) return true;
-  const kalan = (_sbProfil.aylik_limit || 10) - (_sbProfil.kullanim_dakika || 0);
-  if (kalan <= 0) { toast('⚠ Aylık kotanız doldu! Planı yükseltmek için profilinize bakın.','terr',5000); return false; }
-  if (kalan < tahminiDk) toast('⚠ Yalnızca ' + kalan.toFixed(1) + ' dakika kaldı','twarn',3000);
-  return true;
-}
-
-async function kullanımGuncelle(dakika) {
-  if (!_sbUser || !_sbProfil) return;
-  const yeni = (_sbProfil.kullanim_dakika || 0) + dakika;
-  await _sb.from('profiles').update({ kullanim_dakika: yeni }).eq('id', _sbUser.id);
-  _sbProfil.kullanim_dakika = yeni;
-  localStorage.setItem('vf_kullanim_dk', yeni);
+  toast('Cıkıs yapıldı');
 }
 
 function loginModalAc(mesaj) {
@@ -3851,35 +3747,27 @@ function loginModalAc(mesaj) {
     + '<button id="tab_giris" onclick="authTabSec(\'giris\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Giris Yap</button>'
     + '<button id="tab_kayit" onclick="authTabSec(\'kayit\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:transparent;color:var(--muted2);font-size:13px;cursor:pointer;font-family:inherit;">Kayit Ol</button>'
     + '</div>'
-    + '<div style="margin-bottom:12px;">'
-    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">E-posta</label>'
-    + '<input id="auth_email" type="email" placeholder="ornek@email.com" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;">'
-    + '</div>'
-    + '<div style="margin-bottom:16px;">'
-    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Sifre</label>'
-    + '<input id="auth_pass" type="password" placeholder="..." onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;">'
-    + '</div>'
+    + '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">E-posta</label>'
+    + '<input id="auth_email" type="email" placeholder="ornek@email.com" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
+    + '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Sifre</label>'
+    + '<input id="auth_pass" type="password" placeholder="..." onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
     + '<div id="auth_err" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--red2);margin-bottom:12px;"></div>'
     + '<button id="auth_btn" onclick="authGonder()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;margin-bottom:10px;">Giris Yap</button>'
     + '<button onclick="authDevamEt()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Giris yapmadan devam et (Demo)</button>'
-    + '<div style="text-align:center;margin-top:14px;font-size:11px;color:var(--muted);">'
-    + '<button onclick="gizlilikAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:11px;font-family:inherit;">Gizlilik Politikasi</button>'
-    + ' &nbsp;&middot;&nbsp; '
-    + '<button onclick="kullanımSartlariAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:11px;font-family:inherit;">Kullanim Sartlari</button>'
-    + '</div>'
     + '</div>';
   document.body.appendChild(ov);
-  setTimeout(function(){ var e=document.getElementById('auth_email'); if(e) e.focus(); }, 100);
+  setTimeout(function(){ const e=document.getElementById('auth_email'); if(e) e.focus(); }, 100);
 }
 
+let _authMod = 'giris';
 function authTabSec(mod) {
   _authMod = mod;
-  ['giris','kayit'].forEach(m => {
+  ['giris','kayit'].forEach(function(m) {
     const b = document.getElementById('tab_' + m);
     if (b) { b.style.background = m===mod?'var(--accent)':'transparent'; b.style.color = m===mod?'#fff':'var(--muted2)'; }
   });
   const btn = document.getElementById('auth_btn');
-  if (btn) btn.textContent = mod==='giris'?'Giriş Yap':'Hesap Oluştur';
+  if (btn) btn.textContent = mod==='giris' ? 'Giris Yap' : 'Hesap Olustur';
 }
 
 async function authGonder() {
@@ -3887,23 +3775,17 @@ async function authGonder() {
   const pass  = document.getElementById('auth_pass')?.value;
   const errEl = document.getElementById('auth_err');
   const btn   = document.getElementById('auth_btn');
-  const hataMesajlari = {
-    'Invalid login credentials':'E-posta veya şifre hatalı',
-    'Email not confirmed':'E-postanızı onaylayın — gelen kutunuzu kontrol edin',
-    'User already registered':'Bu e-posta zaten kayıtlı',
-    'Password should be at least 6 characters':'Şifre en az 6 karakter olmalı',
-  };
-  if (!email||!pass) { if(errEl){errEl.textContent='E-posta ve şifre gerekli';errEl.style.display='block';} return; }
+  const hatalar = { 'Invalid login credentials':'E-posta veya sifre hatalı', 'Email not confirmed':'E-postanızı onaylayın', 'User already registered':'Bu e-posta zaten kayıtlı' };
+  if (!email||!pass) { if(errEl){errEl.textContent='E-posta ve sifre gerekli';errEl.style.display='block';} return; }
   if (btn) { btn.textContent='...'; btn.disabled=true; }
   if (errEl) errEl.style.display='none';
   let r;
   if (_authMod==='giris') r = await _sb.auth.signInWithPassword({email, password:pass});
   else                    r = await _sb.auth.signUp({email, password:pass});
-  if (btn) { btn.textContent=_authMod==='giris'?'Giriş Yap':'Hesap Oluştur'; btn.disabled=false; }
-  if (r.error) {
-    if (errEl) { errEl.textContent=hataMesajlari[r.error.message]||r.error.message; errEl.style.display='block'; }
-  } else if (_authMod==='kayit' && !r.data?.session) {
-    if (errEl) { errEl.style.cssText='display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;'; errEl.textContent='✓ Kayıt başarılı! E-postanızı onaylayın.'; }
+  if (btn) { btn.textContent=_authMod==='giris'?'Giris Yap':'Hesap Olustur'; btn.disabled=false; }
+  if (r.error) { if(errEl){errEl.textContent=hatalar[r.error.message]||r.error.message; errEl.style.display='block';} }
+  else if (_authMod==='kayit' && !r.data?.session) {
+    if(errEl){errEl.style.cssText='display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;'; errEl.textContent='Kayit basarılı! E-postanızı onaylayın.';}
   }
 }
 
@@ -3912,8 +3794,18 @@ function authDevamEt() {
   toast('Demo modunda devam ediyorsunuz','twarn',3000);
 }
 
-// Sayfa yüklenince auth başlat
 authBaslat();
+
+// Landing'den gelen mod tercihini uygula
+(function() {
+  const baslangicMod = localStorage.getItem('vf_baslangic_mod');
+  if (baslangicMod) {
+    localStorage.removeItem('vf_baslangic_mod');
+    setTimeout(function() {
+      if (typeof modGecis === 'function') modGecis(baslangicMod);
+    }, 800);
+  }
+})();
 
 /* ═══ GDPR COOKIE BANNER ═══ */
 (function() {
@@ -3922,697 +3814,112 @@ authBaslat();
   banner.id = 'cookie_banner';
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--s2);border-top:1px solid var(--border2);padding:12px 20px;display:flex;align-items:center;gap:12px;z-index:9998;flex-wrap:wrap;';
   banner.innerHTML = '<div style="flex:1;font-size:12px;color:var(--muted2);min-width:200px;">'
-    + 'Bu site oturum cerezleri kullanir. Reklam cerezi yoktur. '
-    + '<button onclick="gizlilikAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:12px;font-family:inherit;padding:0;text-decoration:underline;">Gizlilik Politikasi</button>'
+    + 'Bu site oturum cerezleri kullanır. Reklam cerezi yoktur. '
+    + '<button onclick="gizlilikAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:12px;font-family:inherit;text-decoration:underline;">Gizlilik Politikasi</button>'
     + '</div>'
-    + '<button onclick="localStorage.setItem(\'vf_cookie_ok\',\'1\');document.getElementById(\'cookie_banner\').remove()"'
-    + ' style="background:var(--accent);border:none;color:#fff;padding:7px 16px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;white-space:nowrap;">'
-    + 'Tamam, Anladim'
-    + '</button>'
-    + '<button onclick="document.getElementById(\'cookie_banner\').remove()"'
-    + ' style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">'
-    + 'Reddet'
-    + '</button>';
+    + '<button onclick="localStorage.setItem(\'vf_cookie_ok\',\'1\');document.getElementById(\'cookie_banner\').remove()" style="background:var(--accent);border:none;color:#fff;padding:7px 16px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;white-space:nowrap;">Tamam</button>'
+    + '<button onclick="document.getElementById(\'cookie_banner\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Reddet</button>';
   document.body.appendChild(banner);
 })();
 
-async function magicCut(){
-  if(!aSrt)return toast('Önce transkript tamamlayın','twarn');
-  const dil = document.getElementById('src_lang')?.value||'tr';
-  if(!confirm('Dolgu kelimeleri (hmm, sey, ii, um...) otomatik silinsin mi?\n\nBu islem geri alinabilir (Ctrl+Z)'))return;
-
-  try{
-    const fd=new FormData();
-    fd.append('srt_dosya_adi',aSrt);
-    fd.append('dil',dil);
-    fd.append('min_confidence','0.5');
-    const r=await fetch(B + '/api/magic_cut/',{method:'POST',body:fd});
-    const d=await r.json();
-    if(d.basari){
-      toast('✓ Magic Cut: ' + d.silinen_segment_sayisi + ' dolgu silindi, ' + d.kalan_segment_sayisi + ' segment kaldı');
-      await reload();
-    }else toast(d.hata||'Hata','terr');
-  }catch(e){toast('Bağlantı hatası','terr');}
-}
-
-/* ═══ GÜRÜLTÜ GİDERME ═══ */
-async function gurultuGider(){
-  if(!aDosya)return toast('Önce bir video/ses işleyin','twarn');
-
-  const seviye = prompt('Gürültü giderme seviyesi:\n\nhafif — hafif tıslama\norta — standart gürültü\nguclu — yoğun gürültü\n\n(hafif/orta/guclu yazın)','orta');
-  if(!seviye)return;
-  if(!['hafif','orta','guclu'].includes(seviye))return toast('Geçersiz seviye','terr');
-
-  toast('<i class="fa-solid fa-spinner fa-spin"></i> Gürültü gideriliyor (' + seviye + ')... Bu birkaç dakika sürebilir.','tok',60000);
-
-  try{
-    const fd=new FormData();
-    fd.append('dosya_adi',aDosya);
-    fd.append('seviye',seviye);
-    const r=await fetch(B + '/api/gurultu_gider/',{method:'POST',body:fd});
-    const d=await r.json();
-    if(d.islem_id){
-      const iv=setInterval(async()=>{
-        const sr=await fetch(B + '/durum/${d.islem_id}');
-        const sd=await sr.json();
-        if(sd.yuzde===100){
-          clearInterval(iv);
-          aDosya=sd.cikti_dosya||d.beklenen_cikti;
-          toast('✓ Gürültü giderildi → ' + aDosya);
-          // Videoyu yenile
-          const v=document.getElementById('vid');
-          if(v.src) v.src=B + '/dinle/${aDosya}?v=${Date.now()}';
-        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
-          clearInterval(iv);
-          toast(sd.durum,'terr',5000);
-        }
-      },2000);
-    }else toast(d.hata||'Hata','terr');
-  }catch(e){toast('Bağlantı hatası','terr');}
-}
-async function deepL(){
-  if(!aSrt)return alert('Transkript tamamlayın!');
-  document.getElementById('dlbtn').style.display='none';
-  document.getElementById('dlload').style.display='flex';
-  const fd=new FormData();fd.append('srt_dosya_adi',aSrt);fd.append('hedef_dil',document.getElementById('dl_lang').value);
-  try{
-    const r=await fetch(B + '/api/cevir/',{method:'POST',body:fd});
-    const d=await r.json();
-    if(d.basari){aSrt=d.cevrilmis_dosya_adi;const sr=await fetch(B + '/dinle/${d.cevrilmis_dosya_adi}');renderSegs(await sr.text(),d.cevrilmis_dosya_adi,true);}
-    else toast('Çeviri hatası: ' + d.hata,'terr');
-  }catch(e){toast('Bağlantı hatası','terr');}
-  document.getElementById('dlbtn').style.display='';
-  document.getElementById('dlload').style.display='none';
-}
-
-/* ═══ INLINE EDIT ═══ */
-async function iEdit(no,old){
-  if(!aSrt)return;
-  const tx=document.getElementById('t_' + no);
-  if(!tx||tx.querySelector('textarea'))return;
-  const orig=tx.innerHTML;tx.innerHTML='';
-  const ta=document.createElement('textarea');ta.className='ita';ta.value=old;ta.rows=2;
-  const save=async()=>{
-    const nw=ta.value.trim();ta.disabled=true;
-    if(nw===old){tx.innerHTML=orig;return;}
-    try{
-      _pushUndo({undo:{type:'metin',no,metin:old},redo:{type:'metin',no,metin:nw}});
-      const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_metin',nw);
-      const r=await fetch(B + '/api/metin_guncelle/',{method:'POST',body:fd});
-      if(r.ok){
-        tx.innerHTML=nw.split(' ').map((k,i)=>kelimeHtml(k,seg?.no||0)).join(' ');
-        const c=document.getElementById('c_' + no);if(c){c.style.borderColor='var(--green2)';setTimeout(()=>c.style.borderColor='',900);}
-        const s=segs.find(x=>x.no==no);if(s){s.text=nw;s.rawText=nw;}
-        toast('✓ Kaydedildi');
-      }else tx.innerHTML=orig;
-    }catch(e){tx.innerHTML=orig;}
-  };
-  ta.addEventListener('blur',save);
-  ta.addEventListener('keydown',e=>{
-    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();save();}
-    if(e.key==='Escape'){ta.removeEventListener('blur',save);tx.innerHTML=orig;}
-  });
-  tx.appendChild(ta);ta.focus();ta.select();
-}
-
-/* ═══ SEG BOL / BİRLEŞTİR ═══ */
-async function sBol(no){
-  if(!aSrt)return;
-  const s=segs.find(x=>x.no==no);if(!s)return;
-  const k=s.start+(s.end-s.start)/2;
-  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('kesim_saniye',k);
-  try{const r=await fetch(B + '/api/segment_bol/',{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Bölündü');}}catch(e){}
-}
-async function sBirlestir(no){
-  if(!aSrt)return;
-  if(!confirm('#' + no + ' ile #' + parseInt(no)+1 + ' birleştirilsin mi?'))return;
-  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);
-  try{const r=await fetch(B + '/api/segment_birlestir/',{method:'POST',body:fd});if(r.ok){await reload();toast('✓ Birleştirildi');}}catch(e){}
-}
-async function reload(){
-  if(!aSrt)return;
-  const r=await fetch(B + '/dinle/${aSrt}');
-  if(r.ok)renderSegs(await r.text(),aSrt,true);
-}
-
-/* ═══ SEGMENT YENİDEN SESLENDİR ═══ */
-async function segRedub(no){
-  if(!aDosya||!aSrt)return toast('Önce dublaj tamamlayın','twarn');
-  const seg=segs.find(s=>s.no==no);
-  if(!seg)return;
-  if(!confirm('#' + no + ' segmenti yeniden seslendir?\n"' + seg.text.substring(0,60) + '..."'))return;
-
-  toast('<i class="fa-solid fa-spinner fa-spin"></i> #' + no + ' seslendiriliyor...','tok',8000);
-  try{
-    const fd=new FormData();
-    fd.append('video_dosya_adi',aDosya);
-    fd.append('srt_dosya_adi',aSrt);
-    fd.append('segment_no',no);
-    fd.append('ses_id',voice);
-    const r=await fetch(B + '/api/segment_yeniden_seslendir/',{method:'POST',body:fd});
-    const d=await r.json();
-    if(d.islem_id){
-      // Durumu takip et
-      const iv=setInterval(async()=>{
-        const sr=await fetch(B + '/durum/${d.islem_id}');
-        const sd=await sr.json();
-        if(sd.yuzde===100){
-          clearInterval(iv);
-          toast('✓ #' + no + ' yeniden seslendirildi');
-          // Videoyu yenile
-          const v=document.getElementById('vid');
-          if(v.src)v.src=v.src.split('?')[0]+'?v='+Date.now();
-        }else if(sd.yuzde===0&&sd.durum.includes('Hata')){
-          clearInterval(iv);
-          toast(sd.durum,'terr',5000);
-        }
-      },1500);
-    }else{
-      toast(d.hata||'Hata','terr');
-    }
-  }catch(e){toast('Bağlantı hatası','terr');}
-}
-
-/* ═══ TIMELINE ═══ */
-function drawTL(blocks){
-  const track=document.getElementById('tl_track');if(!track)return;
-  Array.from(track.children).forEach(c=>{if(c.id!=='ph'&&c.id!=='wcv')c.remove();});
-  const v=document.getElementById('vid'),a=document.getElementById('aud');
-  const media=(v.style.display!=='none'&&v.src)?v:a;
-  const D=(media?.duration&&!isNaN(media.duration))?media.duration:(dur||100);
-  blocks.forEach(blk=>{
-    const l=blk.trim().split('\n');if(l.length<3)return;
-    const no=l[0].trim(),tp=l[1].split(' --> ');if(tp.length!==2)return;
-    const st=t2s(tp[0]),en=t2s(tp[1]);
-    const lp=(st/D)*100,wp=Math.max(((en-st)/D)*100,0.4);
-    const txt=l.slice(2).join(' ').replace(/\[Konuşmacı \d+\]:\s*/,'');
-    const div=document.createElement('div');
-    div.className='tb';div.id='b_' + no;
-    div.style.left=lp + '%';div.style.width=wp + '%';
-    div.title='#' + no + ': ' + l[1] + '\n' + txt;
-    div.innerHTML='<div class="tb-id">' + no + '</div><div class="tb-txt">' + txt + '</div>';
-    div.addEventListener('mousedown',e=>{
-      if(e.target.classList.contains('rh'))return;
-      e.preventDefault();
-      const tw=track.clientWidth,sx=e.clientX,ol=lp;
-      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.left=Math.max(0,Math.min(100-wp,ol+dp)) + '%';};
-      const up=async()=>{
-        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
-        const nl=parseFloat(div.style.left),ns=(nl/100)*D,ne=ns+(en-st);
-        await utTime(no,ns,ne,div);
-      };
-      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-    });
-    const rh=document.createElement('div');rh.className='rh';rh.title='Süreyi değiştir';
-    rh.addEventListener('mousedown',e=>{
-      e.stopPropagation();e.preventDefault();
-      const tw=track.clientWidth,sx=e.clientX,ow=wp;
-      const mv=ev=>{const dp=((ev.clientX-sx)/tw)*100;div.style.width=Math.max(0.4,Math.min(100-lp,ow+dp)) + '%';};
-      const up=async()=>{
-        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
-        const nw=parseFloat(div.style.width),ne=st+(nw/100)*D;
-        await utTime(no,st,ne,div);toast('#' + no + ' güncellendi');
-      };
-      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-    });
-    div.appendChild(rh);
-    div.addEventListener('click',e=>{if(e.target.classList.contains('rh'))return;cClick(no,st);});
-    track.appendChild(div);
-  });
-}
-
-async function utTime(no,ns,ne,blk){
-  if(!aSrt)return;
-  try{
-    const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('segment_no',no);fd.append('yeni_baslangic',ns);fd.append('yeni_bitis',ne);
-    const r=await fetch(B + '/api/zaman_guncelle/',{method:'POST',body:fd});
-    const d=await r.json();
-    if(d.basari){
-      const s=segs.find(x=>x.no==no);if(s){s.start=ns;s.end=ne;}
-      const te=document.querySelector('#c_' + no + ' .sc-time');if(te)te.textContent=s2t(ns) + ' --> ' + s2t(ne);
-      if(blk){blk.style.borderColor='var(--green2)';setTimeout(()=>blk.style.borderColor='',700);}
-    }
-  }catch(e){}
-}
-
-/* ═══ WAVEFORM ═══ */
-async function waveform(dosya){
-  if(mod!=='altyazi'&&mod!=='seslendirme')return;
-  try{
-    const track=document.getElementById('tl_track');if(!track)return;
-    document.getElementById('wcv')?.remove();
-    const cv=document.createElement('canvas');cv.id='wcv';
-    cv.style.cssText='position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0.25;';
-    cv.width=track.clientWidth||800;cv.height=track.clientHeight||90;
-    track.insertBefore(cv,track.firstChild);
-    const r=await fetch(B + '/api/waveform/${dosya}?orneklem=600');if(!r.ok)return;
-    const d=await r.json();if(!d.waveform?.length)return;
-    const ctx=cv.getContext('2d'),step=cv.width/d.waveform.length,mid=cv.height/2;
-    ctx.fillStyle='#3b82f6';
-    d.waveform.forEach((v,i)=>{const h=Math.max(2,v*cv.height*.85);ctx.fillRect(i*step,mid-h/2,Math.max(step-.5,.5),h);});
-
-    // Timeline'a tıklayarak o ana atla
-    track.onclick = (e) => {
-      if (e.target === cv || e.target === track) {
-        const rect = track.getBoundingClientRect();
-        const oran = (e.clientX - rect.left) / rect.width;
-        const vid = document.getElementById('vid');
-        const aud = document.getElementById('aud');
-        const media = (vid?.style.display !== 'none' && vid?.src) ? vid : aud;
-        if (media && media.duration) {
-          media.currentTime = oran * media.duration;
-        }
-      }
-    };
-  }catch(e){}
-}
-
-/* ═══ ÇOKLU DİL EXPORT ═══ */
-async function cokluDilExport() {
-  if (!aSrt) { toast('Önce transkript oluşturun','twarn'); return; }
-
-  const overlay = document.createElement('div');
-  overlay.id = '_multidil_overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;">🌍 Çoklu Dil Export</div>
-        <button onclick="document.getElementById('_multidil_overlay').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>
-      </div>
-      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Seçilen dillere aynı anda çevir ve SRT indir:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
-        ${[['EN','🇺🇸 İngilizce'],['DE','🇩🇪 Almanca'],['FR','🇫🇷 Fransızca'],['ES','🇪🇸 İspanyolca'],['IT','🇮🇹 İtalyanca'],['PT','🇧🇷 Portekizce'],['RU','🇷🇺 Rusça'],['JA','🇯🇵 Japonca']].map(([k,l])=>`
-          <label style="display:flex;align-items:center;gap:8px;background:var(--s3);padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;">
-            <input type="checkbox" value="${k}" class="_mdil_cb" style="accent-color:var(--accent2);">
-            ${l}
-          </label>`).join('')}
-      </div>
-      <div id="_mdil_progress" style="display:none;margin-bottom:10px;">
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;" id="_mdil_status">Çevriliyor...</div>
-        <div style="background:var(--s3);border-radius:100px;height:4px;overflow:hidden;">
-          <div id="_mdil_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .3s;"></div>
-        </div>
-      </div>
-      <button onclick="cokluDilExportBaslat()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">
-        <i class="fa-solid fa-download"></i> Hepsini İndir
-      </button>
-    </div>`;
-  document.body.appendChild(overlay);
-}
-
-async function cokluDilExportBaslat() {
-  const secili = [...document.querySelectorAll('._mdil_cb:checked')].map(cb => cb.value);
-  if (!secili.length) { toast('En az bir dil seçin','twarn'); return; }
-
-  const prog  = document.getElementById('_mdil_progress');
-  const bar   = document.getElementById('_mdil_bar');
-  const stat  = document.getElementById('_mdil_status');
-  if (prog) prog.style.display = 'block';
-
-  for (let i = 0; i < secili.length; i++) {
-    const dil = secili[i];
-    if (stat) stat.textContent = dil + ' diline çevriliyor... (' + i+1 + '/' + secili.length + ')';
-    if (bar)  bar.style.width = ((i / secili.length) * 100) + '%';
-    try {
-      const fd = new FormData();
-      fd.append('srt_dosya_adi', aSrt);
-      fd.append('hedef_dil', dil);
-      const r = await fetch(B + '/api/cevir/', { method:'POST', body:fd });
-      const d = await r.json();
-      if (d.cevrilmis_dosya_adi) {
-        // Otomatik indir
-        const a = document.createElement('a');
-        a.href = B + '/indir/${d.cevrilmis_dosya_adi}';
-        a.download = d.cevrilmis_dosya_adi;
-        a.click();
-        await new Promise(r => setTimeout(r, 800));
-      }
-    } catch(e) { toast(dil + ' çeviri hatası','terr'); }
-  }
-
-  if (bar)  bar.style.width = '100%';
-  if (stat) stat.textContent = '✓ ' + secili.length + ' dil tamamlandı';
-  toast('✓ ' + secili.length + ' dil SRT indirildi');
-  setTimeout(() => document.getElementById('_multidil_overlay')?.remove(), 2000);
-}
-
-/* ═══ OVERLAP ═══ */
-async function checkOV(){
-  if(!aSrt)return;
-  try{
-    const r=await fetch(B + '/api/cakisma_tespit/${aSrt}');if(!r.ok)return;
-    const d=await r.json();
-    document.getElementById('ov_banner')?.remove();
-    if(d.cakisma_sayisi>0){
-      d.cakismalar?.forEach(c=>document.getElementById('b_' + c.segment_a)?.classList.add('ov'));
-      const b=document.createElement('div');b.className='ovbanner';b.id='ov_banner';
-      b.innerHTML='<span><i class="fa-solid fa-triangle-exclamation"></i> ' + d.cakisma_sayisi + ' zaman çakışması</span><button class="fixbtn" onclick="fixOV()">Düzelt</button>';
-      document.getElementById('slist').insertBefore(b,document.getElementById('slist').firstChild);
-    }
-  }catch(e){}
-}
-async function fixOV(){
-  if(!aSrt)return;
-  const fd=new FormData();fd.append('dosya_adi',aSrt);fd.append('bosluk_ms',80);
-  try{const r=await fetch(B + '/api/cakisma_duzelt/',{method:'POST',body:fd});const d=await r.json();if(d.basari){await reload();toast('✓ ' + d.duzeltilen_cakisma + ' çakışma düzeltildi');}}catch(e){}
-}
-
-/* ═══ KLAVYE ═══ */
-document.addEventListener('keydown',e=>{
-  const tag=document.activeElement?.tagName?.toLowerCase();
-  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
-  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
-  if(['input','textarea','select'].includes(tag))return;
-  const v=document.getElementById('vid'),a=document.getElementById('aud');
-  const media=(v.style.display!=='none'&&v.src)?v:(a.style.display!=='none'&&a.src?a:null);
-  if(!media)return;
-  if(e.code==='Space'){e.preventDefault();media.paused?media.play():media.pause();}
-  else if(e.code==='ArrowLeft'){e.preventDefault();media.currentTime=Math.max(0,media.currentTime-(e.shiftKey?1:5));}
-  else if(e.code==='ArrowRight'){e.preventDefault();media.currentTime=Math.min(media.duration||Infinity,media.currentTime+(e.shiftKey?1:5));}
-});
-
-/* ═══ PROJE KAYDETME (localStorage) ═══ */
-const PROJE_KEY = 'voiceflow_son_proje';
-
-function projeKaydet(){
-  if(!aSrt&&!aDosya)return;
-  try{
-    localStorage.setItem(PROJE_KEY, JSON.stringify({
-      aSrt, aDosya, mod,
-      src_lang: document.getElementById('src_lang')?.value,
-      tgt_lang: document.getElementById('tgt_lang')?.value,
-      zaman: Date.now()
-    }));
-  }catch(e){}
-}
-
-function projeYukle(){
-  try{
-    const kayit = JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
-    if(!kayit)return;
-    const gecenDakika = (Date.now()-kayit.zaman)/60000;
-    if(gecenDakika>480)return; // 8 saatten eski kayıtları yükleme
-
-    const banner=document.createElement('div');
-    banner.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--accent2);border-radius:var(--r2);padding:12px 18px;z-index:4000;display:flex;align-items:center;gap:12px;box-shadow:0 8px 22px rgba(0,0,0,.6);font-size:13px;';
-    banner.innerHTML=`
-      <i class="fa-solid fa-folder-open" style="color:var(--accent2)"></i>
-      <span>Son proje bulundu: <b>${kayit.aDosya||kayit.aSrt}</b> (${Math.round(gecenDakika)} dakika önce)</span>
-      <button onclick="projeGeriYukle()" style="background:var(--accent);border:none;color:#fff;padding:5px 12px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;">Devam Et</button>
-      <button onclick="this.closest('div').remove()" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:0 4px;">×</button>
-    `;
-    banner.id='proje_banner';
-    document.body.appendChild(banner);
-    setTimeout(()=>banner.remove(),15000);
-  }catch(e){}
-}
-
-async function projeGeriYukle(){
-  document.getElementById('proje_banner')?.remove();
-  try{
-    const kayit=JSON.parse(localStorage.getItem(PROJE_KEY)||'null');
-    if(!kayit)return;
-    aSrt=kayit.aSrt; aDosya=kayit.aDosya;
-    if(kayit.src_lang)document.getElementById('src_lang').value=kayit.src_lang;
-    if(kayit.tgt_lang)document.getElementById('tgt_lang').value=kayit.tgt_lang;
-
-    // Modü geç
-    sw(kayit.mod||'desifre');
-
-    // SRT varsa kartları yükle
-    if(aSrt){
-      const r=await fetch(B + '/dinle/${aSrt}');
-      if(r.ok){
-        const srt=await r.text();
-        renderSegs(srt,aSrt,true);
-        document.getElementById('xwrap').classList.remove('hidden');
-        toast('✓ Proje yüklendi');
-      }
-    }
-  }catch(e){toast('Proje yüklenemedi','terr');}
-}
-
-// Proje değişince otomatik kaydet
-setInterval(projeKaydet, 30000); // 30 saniyede bir
-window.addEventListener('beforeunload', projeKaydet); // Sayfa kapanırken
-
-/* ═══ SUNUCU BAĞLANTI KONTROLÜ ═══ */
-async function sunucuKontrol(){
-  try{
-    const r=await fetch(B + '/health',{signal:AbortSignal.timeout(3000)});
-    if(!r.ok)throw new Error();
-    const d=await r.json();
-
-    const uyarilar=[];
-    if(!d.deepgram_key)uyarilar.push('DEEPGRAM_API_KEY');
-    if(!d.elevenlabs_key)uyarilar.push('ELEVENLABS_API_KEY');
-    if(!d.ffmpeg)uyarilar.push('FFmpeg');
-    if(uyarilar.length>0){
-      // Kalıcı banner — Railway'de env var eksikse göster
-      const banner = document.createElement('div');
-      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fed7aa;padding:8px 16px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;';
-      banner.innerHTML='<span>⚠ Railway\'de eksik env variable: ' + uyarilar.join(', ') + ' — Variables sekmesinden ekleyin</span><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:#fed7aa;cursor:pointer;font-size:16px;line-height:1;">×</button>';
-      document.body.prepend(banner);
-    }
-
-    // ElevenLabs kota kontrolü
-    if(d.elevenlabs_key){
-      try{
-        const kota = await fetch(B + '/api/kota/').then(r=>r.json());
-        const badge = document.getElementById('kota_badge');
-        if(badge){
-          badge.style.display = 'block';
-          const renk = kota.yuzde > 90 ? '#ef4444' : kota.yuzde > 70 ? '#f59e0b' : '#22c55e';
-          badge.style.color = renk;
-          badge.textContent = kota.kalan.toLocaleString() + ' karakter kaldı';
-        }
-        if(kota.kalan < 500) toast('⚠ ElevenLabs kotanız dolmak üzere: ' + kota.kalan + ' karakter kaldı. Planınızı yükseltin.', 'twarn', 8000);
-        if(kota.klonlama_destekli){
-          const sub = document.getElementById('clone_card_sub');
-          if(sub) sub.textContent = 'MP3/WAV yükle — AI birebir kopyalar ✓ Klonlama aktif';
-        }
-      }catch(e){}
-    }
-
-    projeYukle();
-  }catch(e){
-    const banner=document.createElement('div');
-    banner.style.cssText='position:fixed;top:0;left:0;right:0;background:var(--red2);color:#fff;text-align:center;padding:10px;font-size:13px;font-weight:600;z-index:9999;';
-    banner.innerHTML='⚠ Backend bağlantısı yok — <code>uvicorn main:app --reload</code> komutunu çalıştırın';
-    document.body.prepend(banner);
-  }
-}
-
-// Sayfa yüklenince kontrol et
-setTimeout(sunucuKontrol, 500);
-
 /* ═══ SİHİRLİ MOD / PRO STÜDYO ═══ */
-let _appMod = 'pro'; // 'sihirli' | 'pro'
+let _appMod = 'pro';
 
 function modGecis(yeniMod) {
   _appMod = yeniMod;
-
-  // Toggle buton stillerini güncelle
-  document.getElementById('btn_sihirli')?.classList.toggle('active', yeniMod === 'sihirli');
-  document.getElementById('btn_pro')?.classList.toggle('active', yeniMod === 'pro');
-
-  if (yeniMod === 'sihirli') {
-    // Sihirli Mod: detayları gizle, magic aksiyonları göster
-    ['tl','mixer','sec_sub_design','sec_audio','sec_voice_btn'].forEach(id => {
+  document.getElementById('btn_sihirli')?.classList.toggle('active', yeniMod==='sihirli');
+  document.getElementById('btn_pro')?.classList.toggle('active', yeniMod==='pro');
+  if (yeniMod==='sihirli') {
+    ['tl','mixer','sec_sub_design','sec_audio','sec_voice_btn'].forEach(function(id) {
       document.getElementById(id)?.classList.add('hidden');
     });
     document.getElementById('magic_actions').style.display = 'flex';
     document.getElementById('slist')?.classList.add('hidden');
-
-    // TikTok altyazı modunu otomatik aç (hormozi stili)
-    const subDesign = document.getElementById('sec_sub_design');
-    if (subDesign) subDesign.classList.add('hidden');
-
-    toast('✨ Sihirli Mod aktif — hızlı aksiyon seçin!');
+    toast('Sihirli Mod aktif — hızlı aksiyon seçin!');
   } else {
-    // Pro Stüdyo: her şeyi geri getir
     document.getElementById('magic_actions').style.display = 'none';
-    // sw() fonksiyonu zaten doğru panelleri açacak
     sw(mod);
-    toast('🎛️ Pro Stüdyo modu aktif');
+    toast('Pro Studio modu aktif');
   }
 }
 
 function magicAction(tip) {
-  if (!pFile && tip !== 'klonlama') {
-    toast('Önce video yükleyin!', 'twarn');
-    return;
-  }
-
-  if (tip === 'hormozi') {
-    // Hormozi stili: TikTok Bold altyazı
-    subSablonUygula('tiktok_bold');
-    sw('altyazi');
+  if (!pFile && tip !== 'klonlama') { toast('Once video yukleyin!','twarn'); return; }
+  if (tip==='hormozi') {
+    if (typeof subSablonUygula === 'function') subSablonUygula('tiktok_bold');
+    sw('altyazi'); modGecis('pro');
+  } else if (tip==='klonlama') {
+    modGecis('pro'); sw('seslendirme');
+  } else if (tip==='magic_cut') {
     modGecis('pro');
-    // Modal aç ve TikTok modu seç
-    setTimeout(() => {
-      const cb = document.getElementById('modal_tiktok');
-      if (cb) { cb.checked = true; tiktokModalToggle(cb); }
-      openModal();
-    }, 100);
-
-  } else if (tip === 'klonlama') {
-    // Ses klonlama
-    modGecis('pro');
-    sw('seslendirme');
-    setTimeout(() => {
-      document.getElementById('clone_inp')?.click();
-    }, 300);
-
-  } else if (tip === 'magic_cut') {
-    // Magic Cut — sessiz boşluklar
-    if (segs.length === 0) {
-      // Önce transkript al
-      sw('desifre');
-      modGecis('pro');
-      toast('Önce transkript alın, sonra Magic Cut çalıştırın', 'twarn', 3000);
-    } else {
-      modGecis('pro');
-      magicCut();
-    }
+    if (segs.length===0) { sw('desifre'); toast('Once transkript alın, sonra Magic Cut kullanın','twarn',3000); }
+    else magicCut();
   }
 }
 
-/* ═══ ONBOARDING TOOLTIPS ═══ */
-let _obStep = 0;
-let _obEl = null;
-
+/* ═══ ONBOARDING ═══ */
+let _obStep = 0, _obEl = null;
 const OB_STEPS = [
-  {
-    target: 'vbox_empty',
-    text: '👉 1. Önce videonu buradan yükle',
-    pos: 'ob-top',
-    offset: { top: -55, left: 20 }
-  },
-  {
-    target: 'src_lang',
-    text: '👉 2. Çeviri veya Dublaj dilini seç',
-    pos: 'ob-right',
-    offset: { top: -10, left: 10 }
-  },
-  {
-    target: 'btn_run',
-    text: '👉 3. Sihri Başlat! 🚀',
-    pos: 'ob-top',
-    offset: { top: -55, left: 0 }
-  }
+  { target:'vbox_empty', text:'1. Once videonu buradan yukle', pos:'ob-top', top:-55, left:20 },
+  { target:'src_lang',   text:'2. Ceviri veya Dublaj dilini sec', pos:'ob-right', top:-10, left:10 },
+  { target:'btn_run',    text:'3. Sihri Baslat!', pos:'ob-top', top:-55, left:0 },
 ];
 
 function onboardingBaslat() {
-  // Daha önce gördü mü?
   if (localStorage.getItem('vf_ob_done')) return;
-  _obStep = 0;
-  obAdimGoster();
+  _obStep = 0; obAdimGoster();
 }
 
 function obAdimGoster() {
-  // Önceki tooltip'i kaldır
   document.getElementById('_ob_tip')?.remove();
-
-  if (_obStep >= OB_STEPS.length) {
-    localStorage.setItem('vf_ob_done', '1');
-    return;
-  }
-
+  if (_obStep >= OB_STEPS.length) { localStorage.setItem('vf_ob_done','1'); return; }
   const step = OB_STEPS[_obStep];
   const target = document.getElementById(step.target);
   if (!target) { _obStep++; obAdimGoster(); return; }
-
   const rect = target.getBoundingClientRect();
-
   const tip = document.createElement('div');
   tip.id = '_ob_tip';
   tip.className = 'ob-tip ' + step.pos;
-  tip.style.cssText = 'left:' + (rect.left + step.offset.left) + 'px;top:' + (rect.top + step.offset.top) + 'px;';
+  tip.style.cssText = 'left:' + (rect.left + step.left) + 'px;top:' + (rect.top + step.top) + 'px;';
   tip.innerHTML = '<span style="flex:1;">' + step.text + '</span>'
-    + '<button class="ob-close" onclick="obKapat()">×</button>'
+    + '<button class="ob-close" onclick="obKapat()">x</button>'
     + '<div class="ob-progress">'
-    + OB_STEPS.map((_,i) => '<div class="ob-dot' + (i===_obStep?' on':'') + '"></div>').join('')
+    + OB_STEPS.map(function(_,i){ return '<div class="ob-dot' + (i===_obStep?' on':'') + '"></div>'; }).join('')
     + '</div>';
-
-  // Tıkla ilerle
-  tip.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('ob-close')) obIleri();
-  });
-
+  tip.addEventListener('click', function(e){ if(!e.target.classList.contains('ob-close')) obIleri(); });
   document.body.appendChild(tip);
   _obEl = tip;
 }
 
-function obIleri() {
-  _obStep++;
-  obAdimGoster();
-}
+function obIleri() { _obStep++; obAdimGoster(); }
+function obKapat() { document.getElementById('_ob_tip')?.remove(); localStorage.setItem('vf_ob_done','1'); }
 
-function obKapat() {
-  document.getElementById('_ob_tip')?.remove();
-  localStorage.setItem('vf_ob_done', '1');
-}
+window.addEventListener('resize', function() { if (_obEl && _obStep < OB_STEPS.length) obAdimGoster(); });
 
-/* ═══ VIDEO YÜKLEME SONRASI CENTER STAGE GÜNCELLEMESİ ═══ */
-// Mevcut pFile set fonksiyonunu override et
-const _origFileSet = window.pFileSet;
-function vboxGuncelle() {
-  const empty = document.getElementById('vbox_empty');
-  const magic = document.getElementById('magic_actions');
-  if (pFile) {
-    if (empty) empty.style.display = 'none';
-    // Magic mode aktifse aksiyonları göster
-    if (_appMod === 'sihirli' && magic) magic.style.display = 'flex';
-  } else {
-    if (empty) empty.style.display = 'flex';
-    if (magic) magic.style.display = 'none';
-  }
-}
-
-/* ═══ PENCERE BOYUTU DEĞİŞİNCE OB GÜNCELLE ═══ */
-window.addEventListener('resize', function() {
-  if (_obEl && _obStep < OB_STEPS.length) obAdimGoster();
-});
-
-/* ═══ SÜRÜKLE BIRAK — CENTER STAGE'E ═══ */
 document.addEventListener('DOMContentLoaded', function() {
   const vbox = document.getElementById('vbox');
   if (!vbox) return;
-
   vbox.addEventListener('dragover', function(e) {
     e.preventDefault();
     const empty = document.getElementById('vbox_empty');
     if (empty) empty.style.background = 'rgba(99,102,241,.1)';
   });
-
   vbox.addEventListener('dragleave', function() {
     const empty = document.getElementById('vbox_empty');
     if (empty) empty.style.background = '';
   });
-
   vbox.addEventListener('drop', function(e) {
     e.preventDefault();
     const empty = document.getElementById('vbox_empty');
     if (empty) empty.style.background = '';
-    const files = e.dataTransfer?.files;
+    const files = e.dataTransfer ? e.dataTransfer.files : null;
     if (files && files[0]) {
       const input = document.getElementById('finput');
-      if (input) {
-        // DataTransfer aracılığıyla dosyayı set et
-        const dt = new DataTransfer();
-        dt.items.add(files[0]);
-        input.files = dt.files;
-        input.dispatchEvent(new Event('change'));
-      }
+      if (input) { const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files; input.dispatchEvent(new Event('change')); }
     }
   });
-
-  // Sayfa yüklenince onboarding başlat (500ms gecikme)
   setTimeout(onboardingBaslat, 1500);
 });
-
 </script>
 </body>
 </html>

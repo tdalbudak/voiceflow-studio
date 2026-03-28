@@ -3,7 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceFlow Studio — AI Dublaj & Altyazı</title>
+<title>VoiceFlow Studio — AI Dublaj & Altyazı | Otomatik Video Çevirisi</title>
+<meta name="description" content="AI ile videolarınızı 60+ dile dublajlayın ve altyazı ekleyin. Deepgram, DeepL ve ElevenLabs destekli. Veed ve Rask'tan daha ucuz. Ücretsiz deneyin.">
+<meta name="keywords" content="AI dublaj, otomatik altyazı, video çeviri, TikTok altyazı, ses klonlama, VoiceFlow Studio">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://voiceflow-studio-production-395d.up.railway.app/">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://voiceflow-studio-production-395d.up.railway.app/">
+<meta property="og:title" content="VoiceFlow Studio — AI Dublaj & Altyazı">
+<meta property="og:description" content="Videolarınızı 60+ dile AI ile dublajlayın. Ücretsiz başlayın, Veed'den ucuz, Rask'tan daha iyi.">
+<meta property="og:image" content="https://voiceflow-studio-production-395d.up.railway.app/og-image.png">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VoiceFlow Studio — AI Dublaj & Altyazı">
+<meta name="twitter:description" content="Videolarınızı 60+ dile AI ile dublajlayın. Ücretsiz başlayın.">
+<meta name="twitter:image" content="https://voiceflow-studio-production-395d.up.railway.app/og-image.png">
+
+<!-- Favicon -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>V</text></svg>">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -171,8 +192,8 @@ footer a:hover{color:var(--accent3);}
   <h1 id="h1-txt">Videonuzu<br><span class="h1-accent" id="h1-accent">Dünyaya Açın</span></h1>
   <p class="hero-sub" id="hero-sub">Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.</p>
   <div class="hero-btns">
-    <a href="/creator" class="btn-primary" id="hero-cta1">⚡ <span id="cta1-txt">Ücretsiz Dene</span></a>
-    <a href="/app" class="btn-secondary" id="hero-cta2"><span id="cta2-txt">Gelişmiş Editör</span> →</a>
+    <button onclick="modalAc('sihirli')" class="btn-primary" id="hero-cta1" style="cursor:pointer;border:none;">⚡ <span id="cta1-txt">Ücretsiz Dene</span></button>
+    <button onclick="modalAc('pro')" class="btn-secondary" id="hero-cta2" style="cursor:pointer;border:none;"><span id="cta2-txt">Pro Stüdyo</span> →</button>
   </div>
   <div class="stats">
     <div class="stat"><div class="stat-num">60+</div><div class="stat-lbl" id="stat1">Desteklenen Dil</div></div>
@@ -349,6 +370,116 @@ footer a:hover{color:var(--accent3);}
   </div>
 </section>
 
+<!-- INFLUENCER SECTION -->
+<div class="divider"></div>
+
+<section id="influencer" style="padding:100px 24px;max-width:1200px;margin:0 auto;">
+  <div class="reveal" style="text-align:center;margin-bottom:60px;">
+    <div class="section-tag" style="background:rgba(236,72,153,.1);color:#ec4899;border-color:rgba(236,72,153,.2);">İçerik Üreticileri</div>
+    <h2 class="section-title">Influencer'lar İçin<br><span class="h1-accent">Neler Yapabiliriz?</span></h2>
+    <p class="hero-sub" style="max-width:540px;margin:0 auto;">TikTok, Reels, YouTube Shorts — viral içeriğini dakikalar içinde hazırla.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;" class="reveal">
+    <!-- Kart 1 -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px;padding:32px;position:relative;overflow:hidden;cursor:pointer;transition:all .3s;" onclick="modalAc('sihirli')"
+      onmouseover="this.style.borderColor='#ec4899';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
+      <div style="position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,rgba(236,72,153,.15),transparent);pointer-events:none;"></div>
+      <div style="font-size:48px;margin-bottom:16px;">🔥</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:10px;font-family:'Syne',sans-serif;">Hormozi Stili<br>Altyazı</div>
+      <div style="font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:20px;">Her kelime ekranda tek tek parlar. TikTok'ta izlenme patlaması yaşa. 1 tıkla uygula.</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(236,72,153,.15);color:#ec4899;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:700;">
+        Dene → <span style="font-size:16px;">⚡</span>
+      </div>
+    </div>
+
+    <!-- Kart 2 -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px;padding:32px;position:relative;overflow:hidden;cursor:pointer;transition:all .3s;" onclick="modalAc('sihirli')"
+      onmouseover="this.style.borderColor='#a855f7';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
+      <div style="position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,rgba(168,85,247,.15),transparent);pointer-events:none;"></div>
+      <div style="font-size:48px;margin-bottom:16px;">🎙️</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:10px;font-family:'Syne',sans-serif;">Kendi Sesinle<br>AI Dublaj</div>
+      <div style="font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:20px;">Sesini klonla, 60+ dilde konuş. Aynı ses, farklı dil. Global kitleye ulaş.</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,.15);color:#a855f7;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:700;">
+        Dene → <span style="font-size:16px;">🚀</span>
+      </div>
+    </div>
+
+    <!-- Kart 3 -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px;padding:32px;position:relative;overflow:hidden;cursor:pointer;transition:all .3s;" onclick="modalAc('sihirli')"
+      onmouseover="this.style.borderColor='#22c55e';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
+      <div style="position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,rgba(34,197,94,.15),transparent);pointer-events:none;"></div>
+      <div style="font-size:48px;margin-bottom:16px;">✂️</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:10px;font-family:'Syne',sans-serif;">Sessiz Boşlukları<br>Kes</div>
+      <div style="font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:20px;">ıı, eee, hmm gibi dolgu sesler otomatik silinir. Video %30 daha dinamik olur.</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.15);color:#22c55e;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:700;">
+        Dene → <span style="font-size:16px;">✨</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Büyük CTA -->
+  <div class="reveal" style="text-align:center;margin-top:60px;">
+    <p style="font-size:14px;color:var(--muted2);margin-bottom:24px;">Hangi modda başlamak istiyorsun?</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="modalAc('sihirli')" style="background:linear-gradient(135deg,#ec4899,#a855f7);border:none;color:#fff;padding:18px 36px;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;box-shadow:0 4px 24px rgba(168,85,247,.4);"
+        onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
+        ✨ Sihirli Mod — Hızlı Başla
+        <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px;">İçerik üreticisi · TikTok · Reels</div>
+      </button>
+      <button onclick="modalAc('pro')" style="background:var(--bg3);border:2px solid var(--border2);color:var(--txt);padding:18px 36px;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;"
+        onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent3)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--txt)'">
+        🎛️ Pro Stüdyo — Tam Kontrol
+        <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px;">Uzman editör · Timeline · Mikser</div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- MOD SEÇİM MODALİ -->
+<div id="mod_modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#111113;border:1px solid rgba(255,255,255,.12);border-radius:28px;padding:40px;width:480px;max-width:95vw;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;" id="modal_icon">✨</div>
+    <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px;" id="modal_title">Sihirli Mod</div>
+    <div style="font-size:14px;color:#71717a;margin-bottom:32px;" id="modal_desc">İçerik üreticileri için basitleştirilmiş arayüz</div>
+
+    <!-- 3 büyük adım butonu -->
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;" id="modal_steps">
+      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;">Videonu yükle</div>
+          <div style="font-size:12px;color:#71717a;">MP4, MOV, MP3 — sürükle bırak</div>
+        </div>
+      </div>
+      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;">Aksiyon seç</div>
+          <div style="font-size:12px;color:#71717a;">Altyazı, Dublaj veya Kes</div>
+        </div>
+      </div>
+      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">3</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;">İndir</div>
+          <div style="font-size:12px;color:#71717a;">Saniyeler içinde hazır</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="modal_cta" onclick="modalGit()"
+      style="width:100%;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:12px;transition:all .2s;"
+      onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
+      Başla →
+    </button>
+    <button onclick="document.getElementById('mod_modal').style.display='none'"
+      style="background:none;border:none;color:#71717a;cursor:pointer;font-size:13px;font-family:inherit;">
+      Vazgeç
+    </button>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer>
   <p style="margin-bottom:12px;">
@@ -360,7 +491,49 @@ footer a:hover{color:var(--accent3);}
 </footer>
 
 <script>
-/* ═══ TRANSLATIONS ═══ */
+/* ═══ MOD SEÇİM MODALI ═══ */
+let _secilenMod = 'sihirli';
+
+function modalAc(mod) {
+  _secilenMod = mod;
+  const modal = document.getElementById('mod_modal');
+  const icon  = document.getElementById('modal_icon');
+  const title = document.getElementById('modal_title');
+  const desc  = document.getElementById('modal_desc');
+  const cta   = document.getElementById('modal_cta');
+  
+  if (mod === 'sihirli') {
+    icon.textContent  = '✨';
+    title.textContent = 'Sihirli Mod';
+    desc.textContent  = 'İçerik üreticileri için basitleştirilmiş arayüz — TikTok, Reels, Shorts';
+    cta.textContent   = '✨ Sihirli Mod ile Başla →';
+    cta.style.background = 'linear-gradient(135deg,#ec4899,#a855f7)';
+  } else {
+    icon.textContent  = '🎛️';
+    title.textContent = 'Pro Stüdyo';
+    desc.textContent  = 'Timeline editör, ses mikseri, gelişmiş ayarlar — profesyoneller için';
+    cta.textContent   = '🎛️ Pro Stüdyo\'ya Gir →';
+    cta.style.background = 'linear-gradient(135deg,#2563eb,#6366f1)';
+  }
+  
+  modal.style.display = 'flex';
+}
+
+function modalGit() {
+  // Editöre geçerken mod tercihini kaydet
+  localStorage.setItem('vf_baslangic_mod', _secilenMod);
+  window.location.href = '/app';
+}
+
+// Editör açılınca mod'u uygula
+if (window.location.pathname === '/app') {
+  const baslangicMod = localStorage.getItem('vf_baslangic_mod');
+  if (baslangicMod && typeof modGecis === 'function') {
+    setTimeout(function() { modGecis(baslangicMod); }, 500);
+  }
+}
+
+/* ═══ HERO BUTONLARI ═══ */
 const T = {
   tr: {
     'nav-cta-txt':'Ücretsiz Başla',
@@ -516,8 +689,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 /* ═══ /app YÖNLENDIRME — uygulama aynı domainde ise / yoksa ayrı link ═══ */
 document.querySelectorAll('a[href="/app"],button[onclick*="/app"]').forEach(el => {
-  if(el.tagName==='A') el.href = '/';
+  if(el.tagName==='A') el.href = '/app';
 });
+// Plan butonları
+document.querySelectorAll('[id^="plan"][id$="-btn"]').forEach(btn => {
+  btn.onclick = () => window.location.href = '/creator';
+});
+document.getElementById('plan2-btn') && (document.getElementById('plan2-btn').onclick = () => window.location.href = '/app');
+document.getElementById('plan3-btn') && (document.getElementById('plan3-btn').onclick = () => window.open('mailto:hello@voiceflow.studio'));
+
 </script>
 </body>
 </html>
