@@ -232,7 +232,15 @@ async def _deepl_chunk_cevir(client: httpx.AsyncClient, satirlar: list, hedef_di
         return satirlar
 
 async def deepl_paralel_cevir_listesi(metin_listesi: list, hedef_dil: str) -> list:
-    CHUNK = 50
+    if not metin_listesi:
+        return []
+    # 100'den az segment → tek API çağrısı (en hızlı)
+    if len(metin_listesi) <= 100:
+        async with httpx.AsyncClient() as client:
+            sonuc = await _deepl_chunk_cevir(client, metin_listesi, hedef_dil)
+        return sonuc
+    # 100+ segment → 100'lük batch'ler halinde paralel
+    CHUNK = 100
     chunks = [metin_listesi[i:i+CHUNK] for i in range(0, len(metin_listesi), CHUNK)]
     async with httpx.AsyncClient() as client:
         sonuclar = await asyncio.gather(*[_deepl_chunk_cevir(client, c, hedef_dil) for c in chunks])
@@ -253,8 +261,49 @@ async def srt_paralel_cevir(srt_icerik: str, hedef_dil: str) -> str:
     return "\n".join(satirlar)
 
 # ============================================================
-# MOTOR 3 — ELEVENLABS (tek metin → ses, TTS için)
-# ============================================================
+import hashlib as _hashlib
+
+# ── TTS Cache ──────────────────────────────────────────────────
+TTS_CACHE_DIR = os.path.join(os.path.dirname(__file__), "gecici", "tts_cache")
+os.makedirs(TTS_CACHE_DIR, exist_ok=True)
+
+def _tts_cache_key(metin: str, ses_id: str) -> str:
+    """Metin + ses_id kombinasyonundan MD5 hash üretir."""
+    raw = f"{ses_id}::{metin.strip()}"
+    return _hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+def _tts_cache_get(metin: str, ses_id: str) -> str | None:
+    """Cache'te varsa dosya yolunu, yoksa None döner."""
+    key  = _tts_cache_key(metin, ses_id)
+    path = os.path.join(TTS_CACHE_DIR, f"tts_{key}.mp3")
+    return path if os.path.exists(path) and os.path.getsize(path) > 100 else None
+
+def _tts_cache_set(metin: str, ses_id: str, kaynak: str) -> str:
+    """Üretilen sesi cache'e kopyalar, cache yolunu döner."""
+    key  = _tts_cache_key(metin, ses_id)
+    path = os.path.join(TTS_CACHE_DIR, f"tts_{key}.mp3")
+    try:
+        shutil.copy2(kaynak, path)
+    except Exception as e:
+        log.warning(f"[TTS Cache] Kayıt hatası: {e}")
+    return path
+
+# ── Cache boyut limiti (500MB) ─────────────────────────────────
+def _tts_cache_temizle(max_mb: int = 500):
+    """En eski cache dosyalarını silerek limiti korur."""
+    try:
+        dosyalar = sorted(
+            [os.path.join(TTS_CACHE_DIR, f) for f in os.listdir(TTS_CACHE_DIR) if f.endswith(".mp3")],
+            key=os.path.getmtime
+        )
+        toplam = sum(os.path.getsize(f) for f in dosyalar)
+        while toplam > max_mb * 1024 * 1024 and dosyalar:
+            sil = dosyalar.pop(0)
+            toplam -= os.path.getsize(sil)
+            os.remove(sil)
+            log.info(f"[TTS Cache] Temizlendi: {os.path.basename(sil)}")
+    except Exception as e:
+        log.warning(f"[TTS Cache] Temizleme hatası: {e}")
 async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2) -> bool:
     if not metin or not metin.strip():
         log.warning("[ElevenLabs] Boş metin gönderildi")
@@ -262,6 +311,13 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
     if not ses_id or not ses_id.strip():
         log.warning("[ElevenLabs] ses_id boş — Brian kullanılıyor")
         ses_id = "nPczCjzI2devNBz1zQrb"
+
+    # ── Cache kontrolü ──────────────────────────────────────────
+    cached = _tts_cache_get(metin, ses_id)
+    if cached:
+        log.info(f"[TTS Cache] HIT → {os.path.basename(cached)}")
+        shutil.copy2(cached, output_path)
+        return True
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}"
     headers = {
@@ -281,6 +337,9 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
             if r.status_code == 200:
                 with open(output_path, "wb") as f:
                     f.write(r.content)
+                # Cache'e kaydet
+                _tts_cache_set(metin, ses_id, output_path)
+                _tts_cache_temizle()
                 return True
             # Kota doldu veya API key geçersiz — retry YOK, direkt çık
             elif r.status_code in (401, 403):
@@ -348,9 +407,12 @@ def ffmpeg_altyazi_gom(video_yolu, srt_yolu, cikti_yolu, font_name, font_size, f
         f"OutlineColour=&H00000000,Outline=2,Shadow={shadow_val},Bold={bold_val},Alignment=2,MarginV={margin_v}"
     )
     cmd = [
-        "ffmpeg", "-y", "-i", video_yolu,
+        "ffmpeg", "-y",
+        "-threads", "0",          # tüm CPU çekirdeklerini kullan
+        "-i", video_yolu,
         "-vf", f"subtitles='{srt_escaped}':force_style='{style_str}'",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+        "-threads", "0",
         "-c:a", "copy", cikti_yolu,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -525,6 +587,7 @@ def ffmpeg_ses_miksleme(
 
     cmd = [
         "ffmpeg", "-y",
+        "-threads", "0",          # tüm CPU çekirdekleri
         "-i", video_yolu,
         "-i", dublaj_wav,
         "-filter_complex",
@@ -535,6 +598,7 @@ def ffmpeg_ses_miksleme(
         "-map", "[aout]",
         "-c:v", "copy",
         "-c:a", "aac", "-b:a", "192k",
+        "-threads", "0",
         "-shortest",
         cikti_yolu,
     ]
