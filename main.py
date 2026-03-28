@@ -1820,6 +1820,164 @@ async def words_al(dosya_adi: str):
         return JSONResponse({"words": json.load(f)})
 
 
+@app.post("/api/kendi_sesiyle_dublaj/")
+async def kendi_sesiyle_dublaj(
+    video: UploadFile = File(...),
+    hedef_dil: str = Form("EN"),
+    kaynak_dil: str = Form("auto"),
+):
+    """
+    Tek tıkla: Videonun kendi sesini klonla → hedef dilde konuştur → videoya karıştır.
+    Akış: Video → FFmpeg ses çıkar → Deepgram transkript → DeepL çeviri
+          → ElevenLabs Instant Clone → klonlanan ses TTS → FFmpeg mix
+    """
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": "ElevenLabs API key eksik"}, status_code=500)
+    if not DEEPGRAM_API_KEY:
+        return JSONResponse({"hata": "Deepgram API key eksik"}, status_code=500)
+
+    b_id = uuid.uuid4().hex[:8]
+    gecici = os.path.join(TEMP_DIR, b_id)
+    os.makedirs(gecici, exist_ok=True)
+
+    ext = os.path.splitext(video.filename or "video.mp4")[1] or ".mp4"
+    video_path = os.path.join(gecici, f"video{ext}")
+    ses_path   = os.path.join(gecici, "ses_orj.mp3")
+    out_path   = os.path.join(OUTPUT_DIR, f"sonuc_{b_id}.mp4")
+    klonlanan_voice_id = None
+
+    try:
+        # 1. Videoyu kaydet
+        with open(video_path, "wb") as f:
+            shutil.copyfileobj(video.file, f)
+        log.info(f"[KendiSesi] Video kaydedildi: {os.path.getsize(video_path)//1024}KB")
+
+        # 2. Sesi çıkar (FFmpeg)
+        ffmpeg = _ffmpeg_path()
+        proc = await asyncio.create_subprocess_exec(
+            ffmpeg, "-y", "-i", video_path,
+            "-vn", "-ar", "16000", "-ac", "1", "-b:a", "64k", ses_path,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        _, err = await proc.communicate()
+        if proc.returncode != 0 or not os.path.exists(ses_path):
+            return JSONResponse({"hata": f"Ses çıkarılamadı: {err.decode()[:200]}"}, status_code=500)
+        log.info(f"[KendiSesi] Ses çıkarıldı: {os.path.getsize(ses_path)//1024}KB")
+
+        # 3. Deepgram transkript
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(ses_path, "rb") as f:
+                dg_r = await client.post(
+                    "https://api.deepgram.com/v1/listen?model=nova-2&detect_language=true&punctuate=true",
+                    headers={"Authorization": f"Token {DEEPGRAM_API_KEY}", "Content-Type": "audio/mpeg"},
+                    content=f.read(),
+                )
+        if dg_r.status_code != 200:
+            return JSONResponse({"hata": f"Transkript hatası: {dg_r.text[:200]}"}, status_code=500)
+
+        transkript = dg_r.json()["results"]["channels"][0]["alternatives"][0]["transcript"]
+        if not transkript.strip():
+            return JSONResponse({"hata": "Videoda konuşma sesi algılanamadı"}, status_code=400)
+        log.info(f"[KendiSesi] Transkript: {transkript[:100]}")
+
+        # 4. DeepL çeviri
+        metin_final = transkript
+        if DEEPL_API_KEY:
+            hedef_deepl = DEEPL_DILLER.get(hedef_dil.upper(), hedef_dil.upper())
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                dl_r = await client.post(
+                    f"{_deepl_base_url()}/v2/translate",
+                    headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
+                    json={"text": [transkript], "target_lang": hedef_deepl},
+                )
+            if dl_r.status_code == 200:
+                metin_final = dl_r.json()["translations"][0]["text"]
+                log.info(f"[KendiSesi] Çeviri: {metin_final[:100]}")
+
+        # 5. Ses klonla (ElevenLabs Instant Clone)
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(ses_path, "rb") as f:
+                klon_r = await client.post(
+                    "https://api.elevenlabs.io/v1/voices/add",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    data={"name": f"KendiSes_{b_id}", "description": "VoiceFlow otomatik klon"},
+                    files={"files": ("ses.mp3", f, "audio/mpeg")},
+                )
+
+        if klon_r.status_code != 200:
+            # Klonlama başarısız — plan kısıtı olabilir, varsayılan ses kullan
+            log.warning(f"[KendiSesi] Klonlama başarısız ({klon_r.status_code}), varsayılan ses kullanılıyor")
+            klonlanan_voice_id = "nPczCjzI2devNBz1zQrb"  # Brian
+        else:
+            klonlanan_voice_id = klon_r.json().get("voice_id")
+            log.info(f"[KendiSesi] Ses klonlandı: {klonlanan_voice_id}")
+
+        # 6. Klonlanan sesle TTS üret
+        tts_path = os.path.join(gecici, "tts_cikti.mp3")
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            tts_r = await client.post(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{klonlanan_voice_id}",
+                headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "text": metin_final,
+                    "model_id": "eleven_multilingual_v2",
+                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.85}
+                },
+            )
+        if tts_r.status_code != 200:
+            return JSONResponse({"hata": f"TTS hatası: {tts_r.text[:200]}"}, status_code=500)
+
+        with open(tts_path, "wb") as f:
+            f.write(tts_r.content)
+        log.info(f"[KendiSesi] TTS üretildi: {len(tts_r.content)//1024}KB")
+
+        # 7. FFmpeg — orijinal video + yeni ses karıştır
+        proc2 = await asyncio.create_subprocess_exec(
+            ffmpeg, "-y",
+            "-i", video_path,
+            "-i", tts_path,
+            "-filter_complex", "[0:a]volume=0.05[orig];[1:a]volume=1.0[dub];[orig][dub]amix=inputs=2:duration=longest[aout]",
+            "-map", "0:v", "-map", "[aout]",
+            "-c:v", "copy", "-c:a", "aac", "-shortest",
+            out_path,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        _, err2 = await proc2.communicate()
+        if proc2.returncode != 0:
+            return JSONResponse({"hata": f"Video birleştirme hatası: {err2.decode()[-300:]}"}, status_code=500)
+
+        log.info(f"[KendiSesi] Tamamlandı: {out_path}")
+
+        # Klonlanan sesi ElevenLabs'tan sil (temizlik)
+        if klonlanan_voice_id and klonlanan_voice_id != "nPczCjzI2devNBz1zQrb":
+            try:
+                async with httpx.AsyncClient() as c:
+                    await c.delete(
+                        f"https://api.elevenlabs.io/v1/voices/{klonlanan_voice_id}",
+                        headers={"xi-api-key": ELEVENLABS_API_KEY}
+                    )
+            except Exception:
+                pass
+
+        return JSONResponse({
+            "basari": True,
+            "dosya": os.path.basename(out_path),
+            "transkript": transkript[:200],
+            "ceviri": metin_final[:200],
+            "hedef_dil": hedef_dil,
+        })
+
+    except Exception as e:
+        log.error(f"[KendiSesi Hata] {e}", exc_info=True)
+        return JSONResponse({"hata": str(e)}, status_code=500)
+    finally:
+        # Geçici dosyaları temizle
+        try:
+            shutil.rmtree(gecici, ignore_errors=True)
+        except Exception:
+            pass
+
+
 @app.post("/api/bakiye_kontrol/")
 async def bakiye_kontrol(request: Request):
     """
