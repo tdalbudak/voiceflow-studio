@@ -1281,7 +1281,7 @@ function toggleAltyazi() {
     btn.style.color = _subVisible ? 'var(--accent3)' : 'var(--red2)';
     btn.style.borderColor = _subVisible ? 'rgba(99,102,241,.3)' : 'rgba(239,68,68,.3)';
   }
-  if (!_subVisible) document.getElementById('live_sub_overlay').style.display = 'none';
+  const _lso = document.getElementById('live_sub_overlay'); if (!_subVisible && _lso) _lso.style.display = 'none';
 }
 
 /* ═══ UTILS ═══ */
@@ -1308,7 +1308,7 @@ function setStyle(el){
 
 function toggleAS(){
   autoScroll=!autoScroll;
-  document.getElementById('as_dot').style.background=autoScroll?'var(--green2)':'var(--muted)';
+  (function(){var _oa=document.getElementById('as_dot');if(_oa)_oa.style.background=autoScroll?'var(--green2)':'var(--muted)';})();
 }
 
 /* ═══ CLOUD (placeholder) ═══ */
@@ -1345,7 +1345,7 @@ async function cloudUpload(svc){
         pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
         pURL = B + '/indir/${d.dosya_adi}';
         toast('✓ "' + d.baslik + '" — ' + d.boyut_mb + 'MB (' + kaliteSecim + ')');
-        document.getElementById('modal').classList.remove('hidden');
+        document.getElementById('modal')?.classList.remove('hidden');
         modalStep(1);
         updateModalBtn();
       }else{
@@ -1501,31 +1501,33 @@ document.getElementById('finput').addEventListener('change',function(){
   // Center stage güncelle
   const empty = document.getElementById('vbox_empty');
   if (empty) empty.style.display = 'none';
-  document.getElementById('modal').classList.remove('hidden');
-  document.getElementById('modal_lang_row').style.display='block';
-  document.getElementById('transcript_upload_row').style.display = 'block';
+  document.getElementById('modal')?.classList.remove('hidden');
+  (function(){var _oa=document.getElementById('modal_lang_row');if(_oa)_oa.style.display='block';})();
+  (function(){var _oa=document.getElementById('transcript_upload_row');if(_oa)_oa.style.display='block';})();
   modalStep(1);
   updateModalBtn();
   if(mod==='seslendirme'){
-    document.getElementById('modal_btn_text').textContent='Ses Seçimine Geç →';
-    document.getElementById('modal_main_btn').querySelector('i').className='fa-solid fa-arrow-right';
+    (function(){var _oa=document.getElementById('modal_btn_text');if(_oa)_oa.textContent='Ses Seçimine Geç →';})();
+    const _mmb1 = document.getElementById('modal_main_btn'); if(_mmb1){const _i1=_mmb1.querySelector('i'); if(_i1) _i1.className='fa-solid fa-arrow-right';}
   }
   // Onboarding sonraki adıma geç
   if (_obStep === 0) obIleri();
 });
 
-function closeModal(){document.getElementById('modal').classList.add('hidden');}
+function closeModal(){document.getElementById('modal')?.classList.add('hidden');}
 
 function finishSetup(){
   // Adım 1 verileri
   const srcVal = document.getElementById('m_src')?.value || 'auto';
   const hasTranslation = document.getElementById('translation_toggle')?.checked;
+  const _m_tgt2 = document.getElementById('m_tgt2');
+  const _m_tgt  = document.getElementById('m_tgt');
   const tgtVal = hasTranslation
-    ? (document.getElementById('m_tgt2')?.value || document.getElementById('m_tgt')?.value || 'en')
+    ? ((_m_tgt2 && _m_tgt2.value) || (_m_tgt && _m_tgt.value) || 'en')
     : '';
 
-  document.getElementById('src_lang').value = srcVal;
-  document.getElementById('tgt_lang').value = tgtVal;
+  (function(){var _oa=document.getElementById('src_lang');if(_oa)_oa.value=srcVal;})();
+  (function(){var _oa=document.getElementById('tgt_lang');if(_oa)_oa.value=tgtVal;})();
 
   // Arka plan ses tercihi
   const bgKeep = document.getElementById('bg_audio_keep')?.checked;
@@ -2031,12 +2033,12 @@ function brandKitUygula() {
 }
 
 function toggleTranslation() {
-  const on  = document.getElementById('translation_toggle').checked;
+  const on  = document.getElementById('translation_toggle')?.checked;
   const row = document.getElementById('tgt_row');
   const trk = document.getElementById('toggle_thumb');
   if (row) row.style.display = on ? 'block' : 'none';
   if (trk) trk.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
-  document.getElementById('toggle_track').style.background = on ? 'var(--accent2)' : 'var(--border2)';
+  (function(){var _oa=document.getElementById('toggle_track');if(_oa)_oa.style.background=on ? 'var(--accent2)' : 'var(--border2)';})();
   updateModalBtn();
 }
 
@@ -2061,14 +2063,14 @@ function updateModalBtn() {
 }
 
 function modalStep(n) {
-  document.getElementById('modal_step1').classList.toggle('hidden', n !== 1);
-  document.getElementById('modal_step2').classList.toggle('hidden', n !== 2);
-  document.getElementById('modal_back_btn').style.display = n === 2 ? 'flex' : 'none';
+  document.getElementById('modal_step1')?.classList.toggle('hidden', n !== 1);
+  document.getElementById('modal_step2')?.classList.toggle('hidden', n !== 2);
+  (function(){var _oa=document.getElementById('modal_back_btn');if(_oa)_oa.style.display=n === 2 ? 'flex' : 'none';})();
   if (n === 2) buildVoiceList();
 }
 
 function modalMainAction() {
-  if (mod === 'seslendirme' && document.getElementById('modal_step1') && !document.getElementById('modal_step1').classList.contains('hidden')) {
+  if (mod === 'seslendirme' && document.getElementById('modal_step1') && !document.getElementById('modal_step1')?.classList.contains('hidden')) {
     // Dublaj: adım 1'den adım 2'ye geç
     modalStep(2);
     return;
@@ -2077,14 +2079,14 @@ function modalMainAction() {
 }
 
 function openModal() {
-  document.getElementById('modal').classList.remove('hidden');
-  document.getElementById('modal_lang_row').style.display = 'block';
-  document.getElementById('transcript_upload_row').style.display = 'none';
+  document.getElementById('modal')?.classList.remove('hidden');
+  (function(){var _oa=document.getElementById('modal_lang_row');if(_oa)_oa.style.display='block';})();
+  (function(){var _oa=document.getElementById('transcript_upload_row');if(_oa)_oa.style.display='none';})();
   modalStep(1);
   updateModalBtn();
   // Dublaj modundaysa Adım 2'ye geç butonu göster
   if (mod === 'seslendirme') {
-    document.getElementById('modal_btn_text').textContent = 'Ses Seçimine Geç →';
+    (function(){var _oa=document.getElementById('modal_btn_text');if(_oa)_oa.textContent='Ses Seçimine Geç →';})();
     document.getElementById('modal_main_btn').querySelector('i').className = 'fa-solid fa-arrow-right';
   }
 }
@@ -2120,7 +2122,7 @@ function transcriptYukle(inp) {
     }
   };
   reader.readAsText(file);
-  document.getElementById('transcript_label').textContent = '✓ ' + file.name;
+  (function(){var _oa=document.getElementById('transcript_label');if(_oa)_oa.textContent='✓ ' + file.name;})();
 }
 
 // Dil bayrakları
@@ -2129,10 +2131,10 @@ const FLAG_MAP = {
   it:'🇮🇹', pt:'🇧🇷', ru:'🇷🇺', zh:'🇨🇳', ja:'🇯🇵', ar:'🇸🇦', ko:'🇰🇷'
 };
 document.getElementById('m_src')?.addEventListener('change', function() {
-  document.getElementById('src_flag').textContent = FLAG_MAP[this.value] || '🌐';
+  (function(){var _oa=document.getElementById('src_flag');if(_oa)_oa.textContent=FLAG_MAP[this.value] || '🌐';})();
 });
 document.getElementById('m_tgt')?.addEventListener('change', function() {
-  document.getElementById('tgt_flag').textContent = FLAG_MAP[this.value] || '🌐';
+  (function(){var _oa=document.getElementById('tgt_flag');if(_oa)_oa.textContent=FLAG_MAP[this.value] || '🌐';})();
 });
 
 /* ═══ RESET & SWITCH ═══ */
@@ -2366,7 +2368,7 @@ function selVoice(id,el){
 /* ═══ MEDIA LOAD ═══ */
 function loadMedia(){
   const isA=pFile.type.startsWith('audio');
-  document.getElementById('dz').style.display='none';
+  (function(){var _oa=document.getElementById('dz');if(_oa)_oa.style.display='none';})();
   const v=document.getElementById('vid'),a=document.getElementById('aud');
   const media=isA?a:v;
   if(isA)v.style.display='none'; else a.style.display='none';
@@ -2374,8 +2376,8 @@ function loadMedia(){
   media.onloadedmetadata=()=>{
     dur=media.duration||0;
     const m=Math.floor(dur/60),s=Math.floor(dur%60);
-    document.getElementById('tl_dur').textContent=p2(m) + ':' + p2(s);
-    document.getElementById('tl_track').innerHTML='<div id="ph" class="ph"></div>';
+    (function(){var _oa=document.getElementById('tl_dur');if(_oa)_oa.textContent=p2(m) + ':' + p2(s);})();
+    (function(){var _oa=document.getElementById('tl_track');if(_oa)_oa.innerHTML='<div id="ph" class="ph"></div>';})();
     setupTU(media);
     // Araç çubuğunu göster
     showVidToolbar();
@@ -2412,7 +2414,7 @@ function setupTU(media){
 
 /* ═══ START ═══ */
 async function startProcess(){
-  if(mod==='metinden_sese'&&!document.getElementById('txt_input').value.trim())return alert('Metin girin!');
+  if(mod==='metinden_sese'&&!document.getElementById('txt_input')?.value.trim())return alert('Metin girin!');
   if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
 
   // Ses seçimi kontrolü
@@ -2450,40 +2452,40 @@ async function startProcess(){
   const fd=new FormData();
   fd.append('modul',mod);
   fd.append('ses_id',voice);
-  fd.append('kaynak_dil',document.getElementById('src_lang').value||'tr');
-  fd.append('hedef_dil',document.getElementById('tgt_lang').value||'');
+  fd.append('kaynak_dil', document.getElementById('src_lang')?.value || 'tr');
+  fd.append('hedef_dil',document.getElementById('tgt_lang')?.value||'');
   // Mixer değerleri
   const srcVol = (document.getElementById('src_vol')?.value || 3) / 100;
   const dubVol = (document.getElementById('dub_vol')?.value || 100) / 100;
   fd.append('orig_vol', srcVol.toFixed(2));
   fd.append('dub_vol_param', dubVol.toFixed(2));
   if(mod==='metinden_sese'){
-    const metin = document.getElementById('txt_input').value.trim();
+    const metin = document.getElementById('txt_input')?.value.trim();
     if(!metin){ alert('Metin girin!'); return; }
     fd.append('yazili_metin', metin);
   } else {
     fd.append('dosya',pFile);
   }
   if(mod==='altyazi'){
-    fd.append('f_name',document.getElementById('sub_font')?.value||'Arial');
-    fd.append('f_size',document.getElementById('sub_size')?.value||'22');
-    fd.append('f_color',document.getElementById('sub_color')?.value||'#ffffff');
+    fd.append('f_name', document.getElementById('sub_font')?.value || 'Arial');
+    fd.append('f_size', document.getElementById('sub_size')?.value || '22');
+    fd.append('f_color', document.getElementById('sub_color')?.value || '#ffffff');
     fd.append('is_bold',document.getElementById('btn_bold')?.classList.contains('on')||true);
     fd.append('is_shadow',document.getElementById('btn_shadow')?.classList.contains('on')||true);
     fd.append('m_v','20');
   }
-  document.getElementById('sbox').classList.remove('hidden');
+  document.getElementById('sbox')?.classList.remove('hidden');
   try{
     const r=await fetch(B + '/api/islem/',{method:'POST',body:fd});
     if(r.ok){const d=await r.json();pollStatus(d.beklenen_dosya_adi);}
     else {
       const err = await r.json().catch(()=>({hata:'Sunucu hatası'}));
       toast(err.hata||'İstek başarısız','terr',4000);
-      document.getElementById('sbox').classList.add('hidden');
+      document.getElementById('sbox')?.classList.add('hidden');
     }
   }catch(e){
     toast('Backend bağlantı hatası','terr',4000);
-    document.getElementById('sbox').classList.add('hidden');
+    document.getElementById('sbox')?.classList.add('hidden');
   }
 }
 
@@ -2498,7 +2500,7 @@ function pollStatus(fn){
       // Hata durumu — yuzde 0 ve "Hata:" ile başlıyorsa
       if(d.yuzde===0&&d.durum.startsWith('Hata:')){
         clearInterval(iv);
-        document.getElementById('sbox').classList.add('hidden');
+        document.getElementById('sbox')?.classList.add('hidden');
         // Hata toast'u — 8 saniye göster
         toast(d.durum,'terr',8000);
         return;
@@ -2506,7 +2508,7 @@ function pollStatus(fn){
 
       if(d.yuzde===100){
         clearInterval(iv);
-        document.getElementById('sbox').classList.add('hidden');
+        document.getElementById('sbox')?.classList.add('hidden');
         // Uyarı var mı?
         if(d.durum.startsWith('Uyarı:')){
           toast(d.durum,'twarn',5000);
@@ -2519,30 +2521,30 @@ function pollStatus(fn){
 
 function showResult(fn){
   aDosya=fn;
-  document.getElementById('xwrap').classList.remove('hidden');
+  document.getElementById('xwrap')?.classList.remove('hidden');
   if(mod==='metinden_sese'){
-    document.getElementById('tts_player').classList.remove('hidden');
-    document.getElementById('tts_status').textContent='✓ Ses üretildi';
+    document.getElementById('tts_player')?.classList.remove('hidden');
+    (function(){var _oa=document.getElementById('tts_status');if(_oa)_oa.textContent='✓ Ses üretildi';})();
     const a=document.getElementById('tts_audio');a.src=B + '/dinle/${fn}?v=${Date.now()}';a.play();
   }else if(mod==='desifre'){
     aSrt=fn;
     fetch(B + '/dinle/${fn}').then(r=>r.text()).then(c=>renderSegs(c,fn)).catch(()=>{});
-    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+    var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }else if(mod==='altyazi'){
     const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
-    document.getElementById('live_badge').style.display='inline';
+    (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
     fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
     setTimeout(()=>waveform(fn),1800);
-    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
-    document.getElementById('xitem_burn')?.style && (document.getElementById('xitem_burn').style.display='flex');
+    var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
+    var _xb=document.getElementById('xitem_burn'); if(_xb) _xb.style.display='flex';
   }else if(mod==='seslendirme'){
-    document.getElementById('live_badge').style.display='inline';
+    (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
     const v=document.getElementById('vid');v.src=B + '/dinle/${fn}?v=${Date.now()}';v.play();
     fetch(B + '/dinle/${aSrt}').then(r=>r.text()).then(c=>renderSegs(c,aSrt)).catch(()=>{});
     setTimeout(()=>waveform(fn),1800);
-    document.getElementById('xitem_multidil')?.style && (document.getElementById('xitem_multidil').style.display='flex');
+    var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }
 
   // TikTok modu modal'da seçildiyse otomatik aktifleştir
@@ -2632,7 +2634,7 @@ function renderSegs(srt,fn,tr=false){
     + '    </div>';
   });
   html+='</div>';
-  document.getElementById('slist').innerHTML=html;
+  (function(){var _oa=document.getElementById('slist');if(_oa)_oa.innerHTML=html;})();
 
   // Birden fazla konuşmacı varsa ses eşleştirme paneli
   const uSpk=new Set(segs.map(s=>s.speaker));
@@ -2712,7 +2714,7 @@ function setVidVol(val) {
   const v = document.getElementById('vid');
   const a = document.getElementById('aud');
   [v, a].forEach(el => { if (el) el.volume = val / 100; });
-  document.getElementById('vid_vol_label').textContent = val + '%';
+  (function(){var _oa=document.getElementById('vid_vol_label');if(_oa)_oa.textContent=val + '%';})();
 }
 
 function toggleLoop() {
@@ -3844,11 +3846,11 @@ function modGecis(yeniMod) {
     ['tl','mixer','sec_sub_design','sec_audio','sec_voice_btn'].forEach(function(id) {
       document.getElementById(id)?.classList.add('hidden');
     });
-    document.getElementById('magic_actions').style.display = 'flex';
+    (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='flex';})();
     document.getElementById('slist')?.classList.add('hidden');
     toast('Sihirli Mod aktif — hızlı aksiyon seçin!');
   } else {
-    document.getElementById('magic_actions').style.display = 'none';
+    (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='none';})();
     sw(mod);
     toast('Pro Studio modu aktif');
   }
@@ -3861,6 +3863,8 @@ function magicAction(tip) {
     sw('altyazi'); modGecis('pro');
   } else if (tip==='klonlama') {
     modGecis('pro'); sw('seslendirme');
+    // Kendi sesiyle dublaj UI'ı aç
+    kendiSesiyleyDublajModalAc();
   } else if (tip==='magic_cut') {
     modGecis('pro');
     if (segs.length===0) { sw('desifre'); toast('Once transkript alın, sonra Magic Cut kullanın','twarn',3000); }
@@ -3904,6 +3908,113 @@ function obAdimGoster() {
 
 function obIleri() { _obStep++; obAdimGoster(); }
 function obKapat() { document.getElementById('_ob_tip')?.remove(); localStorage.setItem('vf_ob_done','1'); }
+
+/* ═══ KENDİ SESİYLE DUBLAJ ═══ */
+function kendiSesiyleyDublajModalAc() {
+  document.getElementById('_ksd_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_ksd_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:440px;max-width:95vw;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div style="font-size:15px;font-weight:700;">🎙️ Kendi Sesinle Başka Dilde Konuş</div>'
+    + '<button onclick="document.getElementById(\'_ksd_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:16px;background:var(--s3);border-radius:var(--r);padding:12px;">'
+    + '1. Videonuzu yükleyin<br>2. Hedef dili seçin<br>3. Tek tıkla: ses klonlanır → çevrilir → videoya işlenir'
+    + '</div>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Video Dosyası</label>'
+    + '<input id="ksd_file" type="file" accept="video/*,audio/*" style="width:100%;padding:8px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;">'
+    + '</div>'
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Hedef Dil</label>'
+    + '<select id="ksd_dil" style="width:100%;padding:9px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;">'
+    + '<option value="EN">🇺🇸 İngilizce</option>'
+    + '<option value="DE">🇩🇪 Almanca</option>'
+    + '<option value="FR">🇫🇷 Fransızca</option>'
+    + '<option value="ES">🇪🇸 İspanyolca</option>'
+    + '<option value="IT">🇮🇹 İtalyanca</option>'
+    + '<option value="PT">🇧🇷 Portekizce</option>'
+    + '<option value="TR">🇹🇷 Türkçe</option>'
+    + '<option value="JA">🇯🇵 Japonca</option>'
+    + '</select>'
+    + '</div>'
+    + '<div id="ksd_progress" style="display:none;margin-bottom:12px;">'
+    + '<div id="ksd_status" style="font-size:12px;color:var(--muted2);margin-bottom:6px;">İşleniyor...</div>'
+    + '<div style="background:var(--s3);border-radius:100px;height:4px;overflow:hidden;">'
+    + '<div id="ksd_bar" style="height:100%;background:var(--accent2);border-radius:100px;width:0%;transition:width .5s;"></div>'
+    + '</div></div>'
+    + '<button onclick="kendiSesiyleyDublajBaslat()" id="ksd_btn" style="width:100%;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;">'
+    + '🚀 Başlat — Tek Tıkla Dublaj'
+    + '</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+async function kendiSesiyleyDublajBaslat() {
+  const fileInput = document.getElementById('ksd_file');
+  const dilSec    = document.getElementById('ksd_dil');
+  const btn       = document.getElementById('ksd_btn');
+  const progress  = document.getElementById('ksd_progress');
+  const status    = document.getElementById('ksd_status');
+  const bar       = document.getElementById('ksd_bar');
+
+  if (!fileInput || !fileInput.files[0]) { toast('Video dosyası seçin','twarn'); return; }
+
+  const fd = new FormData();
+  fd.append('video', fileInput.files[0]);
+  fd.append('hedef_dil', dilSec ? dilSec.value : 'EN');
+  fd.append('kaynak_dil', 'auto');
+
+  if (btn) { btn.disabled = true; btn.textContent = 'İşleniyor...'; }
+  if (progress) progress.style.display = 'block';
+
+  // Adım animasyonu
+  const adimlar = [
+    [10, 'Ses çıkarılıyor...'],
+    [30, 'Transkript alınıyor (Deepgram)...'],
+    [50, 'Çeviri yapılıyor (DeepL)...'],
+    [65, 'Sesiniz klonlanıyor (ElevenLabs)...'],
+    [80, 'Yeni ses üretiliyor...'],
+    [90, 'Video birleştiriliyor...'],
+  ];
+  let adimIdx = 0;
+  const adimInterval = setInterval(function() {
+    if (adimIdx < adimlar.length) {
+      if (bar) bar.style.width = adimlar[adimIdx][0] + '%';
+      if (status) status.textContent = adimlar[adimIdx][1];
+      adimIdx++;
+    }
+  }, 3000);
+
+  try {
+    const r = await fetch(B + '/api/kendi_sesiyle_dublaj/', { method:'POST', body:fd });
+    clearInterval(adimInterval);
+    const d = await r.json();
+
+    if (d.basari) {
+      if (bar) bar.style.width = '100%';
+      if (status) status.textContent = 'Tamamlandı!';
+      toast('Dublaj tamamlandı!');
+      document.getElementById('_ksd_modal')?.remove();
+      // İndir
+      const a = document.createElement('a');
+      a.href = B + '/indir/' + d.dosya;
+      a.download = d.dosya;
+      a.click();
+    } else {
+      if (bar) bar.style.width = '0%';
+      if (status) status.textContent = 'Hata: ' + (d.hata || 'Bilinmeyen hata');
+      toast(d.hata || 'İşlem başarısız', 'terr', 5000);
+      if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
+    }
+  } catch(e) {
+    clearInterval(adimInterval);
+    toast('Bağlantı hatası: ' + e.message, 'terr');
+    if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
+  }
+}
 
 window.addEventListener('resize', function() { if (_obEl && _obStep < OB_STEPS.length) obAdimGoster(); });
 
