@@ -15,7 +15,6 @@ COPY index.html .
 COPY landing.html* ./
 COPY creator.html* ./
 COPY api-docs.html* ./
-COPY static/ ./static/
 
 RUN mkdir -p ciktilar gecici
 
