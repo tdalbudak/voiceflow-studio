@@ -70,11 +70,23 @@ async def root():
 
 # ── Sağlık kontrolü ──
 @app.get("/health")
+async def health():
+    uyarilar = []
+    if not DEEPGRAM_API_KEY:   uyarilar.append("DEEPGRAM_API_KEY eksik")
+    if not ELEVENLABS_API_KEY: uyarilar.append("ELEVENLABS_API_KEY eksik")
+    if not DEEPL_API_KEY:      uyarilar.append("DEEPL_API_KEY eksik — çeviri çalışmaz")
+    if not ffmpeg_var_mi():    uyarilar.append("FFmpeg bulunamadı")
+    return {
+        "status": "ok" if not uyarilar else "degraded",
+        "ffmpeg": ffmpeg_var_mi(),
+        "deepgram_key": bool(DEEPGRAM_API_KEY),
+        "elevenlabs_key": bool(ELEVENLABS_API_KEY),
+        "deepl_key": bool(DEEPL_API_KEY),
+        "uyarilar": uyarilar,
+        "versiyon": "2.0.0",
+    }
 
 
-# ── Email Endpoints ────────────────────────────────────────────
-
-@app.post("/api/kayit_email/")
 async def kayit_email(
     arka_plan: BackgroundTasks,
     email: str = Form(...),
@@ -112,25 +124,9 @@ async def email_test(
     s = EMAIL_SABLONLAR[sablon]
     basari = await resend_email_gonder(email, s["konu"], s["html"], "Test Kullanıcı")
     return JSONResponse({"basari": basari, "sablon": sablon})
-async def health():
-    uyarilar = []
-    if not DEEPGRAM_API_KEY:   uyarilar.append("DEEPGRAM_API_KEY eksik")
-    if not ELEVENLABS_API_KEY: uyarilar.append("ELEVENLABS_API_KEY eksik")
-    if not DEEPL_API_KEY:      uyarilar.append("DEEPL_API_KEY eksik — çeviri çalışmaz")
-    if not ffmpeg_var_mi():    uyarilar.append("FFmpeg bulunamadı")
 
-    return {
-        "status": "ok" if not uyarilar else "degraded",
-        "ffmpeg": ffmpeg_var_mi(),
-        "deepgram_key": bool(DEEPGRAM_API_KEY),
-        "elevenlabs_key": bool(ELEVENLABS_API_KEY),
-        "deepl_key": bool(DEEPL_API_KEY),
-        "uyarilar": uyarilar,
-        "max_dosya_mb": MAX_DOSYA_MB,
-        "max_sure_dakika": MAX_SURE_DAKIKA,
-        "versiyon": "2.0.0",
-    }
 
+# ── Email Endpoints ────────────────────────────────────────────
 
 @app.on_event("startup")
 async def baslangic_kontrolu():
