@@ -1058,12 +1058,31 @@ async def elevenlabs_segment_uret(
 
             if r.status_code == 429:
                 bekle = 6 * (deneme + 1)
-                print(f"[ElevenLabs] Rate limit → {bekle}s bekleniyor...")
+                log.warning(f"[ElevenLabs] Rate limit → {bekle}s bekleniyor...")
                 await asyncio.sleep(bekle)
                 continue
 
+            if r.status_code in (401, 403):
+                log.error("[ElevenLabs] API key geçersiz veya plan yetersiz")
+                return False
+
+            if r.status_code == 422:
+                hata = r.text[:300]
+                log.error(f"[ElevenLabs 422] {hata}")
+                # Plan kısıtı varsa direkt çık, retry yapma
+                if "professional_voice" in hata or "starter" in hata or "free" in hata.lower():
+                    return False
+                if deneme < retry:
+                    await asyncio.sleep(2)
+                    continue
+                return False
+
             if r.status_code != 200:
-                print(f"[ElevenLabs {r.status_code}] {r.text[:150]}")
+                hata = r.text[:300]
+                log.error(f"[ElevenLabs {r.status_code}] {hata}")
+                # Kota/plan hatası — retry yapma
+                if any(k in hata.lower() for k in ["quota", "limit", "insufficient", "upgrade", "plan"]):
+                    return False
                 if deneme < retry:
                     await asyncio.sleep(2)
                     continue
@@ -1467,7 +1486,10 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             ses_liste = [s for s in sonuclar if s is not None]
 
             if not ses_liste:
-                islem_durumlari[out_file] = {"durum": "Hata: Ses üretilemedi. ElevenLabs API key kontrol edin.", "yuzde": 0}
+                islem_durumlari[out_file] = {
+                    "durum": "Hata: Ses üretilemedi — ElevenLabs API key'i kontrol edin. Railway'de ELEVENLABS_API_KEY environment variable doğru mu? ElevenLabs planınız seslendirmeye izin veriyor mu?",
+                    "yuzde": 0
+                }
                 return
 
             # 4. FFmpeg Miksleme
