@@ -979,18 +979,6 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <div style="position:relative;">
             <select id="m_src" style="width:100%;padding:11px 14px;padding-left:52px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;">
               <option value="auto">Otomatik Algıla 🤖</option>
-              <option value="tr">Turkish 🇹🇷 Türkçe</option>
-              <option value="en">English 🇺🇸</option>
-              <option value="es">Spanish 🇪🇸</option>
-              <option value="fr">French 🇫🇷</option>
-              <option value="de">German 🇩🇪</option>
-              <option value="it">Italian 🇮🇹</option>
-              <option value="pt">Portuguese 🇧🇷</option>
-              <option value="ru">Russian 🇷🇺</option>
-              <option value="zh">Chinese 🇨🇳</option>
-              <option value="ja">Japanese 🇯🇵</option>
-              <option value="ar">Arabic 🇸🇦</option>
-              <option value="ko">Korean 🇰🇷</option>
             </select>
             <div id="src_flag" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none;">🌐</div>
           </div>
@@ -1017,17 +1005,6 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <div id="tgt_row" style="margin-bottom:14px;">
           <div style="position:relative;">
             <select id="m_tgt" onchange="buildVoiceList()" style="width:100%;padding:11px 14px;padding-left:52px;background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;">
-              <option value="tr">Turkish 🇹🇷 Türkçe</option>
-              <option value="en" selected>English 🇺🇸</option>
-              <option value="es">Spanish 🇪🇸</option>
-              <option value="fr">French 🇫🇷</option>
-              <option value="de">German 🇩🇪</option>
-              <option value="it">Italian 🇮🇹</option>
-              <option value="pt">Portuguese 🇧🇷</option>
-              <option value="ru">Russian 🇷🇺</option>
-              <option value="zh">Chinese 🇨🇳</option>
-              <option value="ja">Japanese 🇯🇵</option>
-              <option value="ar">Arabic 🇸🇦</option>
             </select>
             <div id="tgt_flag" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none;">🇺🇸</div>
           </div>
@@ -1179,17 +1156,46 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </label>
       </div>
 
-      <!-- Ses klonla -->
-      <div class="clone-card" onclick="document.getElementById('clone_inp').click()" style="padding:12px 16px;">
+      <!-- Kendi Sesini Kullan — BÜYÜK buton -->
+      <div onclick="kendiSesiyleyDublajModalAc()" style="background:linear-gradient(135deg,#065f46,#047857);border:2px solid #34d399;color:#fff;border-radius:var(--r2);padding:20px;cursor:pointer;transition:all .22s;margin-bottom:10px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 28px rgba(16,185,129,.5)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fa-solid fa-microphone-lines" style="font-size:22px;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;">🎙️ Kendi Sesini Kullan</div>
+            <div style="font-size:12px;color:#a7f3d0;line-height:1.5;">Videonun sesini klonla → hedef dilde konuş<br>Tek tıkla, otomatik pipeline</div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="font-size:16px;color:#a7f3d0;flex-shrink:0;"></i>
+        </div>
+      </div>
+
+      <!-- Klasik ses klonlama (dosya yükle) -->
+      <div class="clone-card" onclick="document.getElementById('clone_inp').click()" style="padding:12px 16px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <i class="fa-solid fa-microphone-lines" style="font-size:18px;"></i>
+          <i class="fa-solid fa-upload" style="font-size:16px;"></i>
           <div>
-            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Kendi Sesini Klonla</div>
-            <div style="font-size:11px;color:#d1fae5;margin-top:2px;" id="clone_card_sub">MP3/WAV yükle — AI birebir kopyalar · Creator plan gerektirir</div>
+            <div style="font-size:13px;font-weight:700;">Ses Dosyası ile Klonla</div>
+            <div style="font-size:11px;color:#d1fae5;margin-top:2px;" id="clone_card_sub">MP3/WAV yükle — AI birebir kopyalar</div>
           </div>
           <div id="kota_badge" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:100px;display:none;"></div>
         </div>
         <input type="file" id="clone_inp" hidden accept="audio/*,video/mp4" onchange="sesKlonla(this)">
+      </div>
+
+      <!-- Altyazı da Ekle — dublaja özel -->
+      <div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;" onclick="document.getElementById('dub_altyazi_toggle').click()" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <span style="font-size:18px;">📝</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">Altyazı da Ekle</div>
+          <div style="font-size:11px;color:var(--muted2);">Dublajın yanı sıra videoya altyazı da göm</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;" onclick="event.stopPropagation()">
+          <input type="checkbox" id="dub_altyazi_toggle" style="opacity:0;width:0;height:0;" onchange="dubAltyaziToggle(this.checked)">
+          <span id="dub_altyazi_track" style="position:absolute;inset:0;background:var(--border2);border-radius:10px;transition:.2s;">
+            <span style="position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;display:block;" id="dub_altyazi_thumb"></span>
+          </span>
+        </label>
       </div>
     </div>
 
@@ -2843,12 +2849,36 @@ function openModal() {
   document.getElementById('modal')?.classList.remove('hidden');
   (function(){var _oa=document.getElementById('modal_lang_row');if(_oa)_oa.style.display='block';})();
   (function(){var _oa=document.getElementById('transcript_upload_row');if(_oa)_oa.style.display='none';})();
+
+  // Modal dil select'lerini 70+ dil ile doldur
+  const mSrc = document.getElementById('m_src');
+  const mTgt = document.getElementById('m_tgt');
+  if (mSrc && mSrc.options.length <= 2) {
+    // Kaynak dil — Otomatik + tüm diller
+    TUM_DILLER.forEach(function(d) {
+      const opt = document.createElement('option');
+      opt.value = d.k.toLowerCase();
+      opt.textContent = d.fl + ' ' + d.ad + ' (' + d.k + ')';
+      mSrc.appendChild(opt);
+    });
+  }
+  if (mTgt && mTgt.options.length <= 1) {
+    // Hedef dil — tüm diller (EN seçili)
+    TUM_DILLER.forEach(function(d) {
+      const opt = document.createElement('option');
+      opt.value = d.k;
+      opt.textContent = d.fl + ' ' + d.ad + ' (' + d.k + ')';
+      if (d.k === 'EN') opt.selected = true;
+      mTgt.appendChild(opt);
+    });
+  }
+
   modalStep(1);
   updateModalBtn();
-  // Dublaj modundaysa Adım 2'ye geç butonu göster
   if (mod === 'seslendirme') {
     (function(){var _oa=document.getElementById('modal_btn_text');if(_oa)_oa.textContent='Ses Seçimine Geç →';})();
-    document.getElementById('modal_main_btn').querySelector('i').className = 'fa-solid fa-arrow-right';
+    var _mmb = document.getElementById('modal_main_btn');
+    if (_mmb) { var _i = _mmb.querySelector('i'); if(_i) _i.className='fa-solid fa-arrow-right'; }
   }
 }
 
@@ -2995,7 +3025,16 @@ function sw(m){
   }
 }
 
-/* ═══ ARA & DEĞİŞTİR ═══ */
+/* ═══ DUBLAJ + ALTYAZI TOGGLE ═══ */
+function dubAltyaziToggle(acik) {
+  const track = document.getElementById('dub_altyazi_track');
+  const thumb = document.getElementById('dub_altyazi_thumb');
+  if (track) track.style.background = acik ? 'var(--accent2)' : 'var(--border2)';
+  if (thumb) thumb.style.transform = acik ? 'translateX(16px)' : '';
+  window._dubAltyaziAcik = acik;
+  if (acik) toast('Dublaj tamamlanınca altyazı da otomatik eklenecek', 'tok', 2500);
+}
+window._dubAltyaziAcik = false;
 let _araHits = [], _araIdx = 0;
 function fnAra(yon) {
   const q = document.getElementById('fn_ara')?.value.trim().toLowerCase();
@@ -5079,6 +5118,30 @@ document.addEventListener('DOMContentLoaded', function() {
   // Genel not'u yükle
   const gn = document.getElementById('genel_not');
   if (gn) gn.value = localStorage.getItem('vf_genel_not') || '';
+
+  // TTS dil seçicilerini 70+ dil ile doldur
+  ['tts_src_lang','tts_tgt_lang'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isHedef = id === 'tts_tgt_lang';
+    if (isHedef) {
+      const optBos = document.createElement('option');
+      optBos.value = ''; optBos.textContent = 'Çevirisiz';
+      el.appendChild(optBos);
+    } else {
+      const optAuto = document.createElement('option');
+      optAuto.value = 'auto'; optAuto.textContent = 'Otomatik';
+      el.appendChild(optAuto);
+    }
+    TUM_DILLER.forEach(function(d) {
+      const opt = document.createElement('option');
+      opt.value = d.k;
+      opt.textContent = d.fl + ' ' + d.ad;
+      if (isHedef && d.k === 'EN') opt.selected = true;
+      if (!isHedef && d.k === 'TR') opt.selected = true;
+      el.appendChild(opt);
+    });
+  });
 
   const vbox = document.getElementById('vbox');
   if (!vbox) return;
