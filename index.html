@@ -4446,7 +4446,17 @@ async function authBaslat() {
     const { data: { session } } = await _sb.auth.getSession();
     if (session && session.user) await authGirisYapildi(session.user);
     _sb.auth.onAuthStateChange(async function(event, session) {
-      if (event === 'SIGNED_IN' && session && session.user) await authGirisYapildi(session.user);
+      if (event === 'SIGNED_IN' && session && session.user) {
+        await authGirisYapildi(session.user);
+        // Yeni kayıt ise hoşgeldin emaili tetikle
+        if (event === 'SIGNED_IN' && !localStorage.getItem('vf_hosgeldin_gonderildi_' + session.user.id)) {
+          localStorage.setItem('vf_hosgeldin_gonderildi_' + session.user.id, '1');
+          const fd = new FormData();
+          fd.append('email', session.user.email || '');
+          fd.append('isim', (session.user.user_metadata && session.user.user_metadata.full_name) ? session.user.user_metadata.full_name.split(' ')[0] : (session.user.email || '').split('@')[0]);
+          fetch(B + '/api/kayit_email/', { method:'POST', body:fd }).catch(function(){});
+        }
+      }
       if (event === 'SIGNED_OUT') authCikisYapildi();
     });
   } catch(e) { console.warn('Supabase auth hatası:', e); }
