@@ -453,6 +453,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <button class="cloud-btn" onclick="profilAc()" title="Profil & Kullanım" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
     <button class="cloud-btn" onclick="topluIslemAc()" title="Toplu video işle"><i class="fa-solid fa-layer-group"></i> Toplu</button>
     <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Sürüm geçmişi A/B karşılaştır" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
+    <!-- Dil göstergesi — modal'dan seçince güncellenir -->
+    <button onclick="openModal()" id="nav_dil_goster" style="display:none;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;" title="Dil değiştir"></button>
     <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Başlat</button>
     <div class="xwrap hidden" id="xwrap">
       <button class="btn-dl"><i class="fa-solid fa-download"></i> İndir ▾</button>
@@ -477,24 +479,11 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
   <div class="lp" id="lp">
 
     <!-- Dil -->
-    <div class="lp-sec" id="sec_dil">
-      <div class="sec-hd"><i class="fa-solid fa-language"></i> Proje Dili</div>
-      <!-- Modal'dan gelen değerler — sadece gösterim -->
-      <div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:12px;cursor:pointer;" onclick="openModal()" title="Değiştirmek için tıkla">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <span style="color:var(--muted2);">Kaynak</span>
-          <span id="src_lang_label" style="font-weight:600;">Otomatik 🤖</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="color:var(--muted2);">Hedef</span>
-          <span id="tgt_lang_label" style="font-weight:600;color:var(--accent3);">—</span>
-        </div>
-        <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);padding-top:6px;">Değiştirmek için tıkla</div>
-      </div>
-      <!-- Gizli gerçek değerler — JS okur -->
-      <input type="hidden" id="src_lang" value="auto">
-      <input type="hidden" id="tgt_lang" value="">
-    </div>
+    <!-- Gizli dil değerleri — JS okur, modal'dan doldurulur -->
+    <input type="hidden" id="src_lang" value="auto">
+    <input type="hidden" id="tgt_lang" value="">
+    <input type="hidden" id="src_lang_label" value="Otomatik">
+    <input type="hidden" id="tgt_lang_label" value="">
 
     <!-- Altyazı Tasarımcısı -->
     <div class="lp-sec hidden" id="sec_sub_design">
@@ -1956,22 +1945,19 @@ function finishSetup(){
   if (srcInput) srcInput.value = srcVal;
   if (tgtInput) tgtInput.value = tgtVal;
 
-  // Sol panel etiketlerini güncelle
-  const srcLabel = document.getElementById('src_lang_label');
-  const tgtLabel = document.getElementById('tgt_lang_label');
-  if (srcLabel) {
-    const srcDil = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === srcVal.toLowerCase(); });
-    srcLabel.textContent = srcVal === 'auto' ? 'Otomatik 🤖' : (srcDil ? srcDil.fl + ' ' + srcDil.ad : srcVal.toUpperCase());
-  }
-  if (tgtLabel) {
-    if (tgtVal) {
-      const tgtDil = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === tgtVal.toLowerCase(); });
-      tgtLabel.textContent = tgtDil ? tgtDil.fl + ' ' + tgtDil.ad : tgtVal.toUpperCase();
-      tgtLabel.style.color = 'var(--accent3)';
-    } else {
-      tgtLabel.textContent = '— (Çeviri Yok)';
-      tgtLabel.style.color = 'var(--muted2)';
-    }
+  // Dil değerlerini hidden input'lara yaz
+  const _si = document.getElementById('src_lang');
+  const _ti = document.getElementById('tgt_lang');
+  if (_si) _si.value = srcVal;
+  if (_ti) _ti.value = tgtVal;
+
+  // Navbar'da küçük gösterge güncelle (varsa)
+  const navDil = document.getElementById('nav_dil_goster');
+  if (navDil) {
+    const srcDilObj = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === srcVal.toLowerCase(); });
+    const tgtDilObj = TUM_DILLER.find(function(d){ return d.k.toLowerCase() === tgtVal.toLowerCase(); });
+    navDil.textContent = (srcDilObj ? srcDilObj.fl : '🌐') + (tgtVal ? ' → ' + (tgtDilObj ? tgtDilObj.fl : tgtVal) : '');
+    navDil.style.display = 'inline';
   }
 
   closeModal();
