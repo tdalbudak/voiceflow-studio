@@ -588,63 +588,26 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       </div>
     </div>
 
-    <!-- TTS Input -->
-    <div class="tts-wrap hidden" id="tts_wrap">
+    <!-- TTS — Metin→Ses (3 kolon: ses listesi | metin | araçlar) -->
+    <div class="tts-wrap hidden" id="tts_wrap" style="display:none;flex:1;flex-direction:row;min-height:0;overflow:hidden;">
 
-      <!-- AI Metin Araç Çubuğu -->
-      <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">AI Yardım</span>
-        <button onclick="ttsAIDuzelt('duzelt')" title="Yazım ve dilbilgisini düzelt" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <i class="fa-solid fa-spell-check" style="color:var(--accent2)"></i> Düzelt
-        </button>
-        <button onclick="ttsAIDuzelt('kisalt')" title="Metni kısalt" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <i class="fa-solid fa-compress" style="color:#22c55e"></i> Kısalt
-        </button>
-        <button onclick="ttsAIDuzelt('uzat')" title="Metni genişlet" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <i class="fa-solid fa-expand" style="color:#f59e0b"></i> Uzat
-        </button>
-        <div style="width:0.5px;height:16px;background:var(--border2);margin:0 2px;"></div>
-        <!-- Tarz seçimi -->
-        <select id="tts_tarz" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;">
-          <option value="">Tarz seç...</option>
-          <option value="samimi">😊 Samimi</option>
-          <option value="resmi">💼 Resmi</option>
-          <option value="komik">😂 Komik</option>
-          <option value="hikaye">📖 Hikaye</option>
-          <option value="influencer">🎤 İnfluencer</option>
-          <option value="haber">📰 Haber</option>
-        </select>
-        <button onclick="ttsAIDuzelt('tarz')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--purple2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple2)"></i> Tarz Uygula
-        </button>
-        <button onclick="ttsAIDuzelt('cevir')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--yellow2)'" onmouseout="this.style.borderColor='var(--border2)'">
-          <i class="fa-solid fa-language" style="color:var(--yellow2)"></i> Çevir
-        </button>
-        <div id="tts_ai_loading" style="display:none;font-size:11px;color:var(--accent2);"><i class="fa-solid fa-spinner fa-spin"></i></div>
-      </div>
-
-      <!-- Textarea -->
-      <textarea class="tts-ta" id="txt_input" placeholder="Sese çevrilecek metni buraya yazın...&#10;&#10;• AI Düzelt — yazım/dilbilgisi hatalarını gider&#10;• Tarz Uygula — samimi, resmi, komik...&#10;• Çevir — hedef dile otomatik çevir"></textarea>
-
-      <!-- Karakter sayacı -->
-      <div style="padding:3px 14px;background:var(--s2);border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:10px;color:var(--muted);" id="tts_char_count">0 / 5000 karakter</span>
-        <button onclick="txt_inputTemizle()" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--muted)'">Temizle</button>
-      </div>
-
-      <!-- Ses seçimi — büyük, belirgin, demo dinle butonu -->
-      <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--s2);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Ses Aktörü</span>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <!-- Cinsiyet filtresi -->
-            <select id="tts_gender_filter" onchange="ttsSesListesiGuncelle()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;">
+      <!-- SOL: Ses Aktörleri -->
+      <div style="width:280px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--s1);">
+        <!-- Başlık + Filtreler -->
+        <div style="padding:12px;border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">Ses Aktörü</div>
+          <div style="position:relative;margin-bottom:8px;">
+            <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;pointer-events:none;"></i>
+            <input id="tts_ses_ara" type="text" placeholder="Ses ara..." oninput="ttsSesListesiGuncelle()"
+              style="width:100%;padding:7px 8px 7px 26px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">
+          </div>
+          <div style="display:flex;gap:5px;">
+            <select id="tts_gender_filter" onchange="ttsSesListesiGuncelle()" style="flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--muted2);padding:5px 6px;border-radius:var(--r);font-size:11px;font-family:inherit;cursor:pointer;">
               <option value="all">Tümü</option>
               <option value="male">👨 Erkek</option>
               <option value="female">👩 Kadın</option>
             </select>
-            <!-- Dil filtresi -->
-            <select id="tts_lang_filter" onchange="ttsSesListesiGuncelle()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;">
+            <select id="tts_lang_filter" onchange="ttsSesListesiGuncelle()" style="flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--muted2);padding:5px 6px;border-radius:var(--r);font-size:11px;font-family:inherit;cursor:pointer;">
               <option value="all">Tüm Dil</option>
               <option value="tr">🇹🇷 TR</option>
               <option value="en">🇺🇸 EN</option>
@@ -655,55 +618,76 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           </div>
         </div>
 
-        <!-- Arama -->
-        <div style="position:relative;margin-bottom:8px;">
-          <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>
-          <input id="tts_ses_ara" type="text" placeholder="Ses ara..." oninput="ttsSesListesiGuncelle()"
-            style="width:100%;padding:7px 8px 7px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">
-        </div>
-
-        <!-- Ses listesi — grid kartlar -->
-        <div id="tts_voice_grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;">
+        <!-- Ses grid — tek kolon, scrollable -->
+        <div id="tts_voice_grid" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:5px;">
           <!-- JS ile doldurulacak -->
         </div>
 
         <!-- Seçili ses özeti -->
-        <div id="tts_secili_ozet" style="display:none;margin-top:8px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:var(--r);padding:8px 12px;display:flex;align-items:center;gap:8px;">
+        <div id="tts_secili_ozet" style="display:none;padding:10px 12px;border-top:1px solid var(--border);background:rgba(99,102,241,.08);flex-direction:row;align-items:center;gap:8px;">
           <span id="tts_secili_dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0;"></span>
           <span id="tts_secili_isim" style="font-size:12px;font-weight:700;flex:1;">Ses seçilmedi</span>
           <span id="tts_secili_desc" style="font-size:10px;color:var(--muted2);"></span>
         </div>
       </div>
 
-      <div class="tts-toolbar">
-        <div class="tts-viz">
-          <svg class="tts-wavesvg" viewBox="0 0 140 48">
-            <rect x="0" y="16" width="4" height="16" rx="2" fill="#3b82f6" opacity=".5"/>
-            <rect x="8" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".7"/>
-            <rect x="16" y="4" width="4" height="40" rx="2" fill="#3b82f6" opacity=".9"/>
-            <rect x="24" y="10" width="4" height="28" rx="2" fill="#3b82f6" opacity=".8"/>
-            <rect x="32" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".6"/>
-            <rect x="40" y="6" width="4" height="36" rx="2" fill="#3b82f6"/>
-            <rect x="48" y="12" width="4" height="24" rx="2" fill="#3b82f6" opacity=".7"/>
-            <rect x="56" y="2" width="4" height="44" rx="2" fill="#3b82f6" opacity=".9"/>
-            <rect x="64" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".8"/>
-            <rect x="72" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".6"/>
-            <rect x="80" y="4" width="4" height="40" rx="2" fill="#3b82f6" opacity=".9"/>
-            <rect x="88" y="10" width="4" height="28" rx="2" fill="#3b82f6" opacity=".7"/>
-            <rect x="96" y="16" width="4" height="16" rx="2" fill="#3b82f6" opacity=".5"/>
-            <rect x="104" y="6" width="4" height="36" rx="2" fill="#3b82f6" opacity=".8"/>
-            <rect x="112" y="12" width="4" height="24" rx="2" fill="#3b82f6" opacity=".6"/>
-            <rect x="120" y="8" width="4" height="32" rx="2" fill="#3b82f6" opacity=".7"/>
-            <rect x="128" y="14" width="4" height="20" rx="2" fill="#3b82f6" opacity=".5"/>
-            <rect x="136" y="18" width="4" height="12" rx="2" fill="#3b82f6" opacity=".4"/>
-          </svg>
-          <span class="tts-label" id="tts_status">Ses üretmeye hazır</span>
+      <!-- ORTA: Metin Editörü -->
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);">
+        <!-- AI Araç Çubuğu -->
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);background:var(--s2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">AI Yardım</span>
+          <button onclick="ttsAIDuzelt('duzelt')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-spell-check" style="color:var(--accent2)"></i> Düzelt
+          </button>
+          <button onclick="ttsAIDuzelt('kisalt')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-compress" style="color:#22c55e"></i> Kısalt
+          </button>
+          <button onclick="ttsAIDuzelt('uzat')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-expand" style="color:#f59e0b"></i> Uzat
+          </button>
+          <div style="width:1px;height:16px;background:var(--border2);margin:0 2px;"></div>
+          <select id="tts_tarz" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 8px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;">
+            <option value="">Tarz seç...</option>
+            <option value="samimi">😊 Samimi</option>
+            <option value="resmi">💼 Resmi</option>
+            <option value="komik">😂 Komik</option>
+            <option value="hikaye">📖 Hikaye</option>
+            <option value="influencer">🎤 İnfluencer</option>
+            <option value="haber">📰 Haber</option>
+          </select>
+          <button onclick="ttsAIDuzelt('tarz')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--purple2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple2)"></i> Tarz Uygula
+          </button>
+          <button onclick="ttsAIDuzelt('cevir')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--yellow2)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <i class="fa-solid fa-language" style="color:var(--yellow2)"></i> Çevir
+          </button>
+          <div id="tts_ai_loading" style="display:none;font-size:11px;color:var(--accent2);"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+
+        <!-- Büyük Textarea -->
+        <textarea class="tts-ta" id="txt_input" style="flex:1;resize:none;border:none;outline:none;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.8;padding:24px 32px;font-family:inherit;" placeholder="Sese çevrilecek metni buraya yazın...
+
+• AI Düzelt — yazım/dilbilgisi hatalarını gider
+• Tarz Uygula — samimi, resmi, komik...
+• Çevir — hedef dile otomatik çevir"></textarea>
+
+        <!-- Alt bar: karakter sayacı + player -->
+        <div style="border-top:1px solid var(--border);background:var(--s1);flex-shrink:0;">
+          <div style="padding:6px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+            <span style="font-size:11px;color:var(--muted);" id="tts_char_count">0 / 5000 karakter</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="tts_status" style="font-size:11px;color:var(--muted2);">Ses üretmeye hazır</span>
+              <button onclick="txt_inputTemizle()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='var(--red2)'" onmouseout="this.style.color='var(--muted)'">Temizle</button>
+            </div>
+          </div>
+          <!-- Audio player -->
+          <div class="tts-player hidden" id="tts_player" style="padding:10px 16px;display:flex;align-items:center;gap:10px;">
+            <i class="fa-solid fa-waveform-lines" style="color:var(--accent2);font-size:16px;"></i>
+            <audio id="tts_audio" controls style="flex:1;height:32px;"></audio>
+          </div>
         </div>
       </div>
-      <div class="tts-player hidden" id="tts_player">
-        <i class="fa-solid fa-waveform-lines" style="color:var(--accent2);font-size:18px;"></i>
-        <audio id="tts_audio" controls style="flex:1;height:34px;"></audio>
-      </div>
+
     </div>
 
   </div>
@@ -2518,7 +2502,7 @@ function ttsSesListesiGuncelle() {
   });
 
   if (!filtreli.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
+    grid.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
     return;
   }
 
@@ -2527,18 +2511,18 @@ function ttsSesListesiGuncelle() {
     const flagMap = {tr:'🇹🇷',de:'🇩🇪',fr:'🇫🇷',it:'🇮🇹',es:'🇪🇸',en:''};
     const flag = flagMap[v.lang] || '';
     return '<div onclick="ttsSesKart(\'' + v.id + '\')" id="ttsgrd_' + v.id + '"'
-      + ' style="background:' + (aktif?'rgba(99,102,241,.12)':'var(--s3)') + ';'
+      + ' style="background:' + (aktif?'rgba(99,102,241,.1)':'var(--s2)') + ';'
       + 'border:1.5px solid ' + (aktif?'var(--accent2)':'var(--border2)') + ';'
-      + 'border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-      + '<span style="width:8px;height:8px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
-      + '<span style="font-size:12px;font-weight:700;flex:1;">' + flag + ' ' + v.name + '</span>'
-      + (aktif ? '<i class="fa-solid fa-check" style="color:var(--accent2);font-size:10px;"></i>' : '')
+      + 'border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;">'
+      + '<span style="width:9px;height:9px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:13px;font-weight:700;">' + flag + ' ' + v.name + '</div>'
+      + '<div style="font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (v.desc||'') + '</div>'
       + '</div>'
-      + '<div style="font-size:10px;color:var(--muted2);margin-bottom:7px;line-height:1.4;">' + (v.desc||'') + '</div>'
+      + (aktif ? '<i class="fa-solid fa-check" style="color:var(--accent2);font-size:11px;flex-shrink:0;"></i>' : '')
       + '<button onclick="event.stopPropagation();ttsDemo(\'' + v.id + '\',this,\'' + v.lang + '\')" id="ttsdemo_' + v.id + '"'
-      + ' style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;">'
-      + '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle'
+      + ' style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;transition:all .15s;">'
+      + '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo'
       + '</button>'
       + '</div>';
   }).join('');
@@ -2916,13 +2900,12 @@ function sw(m){
 
   }else if(m==='metinden_sese'){
     document.getElementById('slist')?.classList.add('hidden');
-    document.getElementById('tts_wrap')?.classList.remove('hidden');
+    const tw = document.getElementById('tts_wrap');
+    if(tw) { tw.style.display='flex'; tw.classList.remove('hidden'); }
     document.getElementById('sec_voice_btn')?.classList.remove('hidden');
     document.getElementById('rp')?.classList.add('hidden');
     if(btn) btn.innerHTML='<span class="run-dot"></span> Sese Cevir';
     if(title) title.innerHTML='<i class="fa-solid fa-keyboard"></i> Metin → Ses Stüdyosu';
-
-    // TTS ses grid'ini doldur
     setTimeout(function(){ ttsSesListesiGuncelle(); }, 100);
 
     // TTS ses listesini doldur (boşsa)
