@@ -2885,7 +2885,52 @@ function sw(m){
   }
 }
 
-/* ═══ ALTYAZI STİL (sol panelden) ═══ */
+/* ═══ SEGMENT NOTLARI ═══ */
+function segNotToggle(segNo) {
+  const notDiv = document.getElementById('not_' + segNo);
+  const notBtn = document.getElementById('notbtn_' + segNo);
+  if (!notDiv) return;
+  const acik = notDiv.style.display === 'block';
+  notDiv.style.display = acik ? 'none' : 'block';
+  if (notBtn) notBtn.style.color = acik ? 'var(--muted2)' : 'var(--yellow2)';
+  if (!acik) {
+    const ta = document.getElementById('notin_' + segNo);
+    if (ta) ta.focus();
+  }
+}
+
+function segNotKaydet(segNo, start) {
+  const ta = document.getElementById('notin_' + segNo);
+  const tsCheck = document.getElementById('notts_' + segNo);
+  if (!ta) return;
+  const notKey = 'seg_not_' + (aSrt||'x') + '_' + segNo;
+  let deger = ta.value;
+  // Zaman damgası checkbox işaretliyse başa ekle
+  if (tsCheck && tsCheck.checked && deger && !deger.startsWith('[')) {
+    deger = '[' + fmt(start) + '] ' + deger;
+    ta.value = deger;
+    tsCheck.checked = false; // bir kez ekle
+  }
+  localStorage.setItem(notKey, deger);
+}
+
+function tumNotlarIndir() {
+  if (!segs.length) { toast('Once transkript alin','twarn'); return; }
+  const satirlar = [];
+  segs.forEach(function(seg) {
+    const notKey = 'seg_not_' + (aSrt||'x') + '_' + seg.no;
+    const not = localStorage.getItem(notKey);
+    if (not && not.trim()) {
+      satirlar.push('[' + fmt(seg.start) + ' → ' + fmt(seg.end) + ']');
+      satirlar.push(seg.text);
+      satirlar.push('Not: ' + not.trim());
+      satirlar.push('');
+    }
+  });
+  if (!satirlar.length) { toast('Kayıtlı not bulunamadı','twarn'); return; }
+  dl(satirlar.join('\n'), 'notlar.txt', 'text/plain');
+  toast('Notlar indirildi!');
+}
 function updateSub(){
   // Canlı altyazı overlay'i anında güncelle
   const overlay = document.getElementById('live_sub_overlay');
@@ -3289,6 +3334,8 @@ function renderSegs(srt,fn,tr=false){
     const spC=SP[seg.speaker%SP.length];
     const cC=cpsC(c);
     const safe=seg.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const notKey = 'seg_not_' + (aSrt||'x') + '_' + seg.no;
+    const mevcutNot = localStorage.getItem(notKey) || '';
     html+=''
     + '    <div class="sc" id="c_' + seg.no + '" onclick="cClick(\'' + seg.no + '\',' + seg.start + ')">'
     + '      <div class="sc-top">'
@@ -3301,10 +3348,22 @@ function renderSegs(srt,fn,tr=false){
     + '          <button class="sca edit" title="Düzenle" onclick="event.stopPropagation();iEdit(\'' + seg.no + '\',\'' + safe + '\')"><i class="fa-solid fa-pen"></i></button>'
     + '          <button class="sca cut" title="Böl" onclick="event.stopPropagation();sBol(\'' + seg.no + '\')"><i class="fa-solid fa-scissors"></i></button>'
     + '          <button class="sca merge" title="Birleştir" onclick="event.stopPropagation();sBirlestir(\'' + seg.no + '\')"><i class="fa-solid fa-link"></i></button>'
-    + '          ' + mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':''
+    + '          <button class="sca" title="Not ekle" style="color:var(--yellow2);" onclick="event.stopPropagation();segNotToggle(\'' + seg.no + '\')" id="notbtn_' + seg.no + '"><i class="fa-solid fa-sticky-note"></i></button>'
+    + '          ' + (mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':'')
     + '        </div>'
     + '      </div>'
     + '      <div class="sc-txt" id="t_' + seg.no + '" onclick="scTxtKelimeTikla(event,' + seg.no + ')">' + seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ') + '</div>'
+    // Not alanı
+    + '      <div id="not_' + seg.no + '" style="display:' + (mevcutNot?'block':'none') + ';margin-top:5px;padding:0 4px;">'
+    + '        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+    + '          <span style="font-size:10px;color:var(--muted2);">📝 Not</span>'
+    + '          <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted2);margin-left:auto;cursor:pointer;">'
+    + '            <input type="checkbox" id="notts_' + seg.no + '" onclick="event.stopPropagation()" style="accent-color:var(--accent2);width:10px;height:10px;">'
+    + '            <span>[' + fmt(seg.start) + ']</span>'
+    + '          </label>'
+    + '        </div>'
+    + '        <textarea id="notin_' + seg.no + '" onclick="event.stopPropagation()" onkeyup="segNotKaydet(\'' + seg.no + '\',' + seg.start + ')" placeholder="Bu segment için not..." style="width:100%;padding:6px 8px;background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.2);border-radius:6px;color:var(--txt);font-size:11px;font-family:inherit;resize:vertical;outline:none;min-height:42px;box-sizing:border-box;">' + mevcutNot + '</textarea>'
+    + '      </div>'
     + '    </div>';
   });
   html+='</div>';

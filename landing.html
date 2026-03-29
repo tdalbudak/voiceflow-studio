@@ -70,30 +70,57 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:fl
 .nav-cta{background:var(--accent);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
 .nav-cta:hover{background:#4f46e5;transform:translateY(-1px);}
 
-/* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative;}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:var(--accent3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;margin-bottom:32px;animation:fadeUp .6s ease both;}
+/* HERO — Maestra benzeri split layout */
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:120px 60px 80px;position:relative;gap:60px;max-width:1400px;margin:0 auto;}
+.hero-left{text-align:left;}
+.hero-right{display:flex;align-items:center;justify-content:center;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:var(--accent3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;margin-bottom:28px;animation:fadeUp .6s ease both;}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 
-h1{font-family:'Syne',sans-serif;font-size:clamp(42px,7vw,88px);font-weight:800;line-height:1.02;letter-spacing:-2px;margin-bottom:24px;animation:fadeUp .7s .1s ease both;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(36px,5vw,72px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:20px;animation:fadeUp .7s .1s ease both;}
 .h1-accent{background:linear-gradient(135deg,var(--accent2),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--muted2);max-width:560px;margin:0 auto 48px;font-weight:300;animation:fadeUp .7s .2s ease both;}
-.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeUp .7s .3s ease both;}
+.hero-sub{font-size:clamp(15px,1.5vw,18px);color:var(--muted2);max-width:480px;margin:0 0 32px;font-weight:300;animation:fadeUp .7s .2s ease both;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp .7s .3s ease both;}
 .btn-primary{background:var(--accent);color:#fff;border:none;padding:14px 32px;border-radius:var(--r);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
 .btn-primary:hover{background:#4f46e5;transform:translateY(-2px);box-shadow:0 8px 30px rgba(99,102,241,.4);}
 .btn-secondary{background:transparent;color:var(--txt);border:1px solid var(--border2);padding:14px 32px;border-radius:var(--r);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
 .btn-secondary:hover{border-color:var(--accent);color:var(--accent3);transform:translateY(-2px);}
 
+/* Hero sağ — kayıt formu kartı */
+.hero-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:36px;width:100%;max-width:420px;backdrop-filter:blur(20px);animation:fadeUp .7s .3s ease both;}
+.hero-card-title{font-size:15px;color:var(--muted2);text-align:center;margin-bottom:6px;line-height:1.6;}
+.hero-card-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
+.hero-card-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box;transition:border .2s;}
+.hero-card-input:focus{border-color:var(--accent2);}
+.hero-card-btn{width:100%;background:var(--accent);border:none;color:#fff;padding:13px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-bottom:14px;}
+.hero-card-btn:hover{background:#4f46e5;}
+.hero-card-divider{display:flex;align-items:center;gap:12px;margin-bottom:14px;color:var(--muted);font-size:13px;}
+.hero-card-divider::before,.hero-card-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+.hero-card-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:12px;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
+.hero-card-google:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.hero-card-stars{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:12px;color:var(--muted2);}
+
 /* GLOW */
-.glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-60%);pointer-events:none;}
+.glow{position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.12) 0%,transparent 70%);top:50%;left:30%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;}
 
 /* STATS */
-.stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap;margin-top:64px;animation:fadeUp .7s .4s ease both;}
-.stat{text-align:center;}
-.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--txt);}
+.stats{display:flex;gap:48px;justify-content:flex-start;flex-wrap:wrap;margin-top:48px;animation:fadeUp .7s .4s ease both;}
+.stat{text-align:left;}
+.stat-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--txt);}
 .stat-lbl{font-size:13px;color:var(--muted);margin-top:4px;}
+
+/* Mobile responsive */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding:100px 24px 60px;text-align:center;}
+  .hero-left{order:1;}
+  .hero-right{order:2;}
+  .hero-sub,.stats{margin-left:auto;margin-right:auto;}
+  .stats{justify-content:center;}
+  .hero-btns{justify-content:center;}
+  .hero-card{max-width:100%;}
+}
 
 /* SECTION */
 section{padding:100px 24px;max-width:1200px;margin:0 auto;}
@@ -194,49 +221,68 @@ footer a:hover{color:var(--accent3);}
   </div>
 </nav>
 
-<!-- HERO -->
+<!-- HERO — Split Layout -->
 <div class="hero">
   <div class="glow"></div>
-  <div class="hero-badge">
-    <div class="badge-dot"></div>
-    <span id="badge-txt">AI Destekli · 60+ Dil · Saniyeler İçinde</span>
-  </div>
-  <h1 id="h1-txt">Videonuzu<br><span class="h1-accent" id="h1-accent">Dünyaya Açın</span></h1>
-  <p class="hero-sub" id="hero-sub">Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.</p>
 
-  <!-- MOD SEÇİCİ — HERO İÇİNDE -->
-  <div style="margin:32px auto 0;max-width:600px;">
-    <p style="font-size:13px;color:#71717a;margin-bottom:14px;">Ne yapmak istiyorsun?</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <button onclick="modalAc('sihirli')"
-        style="background:linear-gradient(135deg,#ec4899,#a855f7);border:none;color:#fff;padding:16px 28px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;box-shadow:0 4px 20px rgba(168,85,247,.4);display:flex;flex-direction:column;align-items:center;gap:4px;"
-        onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
-        <span style="font-size:24px;">✨</span>
-        Sihirli Mod
-        <span style="font-size:11px;font-weight:400;opacity:.8;">TikTok · Reels · Hızlı</span>
-      </button>
-      <button onclick="modalAc('pro')"
-        style="background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.15);color:#fff;padding:16px 28px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;"
-        onmouseover="this.style.borderColor='var(--accent2)';this.style.background='rgba(99,102,241,.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.background='rgba(255,255,255,.06)'">
-        <span style="font-size:24px;">🎛️</span>
-        Pro Stüdyo
-        <span style="font-size:11px;font-weight:400;opacity:.8;">Timeline · Mikser · Tam Kontrol</span>
-      </button>
-      <button onclick="window.location='/app'"
-        style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#a1a1aa;padding:16px 20px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;"
-        onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='#a1a1aa'">
-        <span style="font-size:24px;">🚀</span>
-        Direkt Aç
-        <span style="font-size:11px;font-weight:400;opacity:.8;">Editörü direkt başlat</span>
-      </button>
+  <!-- SOL: Başlık + Açıklama -->
+  <div class="hero-left" style="position:relative;z-index:1;">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      <span id="badge-txt">AI Destekli · 100+ Dil · Saniyeler İçinde</span>
+    </div>
+    <h1 id="h1-txt">Videonuzu<br><span class="h1-accent" id="h1-accent">Dünyaya Açın</span></h1>
+    <p class="hero-sub" id="hero-sub">Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.</p>
+
+    <div class="hero-btns">
+      <button onclick="modalAc('sihirli')" class="btn-primary" style="cursor:pointer;border:none;">⚡ Ücretsiz Başla</button>
+      <button onclick="modalAc('pro')" class="btn-secondary" style="cursor:pointer;">🎛️ Pro Stüdyo →</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">100+</div><div class="stat-lbl" id="stat1">Desteklenen Dil</div></div>
+      <div class="stat"><div class="stat-num">~2dk</div><div class="stat-lbl" id="stat2">İşlem Süresi</div></div>
+      <div class="stat"><div class="stat-num">%95+</div><div class="stat-lbl" id="stat4">Doğruluk</div></div>
     </div>
   </div>
 
-  <div class="stats" style="margin-top:48px;">
-    <div class="stat"><div class="stat-num">60+</div><div class="stat-lbl" id="stat1">Desteklenen Dil</div></div>
-    <div class="stat"><div class="stat-num">~2dk</div><div class="stat-lbl" id="stat2">Ortalama İşlem Süresi</div></div>
-    <div class="stat"><div class="stat-num">4</div><div class="stat-lbl" id="stat3">AI Motor</div></div>
-    <div class="stat"><div class="stat-num">%95+</div><div class="stat-lbl" id="stat4">Transkript Doğruluğu</div></div>
+  <!-- SAĞ: Kayıt Kartı -->
+  <div class="hero-right" style="position:relative;z-index:1;">
+    <div class="hero-card">
+      <div class="hero-card-title">Transkript, altyazı ve seslendirme<br><strong style="color:var(--txt);">tek platformda, anında.</strong></div>
+      <div class="hero-card-sub">Kredi kartı gerekmez · Ücretsiz başla</div>
+
+      <input class="hero-card-input" type="email" id="hero_email" placeholder="E-posta adresiniz">
+      <button class="hero-card-btn" onclick="heroKayitBaslat()">Ücretsiz Başla →</button>
+
+      <div class="hero-card-divider">veya</div>
+
+      <button class="hero-card-google" onclick="document.getElementById('google_popup').style.display='block'">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Google ile Kayıt Ol
+      </button>
+
+      <div class="hero-card-stars">
+        <span style="color:#eab308;">★★★★★</span>
+        <span>4.8 · 1,200+ kullanıcı</span>
+      </div>
+
+      <!-- Mini mod seçici -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-align:center;">Ne yapmak istiyorsun?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <button onclick="modalAc('sihirli')" style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);color:#ec4899;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(236,72,153,.2)'" onmouseout="this.style.background='rgba(236,72,153,.1)'">
+            📱<br>TikTok
+          </button>
+          <button onclick="modalAc('pro')" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:var(--accent3);padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(99,102,241,.2)'" onmouseout="this.style.background='rgba(99,102,241,.1)'">
+            🎛️<br>Pro Editör
+          </button>
+          <button onclick="window.location='/app'" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(34,197,94,.2)'" onmouseout="this.style.background='rgba(34,197,94,.1)'">
+            🚀<br>Hızlı Aç
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -548,6 +594,19 @@ footer a:hover{color:var(--accent3);}
 </footer>
 
 <script>
+function heroKayitBaslat() {
+  const email = document.getElementById('hero_email')?.value.trim();
+  if (!email || !email.includes('@')) {
+    const inp = document.getElementById('hero_email');
+    if (inp) { inp.style.borderColor='#ef4444'; inp.placeholder='Geçerli e-posta girin'; }
+    return;
+  }
+  // E-postayı localStorage'a kaydet, editöre yönlendir
+  localStorage.setItem('vf_signup_email', email);
+  localStorage.setItem('vf_baslangic_mod', 'sihirli');
+  window.location.href = '/app';
+}
+
 /* ═══ GOOGLE GİRİŞ ═══ */
 async function googleOAuthBaslat() {
   try {
