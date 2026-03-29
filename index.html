@@ -662,6 +662,42 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
             <i class="fa-solid fa-language" style="color:var(--yellow2)"></i> Çevir
           </button>
           <div id="tts_ai_loading" style="display:none;font-size:11px;color:var(--accent2);"><i class="fa-solid fa-spinner fa-spin"></i></div>
+
+          <!-- Dil seçimleri -->
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;color:var(--muted2);">Kaynak:</span>
+              <select id="tts_src_lang" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:4px 6px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;">
+                <option value="auto">Otomatik</option>
+                <option value="TR">🇹🇷 TR</option>
+                <option value="EN">🇺🇸 EN</option>
+                <option value="DE">🇩🇪 DE</option>
+                <option value="FR">🇫🇷 FR</option>
+                <option value="ES">🇪🇸 ES</option>
+                <option value="IT">🇮🇹 IT</option>
+                <option value="RU">🇷🇺 RU</option>
+                <option value="JA">🇯🇵 JA</option>
+              </select>
+            </div>
+            <i class="fa-solid fa-arrow-right" style="color:var(--muted);font-size:10px;"></i>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;color:var(--muted2);">Hedef:</span>
+              <select id="tts_tgt_lang" style="background:var(--s3);border:1px solid var(--accent2);color:var(--accent3);padding:4px 6px;border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;">
+                <option value="">Çevirisiz</option>
+                <option value="EN">🇺🇸 EN</option>
+                <option value="TR">🇹🇷 TR</option>
+                <option value="DE">🇩🇪 DE</option>
+                <option value="FR">🇫🇷 FR</option>
+                <option value="ES">🇪🇸 ES</option>
+                <option value="IT">🇮🇹 IT</option>
+                <option value="PT">🇧🇷 PT</option>
+                <option value="RU">🇷🇺 RU</option>
+                <option value="JA">🇯🇵 JA</option>
+                <option value="ZH">🇨🇳 ZH</option>
+                <option value="AR">🇸🇦 AR</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <!-- Büyük Textarea -->
@@ -2550,16 +2586,17 @@ function ttsSesKart(sesId) {
 
 let _ttsDemoAudio = null;
 async function ttsDemo(sesId, btn, lang) {
+  // Önceki demoyu durdur
   if (_ttsDemoAudio && !_ttsDemoAudio.paused) {
     _ttsDemoAudio.pause();
     document.querySelectorAll('[data-tts-demo]').forEach(function(b) {
-      b.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+      b.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo';
       b.removeAttribute('data-tts-demo');
     });
     if (btn.dataset.ttsDemo) return;
   }
 
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i> Yukleniyor...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:9px;"></i>';
   btn.dataset.ttsDemo = '1';
 
   const demoMetin = {
@@ -2567,29 +2604,50 @@ async function ttsDemo(sesId, btn, lang) {
     de:'Hallo, mit dieser Stimme vertone ich Ihr Video.',
     fr:'Bonjour, je double votre video avec cette voix.',
     it:'Ciao, sto doppiando il tuo video con questa voce.',
-    en:'Hello, I am dubbing your video with this voice.'
+    en:'Hello, I am dubbing your video with this voice.',
+    es:'Hola, estoy doblando tu video con esta voz.',
+    pt:'Olá, estou dublando seu vídeo com esta voz.',
+    ru:'Привет, я озвучиваю ваше видео этим голосом.',
+    ja:'こんにちは、この声であなたの動画を吹き替えています。'
   }[lang||'en'] || 'Hello, this is a voice preview.';
 
   try {
     const fd = new FormData();
     fd.append('ses_id', sesId);
     fd.append('metin', demoMetin);
+
     const r = await fetch(B + '/api/ses_onizle/', { method:'POST', body:fd });
-    if (!r.ok) throw new Error('Demo yuklenemedi');
+
+    // JSON hata mı, ses mi?
+    const contentType = r.headers.get('content-type') || '';
+    if (!r.ok || contentType.includes('application/json')) {
+      const errData = await r.json().catch(function(){ return {}; });
+      const msg = errData.hata || ('ElevenLabs ' + r.status);
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo';
+      btn.removeAttribute('data-tts-demo');
+      toast('Demo: ' + msg, 'twarn', 4000);
+      return;
+    }
+
     const blob = await r.blob();
+    if (!blob.size) throw new Error('Ses boş döndü');
     const url  = URL.createObjectURL(blob);
     _ttsDemoAudio = new Audio(url);
     _ttsDemoAudio.play();
-    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i> Durdur';
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:9px;color:#60a5fa;"></i> Dur';
     _ttsDemoAudio.onended = function() {
-      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo';
       btn.removeAttribute('data-tts-demo');
       URL.revokeObjectURL(url);
     };
+    _ttsDemoAudio.onerror = function() {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo';
+      btn.removeAttribute('data-tts-demo');
+    };
   } catch(e) {
-    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i> Demo Dinle';
+    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> Demo';
     btn.removeAttribute('data-tts-demo');
-    toast('Demo yuklenemedi','twarn',3000);
+    toast('Demo hatası: ' + e.message, 'twarn', 3000);
   }
 }
 
@@ -3385,6 +3443,11 @@ async function startProcess(){
     const metin = document.getElementById('txt_input')?.value.trim();
     if(!metin){ alert('Metin girin!'); return; }
     fd.append('yazili_metin', metin);
+    // TTS dil seçimleri — kendi select'lerinden oku
+    const ttsSrc = document.getElementById('tts_src_lang')?.value || 'TR';
+    const ttsTgt = document.getElementById('tts_tgt_lang')?.value || '';
+    if(ttsSrc && ttsSrc !== 'auto') fd.set('kaynak_dil', ttsSrc);
+    if(ttsTgt) fd.set('hedef_dil', ttsTgt);
   } else {
     fd.append('dosya',pFile);
   }
@@ -3936,7 +3999,7 @@ let _onizlemeAudio = null;
 async function sesOnizle(sesId, btn, lang) {
   if (_onizlemeAudio && !_onizlemeAudio.paused) {
     _onizlemeAudio.pause();
-    document.querySelectorAll('[data-playing="1"]').forEach(b => {
+    document.querySelectorAll('[data-playing="1"]').forEach(function(b) {
       b.innerHTML='<i class="fa-solid fa-play" style="font-size:8px;"></i>';
       b.removeAttribute('data-playing');
     });
@@ -3946,47 +4009,52 @@ async function sesOnizle(sesId, btn, lang) {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i>';
   btn.dataset.playing = '1';
 
-  const isFree = isVoiceFree(sesId);
-
-  // Dile göre demo metni
   const demoMetinler = {
-    tr: 'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
-    de: 'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
-    fr: 'Bonjour, je double votre vidéo avec VoiceFlow Studio.',
-    it: 'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
-    en: 'Hello, I am dubbing your video with VoiceFlow Studio.',
-    es: 'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
+    tr:'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
+    de:'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
+    fr:'Bonjour, je double votre vidéo avec VoiceFlow Studio.',
+    it:'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
+    en:'Hello, I am dubbing your video with VoiceFlow Studio.',
+    es:'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
   };
-  const metin = demoMetinler[lang || 'en'] || demoMetinler.en;
+  const metin = demoMetinler[lang||'en'] || demoMetinler.en;
 
   try {
     const fd = new FormData();
     fd.append('ses_id', sesId);
     fd.append('metin', metin);
 
-    const r = await fetch(B + '/api/ses_onizle/', { method: 'POST', body: fd });
-    if (!r.ok) throw new Error(await r.text());
+    const r = await fetch(B + '/api/ses_onizle/', { method:'POST', body:fd });
+    const contentType = r.headers.get('content-type') || '';
+
+    if (!r.ok || contentType.includes('application/json')) {
+      const errData = await r.json().catch(function(){ return {}; });
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+      toast('Demo: ' + (errData.hata || 'ElevenLabs ' + r.status), 'twarn', 4000);
+      return;
+    }
 
     const blob = await r.blob();
+    if (!blob.size) throw new Error('Ses boş');
     const url = URL.createObjectURL(blob);
     _onizlemeAudio = new Audio(url);
     _onizlemeAudio.play();
-
     btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i>';
 
-    _onizlemeAudio.onended = () => {
+    _onizlemeAudio.onended = function() {
       btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
       btn.removeAttribute('data-playing');
       URL.revokeObjectURL(url);
     };
+    _onizlemeAudio.onerror = function() {
+      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+    };
   } catch(e) {
     btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
     btn.removeAttribute('data-playing');
-    if (!isFree) {
-      toast('Bu ses Pro plana özel. Yakında aktif olacak.', 'twarn', 3000);
-    } else {
-      toast('Demo yüklenemedi', 'twarn', 2000);
-    }
+    toast('Demo hatası: ' + e.message, 'twarn', 3000);
   }
 }
 
