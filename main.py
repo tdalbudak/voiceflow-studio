@@ -87,6 +87,7 @@ async def health():
     }
 
 
+@app.post("/api/kayit_email/")
 async def kayit_email(
     arka_plan: BackgroundTasks,
     email: str = Form(...),
@@ -589,30 +590,62 @@ def hex_to_ass_color(hex_color: str) -> str:
         return f"&H00{b}{g}{r}"
     return "&H00FFFFFF"
 
-def ffmpeg_altyazi_gom(video_yolu, srt_yolu, cikti_yolu, font_name, font_size, font_color, is_bold, is_shadow, margin_v) -> bool:
-    srt_escaped = srt_yolu.replace("\\", "/").replace(":", "\\:")
-    ass_color   = hex_to_ass_color(font_color)
-    bold_val    = "-1" if is_bold else "0"
-    shadow_val  = "2" if is_shadow else "0"
-    font_clean  = font_name.replace("'", "").split(',')[0].strip()
-    style_str   = (
-        f"FontName={font_clean},FontSize={font_size},PrimaryColour={ass_color},"
-        f"OutlineColour=&H00000000,Outline=2,Shadow={shadow_val},Bold={bold_val},Alignment=2,MarginV={margin_v}"
-    )
-    cmd = [
-        "ffmpeg", "-y",
-        "-threads", "0",          # tüm CPU çekirdeklerini kullan
-        "-i", video_yolu,
-        "-vf", f"subtitles='{srt_escaped}':force_style='{style_str}'",
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-        "-threads", "0",
-        "-c:a", "copy", cikti_yolu,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"[FFmpeg Altyazı Hata] {result.stderr[-500:]}")
+def _ffmpeg_libass_var_mi() -> bool:
+    """FFmpeg'in libass (subtitles filter) destekleyip desteklemediğini kontrol eder."""
+    try:
+        r = subprocess.run(["ffmpeg", "-filters"], capture_output=True, text=True)
+        return "subtitles" in r.stdout or "subtitles" in r.stderr
+    except Exception:
         return False
-    return True
+
+def ffmpeg_altyazi_gom(video_yolu, srt_yolu, cikti_yolu, font_name, font_size, font_color, is_bold, is_shadow, margin_v) -> bool:
+    # Yöntem 1: libass ile burn-in (en iyi görüntü kalitesi)
+    if _ffmpeg_libass_var_mi():
+        srt_escaped = srt_yolu.replace("\\", "/").replace(":", "\\:")
+        ass_color   = hex_to_ass_color(font_color)
+        bold_val    = "-1" if is_bold else "0"
+        shadow_val  = "2" if is_shadow else "0"
+        font_clean  = font_name.replace("'", "").split(',')[0].strip()
+        style_str   = (
+            f"FontName={font_clean},FontSize={font_size},PrimaryColour={ass_color},"
+            f"OutlineColour=&H00000000,Outline=2,Shadow={shadow_val},Bold={bold_val},Alignment=2,MarginV={margin_v}"
+        )
+        cmd = [
+            "ffmpeg", "-y", "-threads", "0",
+            "-i", video_yolu,
+            "-vf", f"subtitles='{srt_escaped}':force_style='{style_str}'",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+            "-threads", "0", "-c:a", "copy", cikti_yolu,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+        log.warning(f"[FFmpeg] libass burn başarısız, soft subtitle deneniyor: {result.stderr[-200:]}")
+
+    # Yöntem 2: soft subtitle (mov_text) — libass gerektirmez, tarayıcı overlay ile gösterilir
+    cmd2 = [
+        "ffmpeg", "-y",
+        "-i", video_yolu,
+        "-i", srt_yolu,
+        "-c:v", "copy", "-c:a", "copy",
+        "-c:s", "mov_text",
+        "-map", "0:v", "-map", "0:a?", "-map", "1:s",
+        cikti_yolu,
+    ]
+    result2 = subprocess.run(cmd2, capture_output=True, text=True)
+    if result2.returncode == 0:
+        log.info("[FFmpeg] Soft subtitle (mov_text) başarılı")
+        return True
+
+    # Yöntem 3: Sesi ve videoyu direkt kopyala (hiç subtitle yok, SRT ayrı)
+    cmd3 = ["ffmpeg", "-y", "-i", video_yolu, "-c:v", "copy", "-c:a", "copy", cikti_yolu]
+    result3 = subprocess.run(cmd3, capture_output=True, text=True)
+    if result3.returncode == 0:
+        log.info("[FFmpeg] Video kopyalandı (subtitle ayrı SRT olarak mevcut)")
+        return True
+
+    log.error(f"[FFmpeg Altyazı Hata] Tüm yöntemler başarısız: {result3.stderr[-300:]}")
+    return False
 
 # ============================================================
 # MOTOR 5 — DUBLAJ TTS (sessizlik-concat yaklaşımı)
@@ -1608,7 +1641,11 @@ async def dosyayi_dinle(dosya_adi: str):
         os.path.join(OUTPUT_DIR, os.path.splitext(dosya_adi)[0] + ".srt"),
     ]:
         if os.path.exists(yol):
-            return FileResponse(yol)
+            ext = os.path.splitext(yol)[1].lower()
+            mime = {".mp4": "video/mp4", ".mp3": "audio/mpeg", ".wav": "audio/wav",
+                    ".srt": "text/plain", ".vtt": "text/vtt", ".ass": "text/plain",
+                    ".json": "application/json"}.get(ext)
+            return FileResponse(yol, media_type=mime) if mime else FileResponse(yol)
     return JSONResponse({"hata": "Bulunamadı"}, status_code=404)
 
 
@@ -2126,6 +2163,7 @@ async def kota_kontrol():
         return JSONResponse({"hata": r.text[:100]}, status_code=r.status_code)
     except Exception as e:
         return JSONResponse({"hata": str(e)}, status_code=500)
+@app.get("/api/words/{dosya_adi}")
 async def words_al(dosya_adi: str):
     """TikTok modu için kelime bazlı zaman damgalarını döndürür."""
     base = dosya_adi.replace('.srt', '')

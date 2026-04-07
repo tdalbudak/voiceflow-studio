@@ -301,6 +301,9 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 .ovbanner{margin:5px 8px 0;background:rgba(217,119,6,.1);border:1px solid var(--yellow2);border-radius:var(--r);padding:7px 11px;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:var(--yellow2);}
 .fixbtn{background:var(--yellow2);color:#000;border:none;padding:4px 9px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit;}
 
+/* Orijinal metin (çeviri üstü) */
+.sc-orig{font-size:10px;color:var(--muted2);font-style:italic;padding:2px 0 4px;border-bottom:1px solid var(--border);margin-bottom:3px;line-height:1.4;}
+
 /* Confidence highlight */
 .w-low{border-bottom:2px solid var(--yellow2);color:var(--yellow2);cursor:pointer;border-radius:2px;padding:0 1px;transition:background .12s;}
 .w-low:hover{background:rgba(245,158,11,.15);}
@@ -1333,14 +1336,40 @@ function toggleTikTok() {
 }
 
 async function _loadTikTokWords() {
-  if (!aSrt) return;
+  if (!aSrt) {
+    // SRT yoksa segment varsa segment bazlı fallback
+    if (segs.length) { _tiktokWordsFromSegs(); _buildTikTokOverlay(); }
+    return;
+  }
   try {
-    const r = await fetch(B + '/api/words/${aSrt}');
-    if (!r.ok) { toast('Kelime verisi yok — önce deşifre yapın','twarn'); _tiktokOn=false; return; }
+    const r = await fetch(`${B}/api/words/${aSrt}`);
+    if (!r.ok) {
+      // Kelime verisi yok — segment bazlı fallback (her segment tek blok olarak gösterilir)
+      _tiktokWordsFromSegs();
+      _buildTikTokOverlay();
+      return;
+    }
     const d = await r.json();
     _tiktokWords = d.words || [];
     _buildTikTokOverlay();
-  } catch(e) { toast('Kelime verisi yüklenemedi','terr'); }
+  } catch(e) { _tiktokWordsFromSegs(); _buildTikTokOverlay(); }
+}
+
+function _tiktokWordsFromSegs() {
+  // Her segmentin kelimelerini eşit aralıklı zamanlara böl
+  _tiktokWords = [];
+  segs.forEach(seg => {
+    const kelimeler = seg.text.split(/\s+/).filter(k => k.length > 0);
+    if (!kelimeler.length) return;
+    const surePer = (seg.end - seg.start) / kelimeler.length;
+    kelimeler.forEach((k, i) => {
+      _tiktokWords.push({
+        word:  k,
+        start: seg.start + i * surePer,
+        end:   seg.start + (i + 1) * surePer,
+      });
+    });
+  });
 }
 
 function _buildTikTokOverlay() {
@@ -1428,9 +1457,9 @@ function toggleAltyazi() {
 /* ═══ UTILS ═══ */
 function p2(n){return String(n).padStart(2,'0');}
 function p3(n){return String(n).padStart(3,'0');}
-function s2t(s){s=Math.max(0,s);returnp2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60)) + ',' + p3(Math.round((s-Math.floor(s))*1000));}
+function s2t(s){s=Math.max(0,s);return p2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60)) + ',' + p3(Math.round((s-Math.floor(s))*1000));}
 function t2s(str){if(!str)return 0;const c=str.trim().replace(',','.');const p=c.split(':');return parseFloat(p[0])*3600+parseFloat(p[1])*60+parseFloat(p[2]);}
-function fmt(s){returnp2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60));}
+function fmt(s){return p2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60));}
 function cps(txt,d){return d<=0?0:Math.round(txt.replace(/\s/g,'').length/d);}
 function cpsC(c){return c<=20?'cps-ok':c<=27?'cps-warn':'cps-bad';}
 
@@ -2007,7 +2036,7 @@ const JARGON_LIST = new Set([
 
 async function confidenceYukle(srtAdi) {
   try {
-    const r = await fetch(B + '/api/confidence/${srtAdi}');
+    const r = await fetch(`${B}/api/confidence/${srtAdi}`);
     if (r.ok) {
       const d = await r.json();
       _confidence = d.words || d || {};
@@ -3640,9 +3669,9 @@ function showResult(fn){
     var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }
 
-  // TikTok modu
+  // TikTok modu — tüm modlarda çalışır
   const tikMod = document.getElementById('modal_tiktok');
-  if(tikMod && tikMod.checked && (mod==='desifre'||mod==='altyazi')){
+  if(tikMod && tikMod.checked){
     setTimeout(function(){if(!_tiktokOn) toggleTikTok();},2000);
   }
 }
@@ -3660,8 +3689,8 @@ function renderSegs(srt,fn,tr=false){
     segs.push({no:l[0].trim(),start:st,end:en,text:raw.replace(/\[Konuşmacı \d+\]:\s*/,''),speaker:sm?parseInt(sm[1]):0,tStr:l[1],rawText:raw});
   });
 
-  // Confidence verisi yükle (render'ı bloklamaz)
-  if(fn) confidenceYukle(fn);
+  // Confidence verisi yükle — sadece desifre modunda (diğerlerinde dosya yok)
+  if(fn && mod==='desifre') confidenceYukle(fn);
 
   let html=''
     + '  <div class="dresult"><i class="fa-solid fa-circle-check"></i>' + tr?'Çeviri':'Transkript' + ' Tamamlandı — ' + segs.length + ' segment'
@@ -3709,6 +3738,9 @@ function renderSegs(srt,fn,tr=false){
     const safe=seg.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const notKey = 'seg_not_' + (aSrt||'x') + '_' + seg.no;
     const mevcutNot = localStorage.getItem(notKey) || '';
+    const origHtml = _origTexts[seg.no] && _origTexts[seg.no] !== seg.text
+      ? '<div class="sc-orig">🔤 ' + _origTexts[seg.no] + '</div>'
+      : '';
     html+=''
     + '    <div class="sc" id="c_' + seg.no + '" onclick="cClick(\'' + seg.no + '\',' + seg.start + ')">'
     + '      <div class="sc-top">'
@@ -3725,6 +3757,7 @@ function renderSegs(srt,fn,tr=false){
     + '          ' + (mod==='seslendirme'&&aDosya?'<button class="sca" title="Yeniden Seslendirme" style="color:var(--purple2);" onclick="event.stopPropagation();segRedub(\'' + seg.no + '\')"><i class="fa-solid fa-rotate"></i></button>':'')
     + '        </div>'
     + '      </div>'
+    + origHtml
     + '      <div class="sc-txt" id="t_' + seg.no + '" onclick="scTxtKelimeTikla(event,' + seg.no + ')">' + seg.text.split(' ').map((k,wi)=>'<span class="sc-kelime" data-segno="' + seg.no + '" data-wi="' + wi + '">' + k + '</span>').join(' ') + '</div>'
     // Not alanı
     + '      <div id="not_' + seg.no + '" style="display:' + (mevcutNot?'block':'none') + ';margin-top:5px;padding:0 4px;">'
@@ -3746,7 +3779,7 @@ function renderSegs(srt,fn,tr=false){
   const uSpk=new Set(segs.map(s=>s.speaker));
   if(uSpk.size>1){
     speakerMapPanelOlustur(segs.map(s=>({text:s.rawText||s.text})));
-    if(fn)fetch(B + '/api/speaker_map/${fn}').then(r=>r.json()).then(d=>{
+    if(fn)fetch(`${B}/api/speaker_map/${fn}`).then(r=>r.json()).then(d=>{
       _speakerMap=d;
       Object.entries(d).forEach(([sp,vid])=>{const sel=document.getElementById('spv_' + sp);if(sel)sel.value=vid;});
     }).catch(()=>{});
@@ -3764,6 +3797,260 @@ function renderSegs(srt,fn,tr=false){
       });
     }
   },1800);
+}
+
+/* ═══ TIMELINE SEGMENT DRAW ═══ */
+function drawTL(blocks) {
+  const track = document.getElementById('tl_track');
+  if (!track || !dur) return;
+  const ph = '<div id="ph" class="ph"></div>';
+  let html = ph;
+  blocks.forEach(b => {
+    const lines = b.trim().split('\n');
+    if (lines.length < 2) return;
+    const times = lines[1].split(' --> ');
+    if (times.length !== 2) return;
+    const st = t2s(times[0]), en = t2s(times[1]);
+    if (isNaN(st) || isNaN(en)) return;
+    const left  = (st / dur) * 100;
+    const width = Math.max(0.2, ((en - st) / dur) * 100);
+    html += '<div style="position:absolute;left:' + left + '%;width:' + width + '%;height:65%;top:17%;'
+      + 'background:rgba(99,102,241,.35);border-radius:2px;pointer-events:none;border-left:1px solid rgba(99,102,241,.6);"></div>';
+  });
+  track.innerHTML = html;
+}
+
+/* ═══ WAVEFORM ═══ */
+async function waveform(fn) {
+  const track = document.getElementById('tl_track');
+  if (!track) return;
+  try {
+    const r = await fetch(`${B}/api/waveform/${fn}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.waveform || !d.waveform.length) return;
+    const vals = d.waveform;
+    const bars = vals.map(v => {
+      const h = Math.max(4, Math.round(v * 100)) + '%';
+      return '<div style="flex:1;background:rgba(99,102,241,.55);border-radius:1px;height:' + h + ';min-width:1px;align-self:center;"></div>';
+    }).join('');
+    track.innerHTML = '<div style="display:flex;align-items:center;height:100%;gap:1px;padding:4px 6px;box-sizing:border-box;">' + bars + '</div>';
+  } catch(e) {}
+}
+
+/* ═══ ÇAKIŞMA DÜZELT ═══ */
+async function cakismaDuzelt() {
+  if (!aSrt) { toast('Transkript yok', 'twarn'); return; }
+  document.getElementById('ov_banner')?.remove();
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', aSrt);
+    fd.append('bosluk_ms', '50');
+    const r = await fetch(`${B}/api/cakisma_duzelt/`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('Hata: ' + d.hata, 'terr'); return; }
+    toast(`✓ ${d.duzeltilen_cakisma} çakışma düzeltildi`);
+    // SRT'yi yeniden yükle
+    const srtR = await fetch(`${B}/dinle/${aSrt}`);
+    const srtC = await srtR.text();
+    renderSegs(srtC, aSrt);
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+/* ═══ MAGIC CUT ═══ */
+async function magicCut() {
+  if (!aSrt) { toast('Transkript yok', 'twarn'); return; }
+  if (!confirm('Dolgu kelimeleri (um, hmm, şey...) olan segmentler silinecek. Devam?')) return;
+  undoPush();
+  try {
+    const fd = new FormData();
+    fd.append('srt_dosya_adi', aSrt);
+    fd.append('dil', 'tr');
+    fd.append('min_confidence', '0.5');
+    const r = await fetch(`${B}/api/magic_cut/`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('Hata: ' + d.hata, 'terr'); return; }
+    if (d.silinen_segment_sayisi === 0) { toast('Silinecek dolgu bulunamadı', 'twarn'); return; }
+    toast(`✓ ${d.silinen_segment_sayisi} dolgu segmenti silindi, ${d.kalan_segment_sayisi} kaldı`);
+    const srtR = await fetch(`${B}/dinle/${aSrt}`);
+    const srtC = await srtR.text();
+    renderSegs(srtC, aSrt);
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+/* ═══ GÜRÜLTÜ GİDER ═══ */
+async function gurultuGider() {
+  const dosya = aDosya || aSrt;
+  if (!dosya) { toast('Önce video yükleyin', 'twarn'); return; }
+
+  // Seviye seçim modalı
+  const ov = document.createElement('div');
+  ov.id = '_gurultu_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = ''
+    + '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;min-width:280px;display:flex;flex-direction:column;gap:12px;">'
+    + '  <div style="font-size:14px;font-weight:700;">🎙 Gürültü Giderme Seviyesi</div>'
+    + '  <div style="display:flex;flex-direction:column;gap:8px;">'
+    + '    <button onclick="_gurultuBaslat(\'hafif\')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:10px;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;"><b>Hafif</b><div style="font-size:11px;color:var(--muted2);">Minimal gürültü — ses kalitesini korur</div></button>'
+    + '    <button onclick="_gurultuBaslat(\'orta\')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:10px;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;"><b>Orta</b> (Önerilen)<div style="font-size:11px;color:var(--muted2);">Çoğu video için iyi denge</div></button>'
+    + '    <button onclick="_gurultuBaslat(\'guclu\')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:10px;border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left;"><b>Güçlü</b><div style="font-size:11px;color:var(--muted2);">Yoğun arka plan gürültüsü için</div></button>'
+    + '  </div>'
+    + '  <button onclick="document.getElementById(\'_gurultu_modal\')?.remove()" style="background:transparent;border:1px solid var(--border2);color:var(--muted2);padding:7px;border-radius:var(--r);cursor:pointer;font-family:inherit;">İptal</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+async function _gurultuBaslat(seviye) {
+  document.getElementById('_gurultu_modal')?.remove();
+  const dosya = aDosya || aSrt;
+  toast('⏳ Gürültü gideriliyor...', 'tok', 60000);
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', dosya);
+    fd.append('seviye', seviye);
+    const r = await fetch(`${B}/api/gurultu_gider/`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('Hata: ' + d.hata, 'terr'); return; }
+    // İşlem arka planda — dur sorgula
+    const islemId = d.islem_id;
+    const ciktiAd = d.beklenen_cikti;
+    const poll = setInterval(async () => {
+      try {
+        const sr = await fetch(`${B}/durum/${islemId}`);
+        const sd = await sr.json();
+        if (sd.yuzde >= 100) {
+          clearInterval(poll);
+          document.querySelectorAll('.toast-item').forEach(t => t.remove());
+          if (sd.durum.startsWith('Hata')) { toast(sd.durum, 'terr', 5000); return; }
+          toast(`✓ Gürültü giderildi → ${ciktiAd}`);
+          // Temizlenmiş videoyu yükle
+          const v = document.getElementById('vid');
+          if (v && ciktiAd.match(/\.(mp4|mov)$/i)) {
+            v.src = `${B}/dinle/${ciktiAd}?v=${Date.now()}`;
+            v.play();
+          }
+        }
+      } catch(e) { clearInterval(poll); }
+    }, 2000);
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+/* ═══ ÇOKLU DİL SRT EXPORT ═══ */
+async function cokluDilExport() {
+  if (!aSrt) { toast('Transkript yok', 'twarn'); return; }
+  const diller = [
+    { k: 'EN', ad: '🇺🇸 İngilizce' }, { k: 'DE', ad: '🇩🇪 Almanca' },
+    { k: 'FR', ad: '🇫🇷 Fransızca' }, { k: 'ES', ad: '🇪🇸 İspanyolca' },
+    { k: 'IT', ad: '🇮🇹 İtalyanca' }, { k: 'NL', ad: '🇳🇱 Hollandaca' },
+    { k: 'PT', ad: '🇧🇷 Portekizce' }, { k: 'RU', ad: '🇷🇺 Rusça' },
+    { k: 'JA', ad: '🇯🇵 Japonca' }, { k: 'ZH', ad: '🇨🇳 Çince' },
+    { k: 'AR', ad: '🇸🇦 Arapça' }, { k: 'KO', ad: '🇰🇷 Korece' },
+  ];
+  const kutular = diller.map((d, i) =>
+    `<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:4px 0;">
+      <input type="checkbox" id="mdl_${i}" value="${d.k}" style="accent-color:var(--accent2);">
+      ${d.ad}
+    </label>`
+  ).join('');
+
+  const ov = document.createElement('div');
+  ov.id = '_multidil_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = ''
+    + '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;min-width:320px;max-width:400px;display:flex;flex-direction:column;gap:12px;">'
+    + '  <div style="font-size:14px;font-weight:700;">🌍 Çoklu Dil SRT İndir</div>'
+    + '  <div style="font-size:11px;color:var(--muted2);">İndirilecek dilleri seçin. Her dil için DeepL ile çeviri yapılır.</div>'
+    + '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;max-height:280px;overflow-y:auto;">' + kutular + '</div>'
+    + '  <div style="display:flex;gap:8px;margin-top:4px;">'
+    + '    <button onclick="_cokluDilIndir()" style="flex:1;background:var(--accent);color:#fff;border:none;padding:10px;border-radius:var(--r);cursor:pointer;font-family:inherit;font-weight:700;">⬇ İndir</button>'
+    + '    <button onclick="document.getElementById(\'_multidil_modal\')?.remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px 14px;border-radius:var(--r);cursor:pointer;font-family:inherit;">İptal</button>'
+    + '  </div>'
+    + '  <div id="_multidil_progress" style="display:none;font-size:11px;color:var(--accent3);"></div>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+async function _cokluDilIndir() {
+  const secili = [...document.querySelectorAll('#_multidil_modal input[type=checkbox]:checked')].map(c => c.value);
+  if (!secili.length) { toast('En az bir dil seçin', 'twarn'); return; }
+  const prog = document.getElementById('_multidil_progress');
+  if (prog) prog.style.display = 'block';
+
+  for (const dil of secili) {
+    if (prog) prog.textContent = `⏳ ${dil} çeviriliyor...`;
+    try {
+      const fd = new FormData();
+      fd.append('srt_dosya_adi', aSrt);
+      fd.append('hedef_dil', dil);
+      const r = await fetch(`${B}/api/cevir/`, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!d.basari) { toast(`${dil} çevirisi başarısız: ${d.hata || '?'}`, 'twarn'); continue; }
+      // İndir
+      const link = document.createElement('a');
+      link.href = `${B}/indir/${d.cevrilmis_dosya_adi}`;
+      link.download = d.cevrilmis_dosya_adi;
+      link.click();
+      await new Promise(res => setTimeout(res, 800));
+    } catch(e) { toast(`${dil} hatası: ${e.message}`, 'twarn'); }
+  }
+  if (prog) prog.textContent = '✓ Tamamlandı';
+  setTimeout(() => document.getElementById('_multidil_modal')?.remove(), 1500);
+}
+
+/* ═══ OVERLAP KONTROL ═══ */
+async function checkOV() {
+  if (!aSrt) return;
+  try {
+    const r = await fetch(`${B}/api/cakisma_tespit/${aSrt}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.temiz) return;
+    d.cakismalar.forEach(c => {
+      document.getElementById('c_' + c.segment_a)?.classList.add('sc-overlap');
+      document.getElementById('c_' + c.segment_b)?.classList.add('sc-overlap');
+    });
+    const slist = document.getElementById('slist');
+    if (slist && !document.getElementById('ov_banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'ov_banner';
+      banner.className = 'ovbanner';
+      banner.innerHTML = '⚠ ' + d.cakisma_sayisi + ' çakışan segment var'
+        + ' <button class="fixbtn" onclick="cakismaDuzelt()">Otomatik Düzelt</button>';
+      slist.insertBefore(banner, slist.firstChild);
+    }
+  } catch(e) {}
+}
+
+/* ═══ DEEPL ÇEVİRİ ═══ */
+let _origTexts = {};
+
+async function deepL() {
+  if (!aSrt) { toast('Transkript yok', 'twarn'); return; }
+  const lang = document.getElementById('dl_lang')?.value || 'EN';
+  const btn  = document.getElementById('dlbtn');
+  const load = document.getElementById('dlload');
+  if (btn)  btn.style.display  = 'none';
+  if (load) load.style.display = 'flex';
+  try {
+    // Çeviri öncesi orijinal metinleri sakla
+    segs.forEach(s => { if (!_origTexts[s.no]) _origTexts[s.no] = s.text; });
+    const fd = new FormData();
+    fd.append('srt_dosya_adi', aSrt);
+    fd.append('hedef_dil', lang);
+    const r = await fetch(`${B}/api/cevir/`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.basari) { toast('Çeviri hatası: ' + (d.hata || '?'), 'terr', 4000); return; }
+    const srtR = await fetch(`${B}/dinle/${d.cevrilmis_dosya_adi}`);
+    const srtC = await srtR.text();
+    aSrt = d.cevrilmis_dosya_adi;
+    renderSegs(srtC, aSrt, true);
+    toast('✓ Çeviri tamamlandı (' + d.segment_sayisi + ' segment)');
+  } catch(e) {
+    toast('Çeviri hatası: ' + e.message, 'terr', 4000);
+  } finally {
+    if (btn)  btn.style.display  = '';
+    if (load) load.style.display = 'none';
+  }
 }
 
 function cClick(no,st){
