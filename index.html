@@ -2480,20 +2480,20 @@ function aiAsistanAc() {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:500px;max-width:95vw;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div style="font-size:15px;font-weight:700;">🤖 AI Asistan — Ne yapmak istiyorsun?</div>'
+    + '<div style="font-size:15px;font-weight:700;">🤖 AI Assistant — What do you want to do?</div>'
     + '<button onclick="document.getElementById(\'_ai_asistan_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
     + '</div>'
-    + '<div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">İsteğini yaz, AI en uygun modları ve paketi önersin:</div>'
-    + '<textarea id="ai_asistan_input" placeholder="Örn: TikTok için Türkçe videoyu İngilizceye çevirmek ve Hormozi stili altyazı eklemek istiyorum..." style="width:100%;height:100px;padding:12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:12px;"></textarea>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Describe what you want — AI will suggest the right mode and plan:</div>'
+    + '<textarea id="ai_asistan_input" placeholder="E.g: I want to dub my Turkish video into English with my own voice and add TikTok-style captions..." style="width:100%;height:100px;padding:12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:12px;"></textarea>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'
-    + hizliOneri('TikTok için viral altyazı istiyorum')
-    + hizliOneri('Videoyu İngilizceye çevir, kendi sesimle')
-    + hizliOneri('YouTube için altyazı ve dublaj')
-    + hizliOneri('Podcast transkripti almak istiyorum')
+    + hizliOneri('I want viral TikTok captions')
+    + hizliOneri('Translate video to English with my voice')
+    + hizliOneri('Add subtitles + dubbing for YouTube')
+    + hizliOneri('Get a podcast transcript')
     + '</div>'
     + '<div id="ai_asistan_sonuc" style="display:none;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:13px;line-height:1.7;"></div>'
     + '<button onclick="aiAsistanGonder()" id="ai_asistan_btn" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;">'
-    + '✨ Analiz Et & Öneri Al'
+    + '✨ Analyze & Get Recommendation'
     + '</button>'
     + '</div>';
   document.body.appendChild(ov);
@@ -2508,38 +2508,17 @@ async function aiAsistanGonder() {
   const input = document.getElementById('ai_asistan_input');
   const btn   = document.getElementById('ai_asistan_btn');
   const sonuc = document.getElementById('ai_asistan_sonuc');
-  if (!input || !input.value.trim()) { toast('Lütfen isteğinizi yazın','twarn'); return; }
+  if (!input || !input.value.trim()) { toast('Please write your request','twarn'); return; }
 
-  if (btn) { btn.textContent = '⏳ Analiz ediliyor...'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳ Analyzing...'; btn.disabled = true; }
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: 'Sen VoiceFlow Studio AI asistanısın. Kullanıcı şunu istiyor: "' + input.value.trim() + '"\n\n'
-            + 'VoiceFlow Studio özellikleri:\n'
-            + '- Transkript: Video/ses dosyasını metne çevirir\n'
-            + '- Altyazı: Altyazı ekler, TikTok/Hormozi stili yapabilir\n'
-            + '- Dublaj: Başka dile çevirip seslendirme yapar, ses klonlama var\n'
-            + '- Metin→Ses: Yazdığın metni sese çevirir\n'
-            + '- Kendi Sesiyle Dublaj: Videonun sesini klonlayıp başka dilde konuşturur\n'
-            + 'Planlar: Lite $0/10dk, Creator $9/75dk, Studio $19/200dk, Business $49/600dk\n\n'
-            + 'Kullanıcının isteğine göre:\n'
-            + '1. Hangi modu/modları kullanmalı? (adım adım)\n'
-            + '2. Hangi plan önerirsin ve neden?\n'
-            + '3. Önemli ipuçları\n\n'
-            + 'Kısa ve net cevap ver, emoji kullan, Türkçe yaz.'
-        }]
-      })
-    });
-
+    const fd = new FormData();
+    fd.append('sorgu', input.value.trim());
+    fd.append('dil', _uiDil || 'en');
+    const resp = await fetch(B + '/api/ai/', { method: 'POST', body: fd });
     const data = await resp.json();
-    const text = data.content?.[0]?.text || 'Yanıt alınamadı';
+    const text = data.yanit || data.hata || 'No response';
 
     if (sonuc) {
       sonuc.style.display = 'block';
@@ -2635,13 +2614,69 @@ function uiDilDegistir(dil) {
   toast(sozluk.flag + ' ' + sozluk.ad);
 }
 
-// Sayfa yüklenince dil select'leri doldur
+// ═══ IP-BASED LANGUAGE DETECTION ═══
+async function ipDilTespit() {
+  // Kullanıcı daha önce dil seçtiyse dokunma
+  if (localStorage.getItem('vf_dil_secildi')) return;
+  try {
+    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    const countryLang = {
+      US:'en', GB:'en', AU:'en', CA:'en', NZ:'en', IE:'en',
+      DE:'de', AT:'de', CH:'de',
+      FR:'fr', BE:'fr', LU:'fr',
+      ES:'es', MX:'es', AR:'es', CO:'es', CL:'es', PE:'es',
+      IT:'it',
+      PT:'pt', BR:'pt',
+      NL:'nl', RU:'ru', UA:'uk',
+      JP:'ja', KR:'ko', CN:'zh',
+      SA:'ar', AE:'ar', EG:'ar', QA:'ar',
+      TR:'tr', SE:'sv', DK:'da', NO:'no', FI:'fi',
+      PL:'pl', CZ:'cs', RO:'ro', HU:'hu', GR:'el',
+    };
+    const dil = countryLang[d.country_code] || 'en';
+    // Nav select'i güncelle
+    const sel = document.querySelector('select[onchange*="uiDilDegistir"]');
+    if (sel && sel.querySelector('option[value="' + dil + '"]')) {
+      sel.value = dil;
+      uiDilDegistir(dil);
+    } else if (dil === 'en') {
+      // Default already English, just update select
+      if (sel) sel.value = 'en';
+      uiDilDegistir('en');
+    }
+  } catch(e) {
+    // Sessizce hata yönet — varsayılan EN
+  }
+}
+
+// Sayfa yüklenince dil select'leri doldur + IP tespiti yap
 document.addEventListener('DOMContentLoaded', function() {
   // Modal dil seçicilerini doldur
   ['m_src','m_tgt','m_tgt2','src_lang','tgt_lang'].forEach(function(id) {
     dilSelectDoldur(id, id.includes('src') ? 'TR' : 'EN');
   });
+  // Stripe checkout success kontrolü
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('checkout') === 'success') {
+    const plan = urlParams.get('plan') || 'creator';
+    localStorage.setItem('vf_plan', plan);
+    toast('🎉 Payment successful! ' + plan.charAt(0).toUpperCase()+plan.slice(1) + ' plan activated.', 'tok', 6000);
+    history.replaceState({}, '', window.location.pathname);
+  }
+  // IP dil tespiti — 1 sn sonra (sayfa yüklenmesini bekleme)
+  setTimeout(ipDilTespit, 1000);
 });
+
+// Dil seçici değişince kalıcı kaydet
+(function(){
+  const sel = document.querySelector('select[onchange*="uiDilDegistir"]');
+  if (sel) {
+    sel.addEventListener('change', function() {
+      localStorage.setItem('vf_dil_secildi', '1');
+    });
+  }
+})();
 function ttsSesListesiGuncelle() {
   const grid = document.getElementById('tts_voice_grid');
   if (!grid) return;
@@ -3281,22 +3316,22 @@ async function dashboardAc() {
     + '</div>'
     // Kullanım bar
     + '<div style="padding:0 24px 14px;border-bottom:1px solid var(--border);">'
-    + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);margin-bottom:6px;"><span>Aylık kullanım</span><span>' + pct + '%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);margin-bottom:6px;"><span>Monthly usage</span><span>' + pct + '%</span></div>'
     + '<div style="background:var(--s3);border-radius:100px;height:6px;overflow:hidden;">'
     + '<div style="height:100%;border-radius:100px;background:' + (pct>80?'#ef4444':pct>60?'#eab308':'#6366f1') + ';width:' + pct + '%;transition:width .5s;"></div>'
     + '</div></div>'
     // Dosyalar
     + '<div style="padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">'
-    + '<div style="font-size:13px;font-weight:700;">📁 Dosyalarım</div>'
-    + '<button onclick="dosyaYukleYeni()" style="background:var(--accent);border:none;color:#fff;padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">+ Yeni Dosya</button>'
+    + '<div style="font-size:13px;font-weight:700;">📁 My Files</div>'
+    + '<button onclick="dosyaYukleYeni()" style="background:var(--accent);border:none;color:#fff;padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">+ New File</button>'
     + '</div>'
     + '<div id="dashboard_dosyalar" style="flex:1;overflow-y:auto;padding:8px 16px;">'
     + '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>'
     + '</div>'
     // Alt butonlar
     + '<div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;">'
-    + (email ? '<button onclick="authCikis();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 16px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;">Çıkış Yap</button>' : '<button onclick="loginModalAc();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--accent);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Giriş Yap</button>')
-    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Plan Yükselt</button>'
+    + (email ? '<button onclick="authCikis();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 16px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;">Sign Out</button>' : '<button onclick="loginModalAc();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--accent);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Sign In</button>')
+    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Upgrade Plan</button>'
     + '</div>'
     + '</div>';
 
@@ -3319,27 +3354,57 @@ async function dashboardDosyalariYukle() {
   const el = document.getElementById('dashboard_dosyalar');
   if (!el) return;
   try {
-    // Supabase'den kullanıcının dosyaları (yoksa localStorage'dan)
-    const localProje = localStorage.getItem('vf_son_dosyalar');
-    const dosyalar = localProje ? JSON.parse(localProje) : [];
+    // Load from backend first, fall back to localStorage
+    let dosyalar = [];
+    try {
+      const r = await fetch(B + '/api/dosyalar/');
+      const d = await r.json();
+      if (d.dosyalar && d.dosyalar.length) {
+        // Map backend format to display format
+        const iconMap = { mp4:'🎬', mp3:'🎵', srt:'📝', vtt:'📝', txt:'📄', ass:'🎞️' };
+        dosyalar = d.dosyalar.map(function(f) {
+          return {
+            dosya: f.ad,
+            isim: f.ad,
+            tarih: new Date(f.tarih).toLocaleDateString('en-US'),
+            modul: f.tur.toUpperCase(),
+            tip: f.tur,
+            boyut: f.boyut,
+            url: f.url,
+          };
+        });
+      }
+    } catch(e2) {}
+
+    // Also merge localStorage recent files
+    try {
+      const local = JSON.parse(localStorage.getItem('vf_son_dosyalar') || '[]');
+      local.forEach(function(l) {
+        if (!dosyalar.find(function(d){ return d.dosya === l.dosya; }))
+          dosyalar.push(l);
+      });
+    } catch(e3) {}
+
     if (!dosyalar.length) {
-      el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">Henüz işlenmiş dosya yok.<br>Video yükleyip işlem başlatın.</div>';
+      el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">No processed files yet.<br>Upload a video and start processing.</div>';
       return;
     }
     el.innerHTML = dosyalar.map(function(d) {
-      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--r);cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);" onmouseover="this.style.background=\'var(--s3)\'" onmouseout="this.style.background=\'\'">'
-        + '<div style="width:36px;height:36px;background:var(--s3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + (d.tip==='mp4'?'🎬':'📝') + '</div>'
+      const iconMap = { mp4:'🎬', mp3:'🎵', srt:'📝', vtt:'📝', txt:'📄', ass:'🎞️' };
+      const ico = iconMap[d.tip] || '📁';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--r);transition:background .15s;border-bottom:1px solid var(--border);" onmouseover="this.style.background=\'var(--s3)\'" onmouseout="this.style.background=\'\'">'
+        + '<div style="width:36px;height:36px;background:var(--s3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + ico + '</div>'
         + '<div style="flex:1;min-width:0;">'
         + '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (d.isim||d.dosya) + '</div>'
-        + '<div style="font-size:11px;color:var(--muted2);">' + (d.tarih||'') + ' · ' + (d.modul||'') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted2);">' + (d.tarih||'') + ' · ' + (d.modul||'') + (d.boyut?' · '+d.boyut+'MB':'') + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:4px;">'
-        + '<button onclick="dosyaIndir(\'' + d.dosya + '\')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;" title="İndir"><i class="fa-solid fa-download"></i></button>'
+        + '<a href="' + (d.url || B+'/indir/'+d.dosya) + '" download style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer;text-decoration:none;display:flex;align-items:center;" title="Download"><i class="fa-solid fa-download"></i></a>'
         + '</div>'
         + '</div>';
     }).join('');
   } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted2);">Dosyalar yüklenemedi</div>';
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted2);">Could not load files</div>';
   }
 }
 
@@ -5221,9 +5286,62 @@ function profilAc() {
   document.body.appendChild(overlay);
 }
 
-function planYukselt() {
+async function planYukselt(plan) {
   document.getElementById('_profil_overlay')?.remove();
-  toast('Odeme sistemi yakin zamanda aktif olacak — Stripe entegrasyonu hazırlanıyor','twarn', 4000);
+  document.getElementById('_dashboard_modal')?.remove();
+  if (!plan) {
+    // Plan seçim modalı
+    const ov = document.createElement('div');
+    ov.id = '_plan_modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:560px;max-width:95vw;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">'
+      + '<div style="font-size:15px;font-weight:700;">⚡ Upgrade Plan</div>'
+      + '<button onclick="document.getElementById(\'_plan_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
+      + _planCard('creator','Creator','$9/mo','75 min/month',['AI Dubbing','Voice Cloning','30+ voices','Emotion controls'],'#22c55e')
+      + _planCard('studio','Studio','$19/mo','200 min/month',['Everything in Creator','Batch processing','API access','A/B compare'],'#6366f1')
+      + _planCard('business','Business','$49/mo','600 min/month',['Everything in Studio','Unlimited clones','Custom brand kit','Priority support'],'#ec4899')
+      + '</div>'
+      + '<div style="margin-top:14px;font-size:11px;color:var(--muted);text-align:center;">Secure payment via Stripe · Cancel anytime · All plans include 7-day free trial</div>'
+      + '</div>';
+    document.body.appendChild(ov);
+    return;
+  }
+  // Stripe checkout'a yönlendir
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Redirecting to checkout...', 'tok', 5000);
+  try {
+    const fd = new FormData();
+    fd.append('plan', plan);
+    fd.append('success_url', window.location.origin);
+    fd.append('cancel_url', window.location.origin);
+    const r = await fetch(B + '/api/stripe/checkout/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.checkout_url) {
+      window.location.href = d.checkout_url;
+    } else {
+      toast('Stripe error: ' + (d.hata || 'Unknown'), 'terr', 6000);
+    }
+  } catch(e) {
+    toast('Connection error — please try again', 'terr');
+  }
+}
+
+function _planCard(id, name, price, mins, features, color) {
+  return '<div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:16px;text-align:center;">'
+    + '<div style="font-size:13px;font-weight:700;color:'+color+';margin-bottom:4px;">'+name+'</div>'
+    + '<div style="font-size:22px;font-weight:800;margin-bottom:2px;">'+price+'</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;">'+mins+'</div>'
+    + '<ul style="list-style:none;font-size:12px;text-align:left;margin-bottom:14px;display:flex;flex-direction:column;gap:5px;">'
+    + features.map(function(f){ return '<li style="display:flex;gap:6px;align-items:flex-start;"><span style="color:'+color+'">✓</span>'+f+'</li>'; }).join('')
+    + '</ul>'
+    + '<button onclick="planYukselt(\''+id+'\')" style="width:100%;background:'+color+';border:none;color:#fff;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Choose '+name+'</button>'
+    + '</div>';
+}
+
+function _planYukseltOld() {
+  toast('Payment system coming soon','twarn', 4000);
 }
 
 /* ═══ GİZLİLİK POLİTİKASI ═══ */

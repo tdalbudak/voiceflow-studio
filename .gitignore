@@ -1,1 +1,12 @@
- 
+.env
+gecici/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+ciktilar/
+outputs/
+gecici/tts_cache/
+ses_listele.py
+maestra_test.html
+git

@@ -20,11 +20,21 @@ from deepgram import (
 )
 
 load_dotenv()
-DEEPGRAM_API_KEY   = os.getenv("DEEPGRAM_API_KEY")
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-DEEPL_API_KEY      = os.getenv("DEEPL_API_KEY")
-RESEND_API_KEY     = os.getenv("RESEND_API_KEY", "re_2gmxFeh5_41LqREVjBxppazRu5RXk5Ui2")
-RESEND_FROM        = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
+DEEPGRAM_API_KEY    = os.getenv("DEEPGRAM_API_KEY")
+ELEVENLABS_API_KEY  = os.getenv("ELEVENLABS_API_KEY")
+DEEPL_API_KEY       = os.getenv("DEEPL_API_KEY")
+GEMINI_API_KEY      = os.getenv("GEMINI_API_KEY", "")
+STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "re_2gmxFeh5_41LqREVjBxppazRu5RXk5Ui2")
+RESEND_FROM         = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
+
+# Stripe fiyat ID'leri — Stripe Dashboard'dan alınacak
+STRIPE_PRICES = {
+    "creator":  os.getenv("STRIPE_PRICE_CREATOR",  ""),   # $9/mo
+    "studio":   os.getenv("STRIPE_PRICE_STUDIO",   ""),   # $19/mo
+    "business": os.getenv("STRIPE_PRICE_BUSINESS", ""),   # $49/mo
+}
 
 # ── Loglama ──
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -3158,3 +3168,167 @@ async def app_page():
         with open("index.html", encoding="utf-8") as f:
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Uygulama bulunamadi.</h1>")
+
+
+# ============================================================
+# LEGAL PAGES
+# ============================================================
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page():
+    if os.path.exists("privacy.html"):
+        with open("privacy.html", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Privacy Policy not found.</h1>")
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page():
+    if os.path.exists("terms.html"):
+        with open("terms.html", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Terms of Service not found.</h1>")
+
+
+# ============================================================
+# AI ASSISTANT — Gemini 2.0 Flash
+# ============================================================
+@app.post("/api/ai/")
+async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
+    if not GEMINI_API_KEY:
+        return JSONResponse({"hata": "Gemini API key not configured."}, status_code=500)
+    if not sorgu or len(sorgu.strip()) < 3:
+        return JSONResponse({"hata": "Query too short."}, status_code=400)
+
+    system_prompt = (
+        "You are the VoiceFlow Studio AI assistant. The user asks about our product. "
+        "VoiceFlow Studio features:\n"
+        "- Transcript: Converts video/audio to text with speaker detection\n"
+        "- Subtitles: Adds subtitles in TikTok/Hormozi viral style\n"
+        "- Dubbing: Translates and dubs to 60+ languages, with voice cloning\n"
+        "- Text-to-Speech: Convert text to studio-quality audio with emotion controls\n"
+        "Plans: Lite $0/10min, Creator $9/75min, Studio $19/200min, Business $49/600min\n\n"
+        f"Reply in {'English' if dil == 'en' else dil} language. Be concise, use emoji, give actionable steps."
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
+                json={
+                    "system_instruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"parts": [{"text": sorgu}]}],
+                    "generationConfig": {"maxOutputTokens": 600, "temperature": 0.7}
+                }
+            )
+        if r.status_code == 200:
+            data = r.json()
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            return JSONResponse({"yanit": text})
+        else:
+            log.error(f"[Gemini] HTTP {r.status_code}: {r.text[:200]}")
+            return JSONResponse({"hata": f"Gemini error {r.status_code}"}, status_code=500)
+    except Exception as e:
+        log.error(f"[Gemini] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
+# MY FILES — Output dosyalarını listele
+# ============================================================
+@app.get("/api/dosyalar/")
+async def dosyalari_listele():
+    try:
+        dosyalar = []
+        for fname in sorted(os.listdir(OUTPUT_DIR), key=lambda f: os.path.getmtime(os.path.join(OUTPUT_DIR, f)), reverse=True):
+            fpath = os.path.join(OUTPUT_DIR, fname)
+            if not os.path.isfile(fpath):
+                continue
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in (".mp4", ".mp3", ".srt", ".vtt", ".txt", ".ass"):
+                continue
+            stat = os.stat(fpath)
+            dosyalar.append({
+                "ad":    fname,
+                "boyut": round(stat.st_size / (1024*1024), 2),
+                "tarih": int(stat.st_mtime * 1000),
+                "tur":   ext.lstrip("."),
+                "url":   f"/ciktilar/{fname}",
+            })
+        return JSONResponse({"dosyalar": dosyalar[:50]})   # son 50 dosya
+    except Exception as e:
+        return JSONResponse({"dosyalar": [], "hata": str(e)})
+
+
+# ============================================================
+# STRIPE — Ödeme & Webhook
+# ============================================================
+@app.post("/api/stripe/checkout/")
+async def stripe_checkout(
+    plan: str = Form(...),
+    email: str = Form(""),
+    success_url: str = Form(""),
+    cancel_url: str = Form(""),
+):
+    if not STRIPE_SECRET_KEY:
+        return JSONResponse({"hata": "Stripe not configured. Add STRIPE_SECRET_KEY to environment."}, status_code=500)
+
+    price_id = STRIPE_PRICES.get(plan.lower())
+    if not price_id:
+        return JSONResponse({"hata": f"Unknown plan: {plan}. Valid: creator, studio, business"}, status_code=400)
+
+    import stripe as _stripe
+    _stripe.api_key = STRIPE_SECRET_KEY
+
+    # Default URLs
+    base = success_url or "https://voiceflow-studio.com"
+    ok_url  = f"{base}/app?checkout=success&plan={plan}"
+    ko_url  = f"{base}/app?checkout=cancel"
+
+    try:
+        params = {
+            "mode": "subscription",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": ok_url,
+            "cancel_url":  ko_url,
+            "allow_promotion_codes": True,
+            "billing_address_collection": "auto",
+        }
+        if email:
+            params["customer_email"] = email
+
+        session = _stripe.checkout.Session.create(**params)
+        log.info(f"[Stripe] Checkout session: {session.id} plan={plan} email={email}")
+        return JSONResponse({"checkout_url": session.url, "session_id": session.id})
+    except Exception as e:
+        log.error(f"[Stripe] Checkout error: {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.post("/api/stripe/webhook/")
+async def stripe_webhook(request: Request):
+    import stripe as _stripe
+    _stripe.api_key = STRIPE_SECRET_KEY
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = _stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except Exception as e:
+        log.error(f"[Stripe Webhook] Signature error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    etype = event["type"]
+    log.info(f"[Stripe Webhook] {etype}")
+
+    if etype == "checkout.session.completed":
+        session = event["data"]["object"]
+        email   = session.get("customer_email") or session.get("customer_details", {}).get("email", "")
+        plan    = session.get("metadata", {}).get("plan", "creator")
+        log.info(f"[Stripe] Payment OK — email={email} plan={plan}")
+        # TODO: Supabase ile kullanıcı planını güncelle
+        # await update_user_plan(email, plan)
+
+    elif etype in ("customer.subscription.deleted", "customer.subscription.paused"):
+        log.info(f"[Stripe] Subscription cancelled/paused")
+
+    return JSONResponse({"received": True})
