@@ -1513,7 +1513,7 @@ async function cloudUpload(svc){
       const d=await r.json();
       if(d.basari){
         pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
-        pURL = B + '/indir/${d.dosya_adi}';
+        pURL = `${B}/indir/${d.dosya_adi}`;
         toast('✓ "' + d.baslik + '" — ' + d.boyut_mb + 'MB (' + kaliteSecim + ')');
         document.getElementById('modal')?.classList.remove('hidden');
         modalStep(1);
@@ -3974,26 +3974,35 @@ async function _cokluDilIndir() {
   const secili = [...document.querySelectorAll('#_multidil_modal input[type=checkbox]:checked')].map(c => c.value);
   if (!secili.length) { toast('En az bir dil seçin', 'twarn'); return; }
   const prog = document.getElementById('_multidil_progress');
-  if (prog) prog.style.display = 'block';
+  if (prog) { prog.style.display = 'block'; prog.textContent = `⏳ ${secili.length} dil paralel çeviriliyor...`; }
 
-  for (const dil of secili) {
-    if (prog) prog.textContent = `⏳ ${dil} çeviriliyor...`;
-    try {
-      const fd = new FormData();
-      fd.append('srt_dosya_adi', aSrt);
-      fd.append('hedef_dil', dil);
-      const r = await fetch(`${B}/api/cevir/`, { method: 'POST', body: fd });
-      const d = await r.json();
-      if (!d.basari) { toast(`${dil} çevirisi başarısız: ${d.hata || '?'}`, 'twarn'); continue; }
-      // İndir
+  // Paralel çeviri
+  const sonuclar = await Promise.allSettled(secili.map(async dil => {
+    const fd = new FormData();
+    fd.append('srt_dosya_adi', aSrt);
+    fd.append('hedef_dil', dil);
+    const r = await fetch(`${B}/api/cevir/`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.basari) throw new Error(d.hata || '?');
+    return { dil, dosya: d.cevrilmis_dosya_adi };
+  }));
+
+  // Başarılıları indir
+  let basarili = 0;
+  for (const sonuc of sonuclar) {
+    if (sonuc.status === 'fulfilled') {
+      basarili++;
       const link = document.createElement('a');
-      link.href = `${B}/indir/${d.cevrilmis_dosya_adi}`;
-      link.download = d.cevrilmis_dosya_adi;
+      link.href = `${B}/indir/${sonuc.value.dosya}`;
+      link.download = sonuc.value.dosya;
       link.click();
-      await new Promise(res => setTimeout(res, 800));
-    } catch(e) { toast(`${dil} hatası: ${e.message}`, 'twarn'); }
+      await new Promise(res => setTimeout(res, 400));
+    } else {
+      toast(`Çeviri hatası: ${sonuc.reason?.message}`, 'twarn', 3000);
+    }
   }
-  if (prog) prog.textContent = '✓ Tamamlandı';
+
+  if (prog) prog.textContent = `✓ ${basarili}/${secili.length} dil tamamlandı`;
   setTimeout(() => document.getElementById('_multidil_modal')?.remove(), 1500);
 }
 
@@ -4744,7 +4753,7 @@ async function batchBaslat() {
       await new Promise((resolve, reject) => {
         const iv = setInterval(async () => {
           try {
-            const sr = await fetch(B + '/durum/${d.beklenen_dosya_adi}');
+            const sr = await fetch(`${B}/durum/${d.beklenen_dosya_adi}`);
             const sd = await sr.json();
             if (sd.yuzde === 100) { clearInterval(iv); resolve(); }
             else if (sd.yuzde === 0 && sd.durum?.startsWith('Hata')) { clearInterval(iv); reject(sd.durum); }
@@ -4907,7 +4916,7 @@ async function klipIndir(dosyaAdi, baslangic, bitis) {
     fd.append('bitis', bitis.toFixed(2));
     const r = await fetch(B + '/api/klip_kes/', {method:'POST', body:fd});
     const d = await r.json();
-    if (d.cikti) { window.open(B + '/indir/${d.cikti}','_blank'); toast('✓ Klip hazır!'); }
+    if (d.cikti) { window.open(`${B}/indir/${d.cikti}`,'_blank'); toast('✓ Klip hazır!'); }
     else toast(d.hata||'Klip kesilemedi','terr');
   } catch(e) { toast('Bağlantı hatası','terr'); }
 }
