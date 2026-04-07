@@ -1095,7 +1095,7 @@ async def elevenlabs_segment_uret(
             async with httpx.AsyncClient() as client:
                 r = await client.post(url, json=data, headers=headers, timeout=90.0)
 
-            log.debug(f"[ElevenLabs] {r.status_code} ses_id={ses_id[:8]} metin='{metin_temiz[:30]}'")
+            log.info(f"[ElevenLabs] HTTP {r.status_code} ses_id={ses_id[:8]} metin='{metin_temiz[:30]}'")
 
             if r.status_code == 429:
                 bekle = 6 * (deneme + 1)
@@ -1478,20 +1478,26 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             # 4. Paralel ElevenLabs TTS
             toplam = len(segmentler)
+            log.info(f"[Dublaj] {toplam} segment bulundu, ses_id={ses_id[:12]}, style={style}, stability={stability}")
             islem_durumlari[out_file] = {"durum": f"Sesler üretiliyor (0/{toplam})...", "yuzde": 20}
 
             ses_klasor = os.path.join(gecici, "sesler")
             os.makedirs(ses_klasor, exist_ok=True)
+            log.info(f"[Dublaj] Ses klasörü: {ses_klasor}")
 
-            semaphore  = asyncio.Semaphore(4)
-            tamamlanan = [0]
+            semaphore   = asyncio.Semaphore(4)
+            tamamlanan  = [0]
+            atlanan     = [0]
+            hata_kodlari = []
 
             async def seg_uret_task(seg, idx, tum_segmentler):
                 async with semaphore:
                     metin = re.sub(r"\[Konuşmacı \d+\]:\s*", "", seg["metin"]).strip()
                     temiz = re.sub(r"[^\w\s]", "", metin).strip()
                     if not metin or len(temiz) < 2:
+                        log.info(f"[Dublaj seg {idx}] Çok kısa metin, atlandı: '{seg['metin'][:30]}'")
                         tamamlanan[0] += 1
+                        atlanan[0] += 1
                         return None
 
                     # Konuşmacıya özel ses ID'si varsa onu kullan
@@ -1514,6 +1520,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         sure = max(1.0, seg["bitis"] - seg["baslangic"])
 
                     ses_yol = os.path.join(ses_klasor, f"seg_{idx:04d}.mp3")
+                    log.info(f"[Dublaj seg {idx}] '{metin[:40]}' → {ses_id[:8]} sure={sure:.2f}s")
                     ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en", style=style, stability=stability)
                     tamamlanan[0] += 1
                     pct = 20 + int((tamamlanan[0] / toplam) * 55)
@@ -1522,26 +1529,28 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         "yuzde": pct,
                     }
                     if ok:
+                        log.info(f"[Dublaj seg {idx}] OK ✓")
                         return {"dosya": ses_yol, "baslangic": seg["baslangic"]}
+                    log.error(f"[Dublaj seg {idx}] BAŞARISIZ — metin='{metin[:30]}'")
                     return None
 
             gorevler  = [seg_uret_task(seg, i, segmentler) for i, seg in enumerate(segmentler)]
             sonuclar  = await asyncio.gather(*gorevler)
             ses_liste = [s for s in sonuclar if s is not None]
 
+            log.info(f"[Dublaj] Toplam={toplam} Atlanan={atlanan[0]} Üretilen={len(ses_liste)}")
             if not ses_liste:
-                islem_durumlari[out_file] = {
-                    "durum": (
-                        "Hata: Ses üretilemedi. Olası nedenler: "
-                        "1) Türkçe/Almanca/Fransızca sesler ElevenLabs Starter plan gerektirir ($5/ay) — "
-                        "İngilizce ses (Brian, Sarah vb.) seçin. "
-                        "2) Railway'de ELEVENLABS_API_KEY hatalı girilmiş. "
-                        "3) ElevenLabs kotanız dolmuş. "
-                        f"Seçili ses: {ses_id[:8]}... | "
-                        "Detay için Railway loglarını kontrol edin."
-                    ),
-                    "yuzde": 0
-                }
+                if atlanan[0] == toplam:
+                    neden = "Videodaki tüm konuşma segmentleri çok kısa veya boş. Daha uzun konuşma içeren bir video deneyin."
+                else:
+                    neden = (
+                        f"Seçili ses: {ses_id[:12]}... — "
+                        "ElevenLabs API hatası. Olası nedenler: "
+                        "1) Türkçe/DE/FR/IT sesler Starter plan gerektirir — İngilizce ses seçin. "
+                        "2) Railway ELEVENLABS_API_KEY hatalı. "
+                        "3) Kota dolmuş. Railway loglarını kontrol edin."
+                    )
+                islem_durumlari[out_file] = {"durum": f"Hata: {neden}", "yuzde": 0}
                 return
 
             # 4. FFmpeg Miksleme
