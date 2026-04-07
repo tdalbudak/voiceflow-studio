@@ -1264,25 +1264,45 @@ def deepgram_to_srt(dg_response, path: str):
 # ANA İŞLEM MOTORU
 # ============================================================
 async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55):
+    import time as _time
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
-    os.makedirs(gecici, exist_ok=True)
+    _t0    = _time.time()
+
+    log.info(f"══ MOTOR BAŞLADI ══ id={b_id} modul={modul} ses={ses_id[:12]} dil={kaynak_dil}→{hedef_dil} style={style} stability={stability}")
+
+    try:
+        os.makedirs(gecici, exist_ok=True)
+    except Exception as e:
+        log.error(f"[Motor] Geçici klasör oluşturulamadı: {gecici} — {e}")
+        islem_durumlari[out_file] = {"durum": f"Hata: Temp dizin oluşturulamadı — {e}", "yuzde": 0}
+        return
 
     try:
         islem_durumlari[out_file] = {"durum": "Başlatılıyor...", "yuzde": 5}
 
         # ── Dosya boyutu / süre kontrolü ──
-        if tmp_in and os.path.exists(tmp_in):
+        if tmp_in:
+            if not os.path.exists(tmp_in):
+                log.error(f"[Motor] Yüklenen dosya bulunamadı: {tmp_in}")
+                islem_durumlari[out_file] = {"durum": "Hata: Yüklenen dosya sunucuda bulunamadı. Tekrar yükleyin.", "yuzde": 0}
+                return
+            boyut_mb = os.path.getsize(tmp_in) / 1024 / 1024
+            log.info(f"[Motor] Dosya: {os.path.basename(tmp_in)} ({boyut_mb:.1f} MB)")
             gecerli, hata_msg = _dosya_kontrol(tmp_in)
             if not gecerli:
+                log.warning(f"[Motor] Dosya kontrolü başarısız: {hata_msg}")
                 islem_durumlari[out_file] = {"durum": f"Hata: {hata_msg}", "yuzde": 0}
                 return
+            log.info(f"[Motor] Dosya kontrolü OK ({boyut_mb:.1f} MB)")
 
         # ── API key kontrolleri ──
         if modul in ["desifre", "altyazi", "seslendirme"] and not DEEPGRAM_API_KEY:
+            log.error("[Motor] DEEPGRAM_API_KEY eksik!")
             islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('deepgram_401')}", "yuzde": 0}
             return
         if modul in ["metinden_sese", "seslendirme"] and not ELEVENLABS_API_KEY:
+            log.error("[Motor] ELEVENLABS_API_KEY eksik!")
             islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('elevenlabs_401')}", "yuzde": 0}
             return
 
@@ -1336,17 +1356,26 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
         # ── DEŞİFRE ────────────────────────────────────────
         if modul == "desifre":
             islem_durumlari[out_file] = {"durum": "Ses analiz ediliyor...", "yuzde": 30}
+            log.info(f"[Desifre] Deepgram başlıyor: {os.path.basename(tmp_in)} dil={kaynak_dil}")
             try:
                 dg = await deepgram_desifre_et(tmp_in, kaynak_dil)
             except ValueError as e:
+                log.error(f"[Desifre] Deepgram HATA: {e}")
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji(str(e))}", "yuzde": 0}
                 return
+            except Exception as e:
+                log.error(f"[Desifre] Deepgram beklenmedik HATA: {e}")
+                islem_durumlari[out_file] = {"durum": f"Hata: Deepgram yanıt vermedi — {e}", "yuzde": 0}
+                return
+            log.info(f"[Desifre] Deepgram OK → transkript oluşturuluyor")
             islem_durumlari[out_file] = {"durum": "Transkript oluşturuluyor...", "yuzde": 70}
             srt_path = os.path.join(OUTPUT_DIR, os.path.splitext(out_file)[0] + ".srt")
             deepgram_to_srt(dg, srt_path)
             if not os.path.exists(srt_path) or os.path.getsize(srt_path) < 10:
+                log.error(f"[Desifre] SRT boş veya oluşturulamadı: {srt_path}")
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('segment_yok')}", "yuzde": 0}
                 return
+            log.info(f"[Desifre] SRT oluşturuldu ({os.path.getsize(srt_path)} byte)")
 
             # Çeviri — hedef dil varsa çevir
             hd = (hedef_dil or "").strip().upper()
@@ -1356,6 +1385,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                 try:
                     with open(srt_path, encoding="utf-8") as f:
                         icerik = f.read()
+                    log.info(f"[Desifre] DeepL çeviri başlıyor: {kd}→{hd} ({len(icerik)} karakter)")
                     cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
                     with open(srt_path, "w", encoding="utf-8") as f:
                         f.write(cevrilmis)
@@ -1365,20 +1395,30 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             elif hd and not DEEPL_API_KEY:
                 log.warning("[Desifre] Hedef dil seçili ama DEEPL_API_KEY eksik")
 
+            elapsed = _time.time() - _t0
+            log.info(f"[Desifre] ✓ TAMAMLANDI — süre={elapsed:.1f}s")
             islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             return
 
         # ── ALTYAZI ────────────────────────────────────────
         if modul == "altyazi":
             if not ffmpeg_var_mi():
+                log.error("[Altyazı] FFmpeg bulunamadı!")
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('ffmpeg_yok')}", "yuzde": 0}
                 return
             islem_durumlari[out_file] = {"durum": "Ses analiz ediliyor...", "yuzde": 20}
+            log.info(f"[Altyazı] Deepgram başlıyor: {os.path.basename(tmp_in)} dil={kaynak_dil}")
             try:
                 dg = await deepgram_desifre_et(tmp_in, kaynak_dil)
             except ValueError as e:
+                log.error(f"[Altyazı] Deepgram HATA: {e}")
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji(str(e))}", "yuzde": 0}
                 return
+            except Exception as e:
+                log.error(f"[Altyazı] Deepgram beklenmedik HATA: {e}")
+                islem_durumlari[out_file] = {"durum": f"Hata: Deepgram yanıt vermedi — {e}", "yuzde": 0}
+                return
+            log.info(f"[Altyazı] Deepgram OK")
 
             srt_kaynak = os.path.join(gecici, "kaynak.srt")
             deepgram_to_srt(dg, srt_kaynak)
@@ -1389,12 +1429,17 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             kd = (kaynak_dil or "").strip().upper()
             if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"DeepL ile {hd}'e çevriliyor...", "yuzde": 50}
-                with open(srt_kaynak, encoding="utf-8") as f:
-                    icerik = f.read()
-                cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
-                srt_final = os.path.join(gecici, f"ceviri_{hedef_dil}.srt")
-                with open(srt_final, "w", encoding="utf-8") as f:
-                    f.write(cevrilmis)
+                try:
+                    with open(srt_kaynak, encoding="utf-8") as f:
+                        icerik = f.read()
+                    log.info(f"[Altyazı] DeepL çeviri başlıyor: {kd}→{hd} ({len(icerik)} karakter)")
+                    cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
+                    srt_final = os.path.join(gecici, f"ceviri_{hedef_dil}.srt")
+                    with open(srt_final, "w", encoding="utf-8") as f:
+                        f.write(cevrilmis)
+                    log.info(f"[Altyazı] Çeviri tamamlandı: {kd}→{hd}")
+                except Exception as e:
+                    log.error(f"[Altyazı] Çeviri hatası: {e} — orijinal SRT kullanılıyor")
             elif hd and hd not in ("", "AUTO") and not DEEPL_API_KEY:
                 log.warning("[Altyazı] Hedef dil seçili ama DEEPL_API_KEY eksik — çeviri atlandı")
 
@@ -1403,19 +1448,27 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             if ffmpeg_var_mi():
                 islem_durumlari[out_file] = {"durum": "Altyazı videoya gömülüyor...", "yuzde": 75}
-                ok = ffmpeg_altyazi_gom(
-                    tmp_in, srt_final,
-                    os.path.join(OUTPUT_DIR, out_file),
-                    f_name, f_size, f_color,
-                    is_bold == "true", is_shadow == "true", m_v
-                )
+                log.info(f"[Altyazı] FFmpeg altyazı gömme başlıyor")
+                try:
+                    ok = ffmpeg_altyazi_gom(
+                        tmp_in, srt_final,
+                        os.path.join(OUTPUT_DIR, out_file),
+                        f_name, f_size, f_color,
+                        is_bold == "true", is_shadow == "true", m_v
+                    )
+                except Exception as e:
+                    log.error(f"[Altyazı] FFmpeg altyazı gömme HATA: {e}")
+                    ok = False
                 if not ok:
+                    log.error(f"[Altyazı] FFmpeg altyazı gömme başarısız")
                     islem_durumlari[out_file] = {"durum": "Uyarı: FFmpeg hatası, SRT kaydedildi", "yuzde": 100}
                     return
             else:
                 islem_durumlari[out_file] = {"durum": "Uyarı: FFmpeg yok, SRT kaydedildi", "yuzde": 100}
                 return
 
+            elapsed = _time.time() - _t0
+            log.info(f"[Altyazı] ✓ TAMAMLANDI — süre={elapsed:.1f}s")
             islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             return
 
@@ -1424,11 +1477,18 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             # 1. Deşifre
             islem_durumlari[out_file] = {"durum": "Konuşmalar analiz ediliyor...", "yuzde": 8}
+            log.info(f"[Dublaj] Deepgram başlıyor: {os.path.basename(tmp_in)} dil={kaynak_dil}")
             try:
                 dg = await deepgram_desifre_et(tmp_in, kaynak_dil)
             except ValueError as e:
+                log.error(f"[Dublaj] Deepgram HATA: {e}")
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji(str(e))}", "yuzde": 0}
                 return
+            except Exception as e:
+                log.error(f"[Dublaj] Deepgram beklenmedik HATA: {e}")
+                islem_durumlari[out_file] = {"durum": f"Hata: Deepgram yanıt vermedi — {e}", "yuzde": 0}
+                return
+            log.info(f"[Dublaj] Deepgram OK → SRT oluşturuluyor")
 
             srt_path = os.path.join(OUTPUT_DIR, os.path.splitext(out_file)[0] + ".srt")
             deepgram_to_srt(dg, srt_path)
@@ -1438,8 +1498,10 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             segmentler = _srt_parse(srt_icerik)
 
             if not segmentler:
+                log.error(f"[Dublaj] SRT parse sonucu boş: {srt_path}")
                 islem_durumlari[out_file] = {"durum": "Hata: Segment bulunamadı", "yuzde": 0}
                 return
+            log.info(f"[Dublaj] {len(segmentler)} segment parse edildi")
 
             # 2. Kısa segmentleri birleştir (< 0.8s → bir sonrakiyle birleştir)
             # Hem kalite artar hem ElevenLabs karakter israfı azalır
@@ -1450,12 +1512,16 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             kd = (kaynak_dil or "").strip().upper()
             if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"{hedef_dil} diline çevriliyor...", "yuzde": 15}
-                cevrilmis_srt = await srt_paralel_cevir(srt_icerik, hedef_dil)
-                with open(srt_path, "w", encoding="utf-8") as f:
-                    f.write(cevrilmis_srt)
-                segmentler = _srt_parse(cevrilmis_srt)
-                segmentler = _kisa_seg_birlestir(segmentler, min_sure=0.8)
-                log.info(f"[Dublaj] Çeviri tamamlandı → {hedef_dil}, {len(segmentler)} segment")
+                log.info(f"[Dublaj] DeepL çeviri başlıyor: {kd}→{hd}")
+                try:
+                    cevrilmis_srt = await srt_paralel_cevir(srt_icerik, hedef_dil)
+                    with open(srt_path, "w", encoding="utf-8") as f:
+                        f.write(cevrilmis_srt)
+                    segmentler = _srt_parse(cevrilmis_srt)
+                    segmentler = _kisa_seg_birlestir(segmentler, min_sure=0.8)
+                    log.info(f"[Dublaj] Çeviri tamamlandı → {hedef_dil}, {len(segmentler)} segment")
+                except Exception as e:
+                    log.error(f"[Dublaj] Çeviri hatası: {e} — orijinal segmentler kullanılıyor")
             elif hd and hd not in ("", "AUTO") and not DEEPL_API_KEY:
                 log.warning("[Dublaj] Hedef dil seçili ama DEEPL_API_KEY eksik — çeviri atlandı")
 
@@ -1556,27 +1622,36 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # 4. FFmpeg Miksleme
             islem_durumlari[out_file] = {"durum": f"{len(ses_liste)} ses senkronize ediliyor...", "yuzde": 80}
             cikti_tam = os.path.join(OUTPUT_DIR, out_file)
-
-            ok = ffmpeg_ses_miksleme(
-                video_yolu=tmp_in,
-                ses_listesi=ses_liste,
-                cikti_yolu=cikti_tam,
-                orig_vol=orig_vol,
-                dub_vol=dub_vol,
-                gecici_klasor=ses_klasor,
-            )
+            log.info(f"[Dublaj] FFmpeg miksleme başlıyor: {len(ses_liste)} ses → {os.path.basename(cikti_tam)}")
+            try:
+                ok = ffmpeg_ses_miksleme(
+                    video_yolu=tmp_in,
+                    ses_listesi=ses_liste,
+                    cikti_yolu=cikti_tam,
+                    orig_vol=orig_vol,
+                    dub_vol=dub_vol,
+                    gecici_klasor=ses_klasor,
+                )
+            except Exception as e:
+                log.error(f"[Dublaj] FFmpeg miksleme HATA: {e}")
+                import traceback; log.error(traceback.format_exc())
+                islem_durumlari[out_file] = {"durum": f"Hata: FFmpeg miksleme başarısız — {e}", "yuzde": 0}
+                return
 
             if not ok:
+                log.error(f"[Dublaj] FFmpeg miksleme başarısız (False döndü) — cikti={cikti_tam}")
                 islem_durumlari[out_file] = {"durum": "Uyarı: Miksleme hatası, SRT kaydedildi", "yuzde": 100}
                 return
 
+            elapsed = _time.time() - _t0
+            log.info(f"[Dublaj] ✓ TAMAMLANDI — süre={elapsed:.1f}s çıktı={os.path.basename(cikti_tam)}")
             islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             return
 
     except Exception as e:
-        print(f"[Sistem Hata] {e}")
-        import traceback; traceback.print_exc()
-        islem_durumlari[out_file] = {"durum": "Hata: Sistem işleyemedi", "yuzde": 0}
+        import traceback
+        log.error(f"[Motor FATAL] {e}\n{traceback.format_exc()}")
+        islem_durumlari[out_file] = {"durum": f"Hata: Sistem işleyemedi — {e}", "yuzde": 0}
     finally:
         if tmp_in and os.path.exists(tmp_in):
             try: os.remove(tmp_in)
