@@ -28,7 +28,7 @@ STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "re_2gmxFeh5_41LqREVjBxppazRu5RXk5Ui2")
 RESEND_FROM         = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
-SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://scbnrgvpmdmmginezamj.supabase.co")
+SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://biqsljanevkxrgpdxard.supabase.co")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 # Stripe fiyat ID'leri — Stripe Dashboard'dan alınacak
