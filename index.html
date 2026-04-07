@@ -1372,39 +1372,65 @@ function _tiktokWordsFromSegs() {
   });
 }
 
+let _tiktokLastSegStart = -1;
+
 function _buildTikTokOverlay() {
   const overlay = document.getElementById('tiktok_overlay');
-  if (!overlay) return;
-
-  const size  = document.getElementById('sub_size')?.value  || '22';
-  const color = document.getElementById('sub_color')?.value || '#ffffff';
-  const bold  = document.getElementById('btn_bold')?.classList.contains('on');
-  const pos   = document.getElementById('sub_pos')?.value   || 'bottom';
-  const fw    = bold ? '900' : '700';
-  const fs    = Math.max(18, parseInt(size) + 4) + 'px';
-
-  overlay.style.bottom = pos === 'top' ? 'auto' : pos === 'center' ? '40%' : '12%';
-  overlay.style.top    = pos === 'top' ? '12%' : 'auto';
-
-  overlay.innerHTML = _tiktokWords.map((w, i) =>
-    '<span class="tiktok-word" id="tw_' + i + '" style="font-size:' + fs + ';font-weight:' + fw + ';color:' + color + ';">' + w.word + '</span>'
-  ).join(' ');
+  if (overlay) overlay.innerHTML = '';
+  _tiktokLastSegStart = -1;
 }
 
 function _updateTikTokHighlight(currentTime) {
   if (!_tiktokOn || !_tiktokWords.length) return;
-  _tiktokWords.forEach((w, i) => {
-    const el = document.getElementById('tw_' + i);
-    if (!el) return;
-    if (currentTime >= w.start && currentTime < w.end) {
-      el.className = 'tiktok-word tw-active';
-      el.scrollIntoView?.({ block:'nearest', inline:'center' });
-    } else if (currentTime >= w.end) {
-      el.className = 'tiktok-word tw-done';
-    } else {
-      el.className = 'tiktok-word';
+  const overlay = document.getElementById('tiktok_overlay');
+  if (!overlay) return;
+
+  // Find active segment
+  const activeSeg = segs.find(s => currentTime >= s.start && currentTime < s.end);
+  if (!activeSeg) {
+    if (overlay.innerHTML !== '') { overlay.innerHTML = ''; _tiktokLastSegStart = -1; }
+    return;
+  }
+
+  const size  = document.getElementById('sub_size')?.value  || '22';
+  const color = document.getElementById('sub_color')?.value || '#ffffff';
+  const bold  = document.getElementById('btn_bold')?.classList.contains('on');
+  const fw    = bold ? '900' : '700';
+  const fs    = parseInt(size) + 'px';
+
+  // Rebuild overlay when segment changes
+  if (activeSeg.start !== _tiktokLastSegStart) {
+    _tiktokLastSegStart = activeSeg.start;
+    const segWords = _tiktokWords
+      .map((w, i) => Object.assign({}, w, { _i: i }))
+      .filter(w => w.start >= activeSeg.start - 0.05 && w.start < activeSeg.end);
+
+    if (!segWords.length) {
+      // Fallback: show whole segment text as one highlighted block
+      const txt = activeSeg.text.replace(/\[Konuşmacı \d+\]:\s*/g, '').trim();
+      overlay.innerHTML = '<span class="tiktok-word tw-active" style="font-size:' + fs + ';font-weight:' + fw + ';color:' + color + ';">' + txt + '</span>';
+      return;
     }
-  });
+    overlay.innerHTML = segWords.map(w =>
+      '<span class="tiktok-word" id="tw_' + w._i + '" style="font-size:' + fs + ';font-weight:' + fw + ';color:' + color + ';">' + w.word + '</span>'
+    ).join(' ');
+  }
+
+  // Highlight active word within segment
+  _tiktokWords
+    .map((w, i) => Object.assign({}, w, { _i: i }))
+    .filter(w => w.start >= activeSeg.start - 0.05 && w.start < activeSeg.end)
+    .forEach(w => {
+      const el = document.getElementById('tw_' + w._i);
+      if (!el) return;
+      if (currentTime >= w.start && currentTime < w.end) {
+        el.className = 'tiktok-word tw-active';
+      } else if (currentTime >= w.end) {
+        el.className = 'tiktok-word tw-done';
+      } else {
+        el.className = 'tiktok-word';
+      }
+    });
 }
 
 /* ═══ CANLI ALTYAZI ÖNİZLEME ═══ */
@@ -2988,6 +3014,18 @@ function reset(){
 function sw(m){
   // pFile'ı koru — sadece UI state'i sıfırla
   const _pFile = pFile, _pURL = pURL;
+  // Altyazı modundan çıkıyorsak vbox'ı geri rp'ye al
+  (function() {
+    const vbox = document.getElementById('vbox');
+    const rp   = document.getElementById('rp');
+    const cp   = document.getElementById('cp');
+    if (vbox && rp && vbox.parentElement !== rp) {
+      rp.insertBefore(vbox, rp.firstChild);
+      vbox.style.cssText = '';
+      if (cp) cp.style.overflowY = '';
+    }
+    if (rp) rp.classList.remove('hidden');
+  })();
   reset();
   pFile = _pFile; pURL = _pURL;
   // Video varsa göster
@@ -3026,6 +3064,23 @@ function sw(m){
     subSablonGalerisiOlustur();
     if(btn) btn.innerHTML='<span class="run-dot"></span> Altyazıyı Göm';
     if(title) title.innerHTML='<i class="fa-solid fa-closed-captioning"></i> Altyazı Editörü';
+    // Altyazı modunda video ana odak — vbox'ı cp'nin üstüne taşı, rp'yi gizle
+    setTimeout(function(){
+      const vbox  = document.getElementById('vbox');
+      const cp    = document.getElementById('cp');
+      const slist = document.getElementById('slist');
+      const rp    = document.getElementById('rp');
+      if (vbox && cp && slist) {
+        cp.insertBefore(vbox, slist);
+        vbox.style.width      = '100%';
+        vbox.style.maxWidth   = '860px';
+        vbox.style.margin     = '12px auto 0';
+        vbox.style.flexShrink = '0';
+        vbox.style.borderRadius = 'var(--r2)';
+        cp.style.overflowY    = 'auto';
+      }
+      if (rp) rp.classList.add('hidden');
+    }, 0);
 
   }else if(m==='seslendirme'){
     ['sec_audio','sec_voice_btn','mixer','tl'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
