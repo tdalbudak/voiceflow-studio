@@ -345,7 +345,7 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 .undo-btn:disabled{opacity:.3;cursor:not-allowed;}
 
 /* Canlı altyazı önizleme overlay (video üzerinde) */
-.live-sub-overlay{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;font-size:16px;font-weight:700;padding:6px 16px;border-radius:6px;text-align:center;max-width:90%;pointer-events:none;z-index:12;display:none;text-shadow:1px 1px 2px #000;line-height:1.4;}
+.live-sub-overlay{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);background:transparent;color:#fff;font-size:22px;font-weight:700;padding:4px 12px;border-radius:4px;text-align:center;max-width:92%;pointer-events:none;z-index:12;display:none;text-shadow:2px 2px 4px #000,0 0 8px #000;line-height:1.4;white-space:pre-wrap;}
 
 .hidden{display:none!important;}
 
@@ -1506,7 +1506,9 @@ function _updateLiveSubtitle(currentTime) {
   const overlay = document.getElementById('live_sub_overlay');
   if (!overlay || _tiktokOn || !_subVisible) { if(overlay) overlay.style.display='none'; return; }
   if (!segs.length) { overlay.style.display='none'; return; }
-  const aktif = segs.find(s => currentTime >= s.start && currentTime < s.end);
+  // 80ms öne al = senkronizasyon tazminatı (algı gecikmesi)
+  const T = currentTime + 0.08;
+  const aktif = segs.find(s => T >= s.start && T < s.end - 0.04);
   if (aktif) {
     // Temiz metin — konuşmacı prefix kaldır
     const temizMetin = aktif.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
@@ -1955,7 +1957,38 @@ async function kaydetIcerik(fmt_, isim, fileHandle) {
   const uzantiMap = {'original':'.mp4','srt':'.srt','vtt':'.vtt','ass':'.ass','txt':'.txt','txt_clean':'.txt'};
   const uzanti = uzantiMap[fmt_] || '.srt';
 
-  if (fmt_ === 'original' || fmt_ === 'srt' || fmt_ === 'burn_sub') {
+  if (fmt_ === 'burn_sub') {
+    // Altyazıyı mevcut ayarlarla videoya gömüp indir
+    if (!aDosya || !aSrt) { toast('Önce video işleyin','twarn'); return; }
+    toast('<i class="fa-solid fa-spinner fa-spin"></i> Altyazı gömülüyor...', 'tok', 30000);
+    try {
+      const fd = new FormData();
+      fd.append('video_adi', aDosya);
+      fd.append('srt_adi', aSrt);
+      fd.append('f_name',   document.getElementById('sub_font')?.value   || 'Arial');
+      fd.append('f_size',   document.getElementById('sub_size')?.value   || '22');
+      fd.append('f_color',  document.getElementById('sub_color')?.value  || '#ffffff');
+      fd.append('is_bold',  document.getElementById('btn_bold')?.classList.contains('on') ? 'true' : 'false');
+      fd.append('is_shadow',document.getElementById('btn_shadow')?.classList.contains('on') ? 'true' : 'false');
+      const pos = document.getElementById('sub_pos')?.value || 'bottom';
+      fd.append('m_v', pos === 'top' ? '90' : pos === 'center' ? '45' : '20');
+      const br = await fetch(B + '/api/altyazi_gom/', { method: 'POST', body: fd });
+      const bd = await br.json();
+      if (bd.hata) { toast('Hata: ' + bd.hata, 'terr', 6000); return; }
+      // Burned dosyayı indir
+      const r2 = await fetch(B + '/indir/' + bd.dosya_adi);
+      const blob2 = await r2.blob();
+      const writable2 = await fileHandle.createWritable();
+      await writable2.write(blob2);
+      await writable2.close();
+      toast('✓ Burned-in MP4 indirildi');
+    } catch(e) {
+      toast('Burn hatası: ' + e.message, 'terr', 5000);
+    }
+    return;
+  }
+
+  if (fmt_ === 'original' || fmt_ === 'srt') {
     // Sunucudan indir
     const dosya = fmt_ === 'srt' ? aSrt : (aDosya || aSrt);
     const r = await fetch(B + '/indir/' + dosya);

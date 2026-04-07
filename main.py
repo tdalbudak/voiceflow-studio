@@ -1546,25 +1546,15 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             base = os.path.splitext(out_file)[0]
             shutil.copy(srt_final, os.path.join(OUTPUT_DIR, base + ".srt"))
 
-            if ffmpeg_var_mi():
-                islem_durumlari[out_file] = {"durum": "Altyazı videoya gömülüyor...", "yuzde": 75}
-                log.info(f"[Altyazı] FFmpeg altyazı gömme başlıyor")
-                try:
-                    ok = ffmpeg_altyazi_gom(
-                        tmp_in, srt_final,
-                        os.path.join(OUTPUT_DIR, out_file),
-                        f_name, f_size, f_color,
-                        is_bold == "true", is_shadow == "true", m_v
-                    )
-                except Exception as e:
-                    log.error(f"[Altyazı] FFmpeg altyazı gömme HATA: {e}")
-                    ok = False
-                if not ok:
-                    log.error(f"[Altyazı] FFmpeg altyazı gömme başarısız")
-                    islem_durumlari[out_file] = {"durum": "Uyarı: FFmpeg hatası, SRT kaydedildi", "yuzde": 100}
-                    return
-            else:
-                islem_durumlari[out_file] = {"durum": "Uyarı: FFmpeg yok, SRT kaydedildi", "yuzde": 100}
+            # Preview: orijinal videoyu kopyala (burn etme — frontend live overlay gösterecek)
+            islem_durumlari[out_file] = {"durum": "Video hazırlanıyor...", "yuzde": 75}
+            cikti_mp4 = os.path.join(OUTPUT_DIR, out_file)
+            try:
+                shutil.copy(tmp_in, cikti_mp4)
+                log.info(f"[Altyazı] Orijinal video kopyalandı (burn-free preview)")
+            except Exception as e:
+                log.error(f"[Altyazı] Video kopyalama HATA: {e}")
+                islem_durumlari[out_file] = {"durum": f"Hata: Video kopyalanamadı — {e}", "yuzde": 0}
                 return
 
             elapsed = _time.time() - _t0
@@ -3373,6 +3363,46 @@ def _names_yaz(names: dict):
             json.dump(names, f, ensure_ascii=False, indent=2)
     except Exception as e:
         log.warning(f"[Names] Yazma hatası: {e}")
+
+
+@app.post("/api/altyazi_gom/")
+async def altyazi_gom_endpoint(
+    video_adi: str = Form(...),   # ciktilar/ altındaki mp4 adı (orijinal)
+    srt_adi:   str = Form(...),   # ciktilar/ altındaki srt adı
+    f_name:    str = Form("Arial"),
+    f_size:    str = Form("22"),
+    f_color:   str = Form("#ffffff"),
+    is_bold:   str = Form("true"),
+    is_shadow: str = Form("true"),
+    m_v:       str = Form("20"),
+):
+    """Orijinal video + SRT'yi kullanıcının seçtiği ayarlarla burn eder ve indirme URL'si döner."""
+    video_yolu = os.path.join(OUTPUT_DIR, video_adi)
+    srt_yolu   = os.path.join(OUTPUT_DIR, srt_adi)
+    if not os.path.isfile(video_yolu):
+        return JSONResponse({"hata": "Video bulunamadı"}, status_code=404)
+    if not os.path.isfile(srt_yolu):
+        return JSONResponse({"hata": "SRT bulunamadı"}, status_code=404)
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": "FFmpeg sunucuda bulunamadı"}, status_code=500)
+
+    base    = os.path.splitext(video_adi)[0]
+    cikti_ad = f"{base}_burned.mp4"
+    cikti_yolu = os.path.join(OUTPUT_DIR, cikti_ad)
+    try:
+        ok = ffmpeg_altyazi_gom(
+            video_yolu, srt_yolu, cikti_yolu,
+            f_name, f_size, f_color,
+            is_bold == "true", is_shadow == "true", m_v
+        )
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+    if not ok:
+        return JSONResponse({"hata": "FFmpeg altyazı gömme başarısız"}, status_code=500)
+
+    log.info(f"[BurnSub] ✓ {cikti_ad}")
+    return JSONResponse({"url": f"/ciktilar/{cikti_ad}", "dosya_adi": cikti_ad})
 
 
 @app.get("/api/dosyalar/")
