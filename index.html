@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VoiceFlow Studio — AI Dublaj & Altyazı Editörü</title>
-<meta name="description" content="AI ile videolarınızı 60+ dile dublajlayın. Timeline editör, TikTok modu, ses klonlama.">
+<title>VoiceFlow Studio — AI Dubbing & Subtitle Editor</title>
+<meta name="description" content="Dub your videos into 60+ languages with AI. Timeline editor, TikTok mode, voice cloning.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>V</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -426,10 +426,10 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     VoiceFlow
   </div>
   <div class="nav-tabs">
-    <div class="nav-tab" id="tab_desifre" onclick="sw('desifre')">📝 Transkript</div>
-    <div class="nav-tab" id="tab_altyazi" onclick="sw('altyazi')">💬 Altyazı</div>
-    <div class="nav-tab on" id="tab_seslendirme" onclick="sw('seslendirme')">🎙 Dublaj</div>
-    <div class="nav-tab" id="tab_metinden_sese" onclick="sw('metinden_sese')">✍ Metin→Ses</div>
+    <div class="nav-tab" id="tab_desifre" onclick="sw('desifre')">📝 Transcript</div>
+    <div class="nav-tab" id="tab_altyazi" onclick="sw('altyazi')">💬 Subtitles</div>
+    <div class="nav-tab on" id="tab_seslendirme" onclick="sw('seslendirme')">🎙 Dubbing</div>
+    <div class="nav-tab" id="tab_metinden_sese" onclick="sw('metinden_sese')">✍ Text→Speech</div>
   </div>
   <div class="nav-right">
     <!-- UI Dil Seçici -->
@@ -446,32 +446,32 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <option value="ar">🇸🇦 AR</option>
     </select>
     <!-- AI Asistan -->
-    <button onclick="aiAsistanAc()" class="cloud-btn" title="Ne yapmak istiyorsun?" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:var(--accent3);">
-      🤖 AI Asistan
+    <button onclick="aiAsistanAc()" class="cloud-btn" title="What do you want to do?" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:var(--accent3);">
+      🤖 AI Assistant
     </button>
-    <!-- Sihirli Mod / Pro Stüdyo Toggle -->
-    <div class="mod-toggle" title="Mod değiştir">
-      <button class="mod-toggle-btn" id="btn_sihirli" onclick="modGecis('sihirli')">✨ Sihirli</button>
+    <!-- Magic / Pro Studio Toggle -->
+    <div class="mod-toggle" title="Switch mode">
+      <button class="mod-toggle-btn" id="btn_sihirli" onclick="modGecis('sihirli')">✨ Magic</button>
       <button class="mod-toggle-btn active" id="btn_pro" onclick="modGecis('pro')">🎛️ Pro</button>
     </div>
-    <button class="cloud-btn" onclick="dashboardAc()" title="Dosyalarım & Profil" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> Dosyalarım</button>
-    <button class="cloud-btn" onclick="profilAc()" title="Profil & Kullanım" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
-    <button class="cloud-btn" onclick="topluIslemAc()" title="Toplu video işle"><i class="fa-solid fa-layer-group"></i> Toplu</button>
-    <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Sürüm geçmişi A/B karşılaştır" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
-    <!-- Dil göstergesi — modal'dan seçince güncellenir -->
-    <button onclick="openModal()" id="nav_dil_goster" style="display:none;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;" title="Dil değiştir"></button>
-    <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Başlat</button>
+    <button class="cloud-btn" onclick="dashboardAc()" title="My Files & Profile" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> My Files</button>
+    <button class="cloud-btn" onclick="profilAc()" title="Profile & Usage" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
+    <button class="cloud-btn" onclick="topluIslemAc()" title="Process multiple videos"><i class="fa-solid fa-layer-group"></i> Batch</button>
+    <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Version history A/B compare" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
+    <!-- Language indicator — updated from modal -->
+    <button onclick="openModal()" id="nav_dil_goster" style="display:none;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;" title="Change language"></button>
+    <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Start</button>
     <div class="xwrap hidden" id="xwrap">
-      <button class="btn-dl"><i class="fa-solid fa-download"></i> İndir ▾</button>
+      <button class="btn-dl"><i class="fa-solid fa-download"></i> Download ▾</button>
       <div class="xdrop">
-        <div class="xitem" onclick="xport('original')"><i class="fa-solid fa-file-video" style="color:var(--accent2)"></i>Orijinal</div>
+        <div class="xitem" onclick="xport('original')"><i class="fa-solid fa-file-video" style="color:var(--accent2)"></i>Original</div>
         <div class="xitem" onclick="xport('srt')"><i class="fa-solid fa-closed-captioning" style="color:var(--green2)"></i>SRT</div>
         <div class="xitem" onclick="xport('vtt')"><i class="fa-solid fa-closed-captioning" style="color:var(--yellow2)"></i>VTT</div>
-        <div class="xitem" onclick="xport('ass')"><i class="fa-solid fa-closed-captioning" style="color:var(--purple2)"></i>ASS (Gelişmiş)</div>
-        <div class="xitem" onclick="xport('txt')"><i class="fa-solid fa-file-lines" style="color:var(--muted2)"></i>TXT (Zaman Damgalı)</div>
-        <div class="xitem" onclick="xport('txt_clean')"><i class="fa-solid fa-align-left" style="color:var(--muted2)"></i>TXT (Düz Metin)</div>
-        <div class="xitem" onclick="xport('burn_sub')" id="xitem_burn" style="display:none;"><i class="fa-solid fa-closed-captioning" style="color:var(--accent3)"></i>Altyazı Gömülü MP4</div>
-        <div class="xitem" onclick="cokluDilExport()" id="xitem_multidil" style="display:none;"><i class="fa-solid fa-globe" style="color:var(--yellow2)"></i>Çoklu Dil SRT İndir 🌍</div>
+        <div class="xitem" onclick="xport('ass')"><i class="fa-solid fa-closed-captioning" style="color:var(--purple2)"></i>ASS (Advanced)</div>
+        <div class="xitem" onclick="xport('txt')"><i class="fa-solid fa-file-lines" style="color:var(--muted2)"></i>TXT (Timestamped)</div>
+        <div class="xitem" onclick="xport('txt_clean')"><i class="fa-solid fa-align-left" style="color:var(--muted2)"></i>TXT (Plain text)</div>
+        <div class="xitem" onclick="xport('burn_sub')" id="xitem_burn" style="display:none;"><i class="fa-solid fa-closed-captioning" style="color:var(--accent3)"></i>Burned-in MP4</div>
+        <div class="xitem" onclick="cokluDilExport()" id="xitem_multidil" style="display:none;"><i class="fa-solid fa-globe" style="color:var(--yellow2)"></i>Multi-lang SRT 🌍</div>
       </div>
     </div>
   </div>
@@ -490,9 +490,9 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <input type="hidden" id="src_lang_label" value="Otomatik">
     <input type="hidden" id="tgt_lang_label" value="">
 
-    <!-- Altyazı Tasarımcısı -->
+    <!-- Subtitle Designer -->
     <div class="lp-sec hidden" id="sec_sub_design">
-      <div class="sec-hd"><i class="fa-solid fa-palette"></i> Altyazı Tasarımı</div>
+      <div class="sec-hd"><i class="fa-solid fa-palette"></i> Subtitle Design</div>
       <div class="frow">
         <label>Font</label>
         <select id="sub_font" onchange="updateSub()">
@@ -505,7 +505,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </select>
       </div>
       <div class="frow">
-        <label>Punto Boyutu</label>
+        <label>Font Size</label>
         <select id="sub_size" onchange="updateSub()">
           <option value="6">6pt</option><option value="8">8pt</option>
           <option value="10">10pt</option><option value="12">12pt</option>
@@ -517,49 +517,49 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </select>
       </div>
       <div class="frow">
-        <label>Renk</label>
+        <label>Color</label>
         <input type="color" id="sub_color" value="#ffffff" onchange="updateSub()" style="width:100%;height:32px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;background:transparent;padding:2px;">
       </div>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <button id="btn_bold" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Kalın</button>
-        <button id="btn_shadow" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Gölge</button>
+        <button id="btn_bold" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Bold</button>
+        <button id="btn_shadow" class="tbbtn on" onclick="this.classList.toggle('on');updateSub()" style="flex:1;width:auto;">Shadow</button>
       </div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="snapToSpeech()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Altyazı zamanlamasını otomatik hizala">
+        <button onclick="snapToSpeech()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Auto-align subtitle timing">
           <i class="fa-solid fa-align-center" style="color:var(--accent2)"></i> Snap to Speech
         </button>
-        <button onclick="brandKitKaydet()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Bu stili brand kit olarak kaydet">
-          <i class="fa-solid fa-bookmark" style="color:#a855f7"></i> Kit Kaydet
+        <button onclick="brandKitKaydet()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Save as brand kit">
+          <i class="fa-solid fa-bookmark" style="color:#a855f7"></i> Save Kit
         </button>
-        <button onclick="brandKitUygula()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Kaydedilmiş brand kit'i uygula">
-          <i class="fa-solid fa-palette" style="color:#eab308"></i> Kit Uygula
+        <button onclick="brandKitUygula()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px;border-radius:var(--r);font-size:10px;cursor:pointer;font-family:inherit;" title="Apply saved brand kit">
+          <i class="fa-solid fa-palette" style="color:#eab308"></i> Apply Kit
         </button>
       </div>
       <div class="frow" style="margin-top:8px;">
-        <label>Konum</label>
+        <label>Position</label>
         <select id="sub_pos" onchange="updateSub()">
-          <option value="bottom">Alt</option>
-          <option value="center">Orta</option>
-          <option value="top">Üst</option>
+          <option value="bottom">Bottom</option>
+          <option value="center">Center</option>
+          <option value="top">Top</option>
         </select>
       </div>
       <button class="btn-lp" style="margin-top:6px;" onclick="xport('srt_notes')">
-        <i class="fa-solid fa-file-arrow-down"></i> Notlar Olarak İndir
+        <i class="fa-solid fa-file-arrow-down"></i> Download as Notes
       </button>
     </div>
 
-    <!-- Ses Ayarları -->
+    <!-- Audio Settings -->
     <div class="lp-sec hidden" id="sec_audio">
-      <div class="sec-hd"><i class="fa-solid fa-microchip"></i> Ses & Motor</div>
-      <label class="chk"><input type="checkbox" id="noise_clean"><span style="color:#10b981">Gürültü Temizle</span></label>
-      <label class="chk"><input type="checkbox" id="diarize" checked><span style="color:var(--pink2)">Konuşmacı Ayrımı</span></label>
-      <label class="chk"><input type="checkbox" id="tiktok_mode"><span style="color:var(--purple2)">TikTok Altyazı Modu</span></label>
+      <div class="sec-hd"><i class="fa-solid fa-microchip"></i> Audio & Engine</div>
+      <label class="chk"><input type="checkbox" id="noise_clean"><span style="color:#10b981">Noise Removal</span></label>
+      <label class="chk"><input type="checkbox" id="diarize" checked><span style="color:var(--pink2)">Speaker Detection</span></label>
+      <label class="chk"><input type="checkbox" id="tiktok_mode"><span style="color:var(--purple2)">TikTok Subtitle Mode</span></label>
     </div>
 
-    <!-- Ses Aktörü -->
+    <!-- Voice Actor -->
     <div class="lp-sec hidden" id="sec_voice_btn">
       <button class="btn-lp" onclick="openModal()">
-        <i class="fa-solid fa-headset"></i> Ses Aktörünü Değiştir
+        <i class="fa-solid fa-headset"></i> Change Voice Actor
       </button>
     </div>
 
@@ -568,7 +568,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
   <!-- CENTER -->
   <div class="cp" id="cp">
     <div class="cp-head">
-      <span class="cp-title" id="cp_title"><i class="fa-solid fa-layer-group"></i> Çalışma Alanı</span>
+      <span class="cp-title" id="cp_title"><i class="fa-solid fa-layer-group"></i> Workspace</span>
       <div class="cp-meta">
         <div class="undo-bar">
           <button class="undo-btn" id="undo_btn" onclick="undo()" disabled title="Geri Al (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -760,7 +760,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <div class="vbox-empty-state" id="vbox_empty" onclick="document.getElementById('finput').click()">
         <div class="vbox-empty-icon">🎬</div>
         <div class="vbox-upload-btn">
-          <i class="fa-solid fa-plus"></i> Medya Yükle / Sürükle & Bırak
+          <i class="fa-solid fa-plus"></i> Upload Media / Drag & Drop
         </div>
         <div class="cloud-toolbar" onclick="event.stopPropagation()">
           <button class="cloud-mini" onclick="cloudUpload('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive</button>
@@ -778,28 +778,28 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 
     <!-- Sihirli Mod Hızlı Aksiyonlar (başlangıçta gizli) -->
     <div class="magic-actions" id="magic_actions">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">⚡ Hızlı Aksiyon</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">⚡ Quick Action</div>
       <button class="magic-btn" onclick="magicAction('hormozi')">
         <span class="magic-btn-icon">🔥</span>
         <div>
-          <div class="magic-btn-title">Hormozi Stili Dinamik Altyazı</div>
-          <div class="magic-btn-desc">TikTok Bold — Kelimeler tek tek parlar, viral format</div>
+          <div class="magic-btn-title">Hormozi Dynamic Subtitles</div>
+          <div class="magic-btn-desc">TikTok Bold — Words flash one by one, viral format</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
       <button class="magic-btn" onclick="magicAction('klonlama')">
         <span class="magic-btn-icon">🎙️</span>
         <div>
-          <div class="magic-btn-title">Kendi Sesimle AI Dublaj</div>
-          <div class="magic-btn-desc">Sesinizi klonlayın, farklı dilde konuşun</div>
+          <div class="magic-btn-title">AI Dub with My Voice</div>
+          <div class="magic-btn-desc">Clone your voice, speak in another language</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
       <button class="magic-btn" onclick="magicAction('magic_cut')">
         <span class="magic-btn-icon">✂️</span>
         <div>
-          <div class="magic-btn-title">Sessiz Boşlukları Kes</div>
-          <div class="magic-btn-desc">ıı, eee, hmm gibi dolgu sesleri otomatik kaldır</div>
+          <div class="magic-btn-title">Remove Silent Gaps</div>
+          <div class="magic-btn-desc">Auto-remove filler sounds like um, uh, hmm</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -1188,8 +1188,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </div>
       </div>
 
-      <!-- Ses listesi — Veed.io stili renkli noktalar -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Ses Aktörleri</div>
+      <!-- Voice list -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Voice Actors</div>
       <div id="voice_list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;">
         <!-- JS ile doldurulacak -->
       </div>
@@ -1198,8 +1198,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:4px;">
         <i class="fa-solid fa-volume-low" style="color:var(--muted2);font-size:14px;"></i>
         <div style="flex:1;">
-          <div style="font-size:12px;font-weight:600;">Arka Plan Sesini Koru</div>
-          <div style="font-size:11px;color:var(--muted2);">Orijinal ses arka planda %10 seviyede</div>
+          <div style="font-size:12px;font-weight:600;">Keep Background Audio</div>
+          <div style="font-size:11px;color:var(--muted2);">Original audio stays at 10% in background</div>
         </div>
         <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
           <input type="checkbox" id="bg_audio_keep" checked style="opacity:0;width:0;height:0;">
@@ -1209,39 +1209,42 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </label>
       </div>
 
-      <!-- Kendi Sesini Kullan — BÜYÜK buton -->
-      <div onclick="kendiSesiyleyDublajModalAc()" style="background:linear-gradient(135deg,#065f46,#047857);border:2px solid #34d399;color:#fff;border-radius:var(--r2);padding:20px;cursor:pointer;transition:all .22s;margin-bottom:10px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 28px rgba(16,185,129,.5)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="fa-solid fa-microphone-lines" style="font-size:22px;"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;">🎙️ Kendi Sesini Kullan</div>
-            <div style="font-size:12px;color:#a7f3d0;line-height:1.5;">Videonun sesini klonla → hedef dilde konuş<br>Tek tıkla, otomatik pipeline</div>
-          </div>
-          <i class="fa-solid fa-chevron-right" style="font-size:16px;color:#a7f3d0;flex-shrink:0;"></i>
+      <!-- Voice Cloning Section -->
+      <div style="background:var(--s3);border:1.5px solid #34d399;border-radius:var(--r2);padding:14px 16px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#34d399;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          <i class="fa-solid fa-waveform-lines"></i> Voice Cloning
+          <span style="font-size:10px;font-weight:600;background:rgba(52,211,153,.15);color:#34d399;padding:2px 7px;border-radius:20px;margin-left:auto;">Creator+ plan</span>
         </div>
-      </div>
 
-      <!-- Klasik ses klonlama (dosya yükle) -->
-      <div class="clone-card" onclick="document.getElementById('clone_inp').click()" style="padding:12px 16px;margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <i class="fa-solid fa-upload" style="font-size:16px;"></i>
-          <div>
-            <div style="font-size:13px;font-weight:700;">Ses Dosyası ile Klonla</div>
-            <div style="font-size:11px;color:#d1fae5;margin-top:2px;" id="clone_card_sub">MP3/WAV yükle — AI birebir kopyalar</div>
+        <!-- Record button -->
+        <button id="clone_rec_btn" onclick="voiceRecordToggle()" style="width:100%;background:linear-gradient(135deg,#065f46,#047857);border:1.5px solid #34d399;color:#fff;padding:11px 14px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;margin-bottom:8px;transition:all .18s;">
+          <i class="fa-solid fa-microphone" id="clone_rec_icon" style="font-size:16px;"></i>
+          <div style="flex:1;text-align:left;">
+            <div id="clone_rec_label">🎙️ Record Your Voice</div>
+            <div style="font-size:10px;color:#a7f3d0;margin-top:2px;" id="clone_rec_sub">Click to start — min 30 seconds recommended</div>
           </div>
+          <span id="clone_rec_timer" style="font-size:12px;font-family:monospace;display:none;color:#4ade80;"></span>
+        </button>
+        <!-- Recording visualizer -->
+        <div id="clone_visualizer" style="display:none;height:32px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;margin-bottom:8px;align-items:center;justify-content:center;gap:2px;padding:4px 8px;">
+          <!-- bars injected by JS -->
+        </div>
+
+        <!-- Upload button -->
+        <div onclick="document.getElementById('clone_inp').click()" style="width:100%;background:var(--s4);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;" onmouseover="this.style.borderColor='#34d399';this.style.color='#fff'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">
+          <i class="fa-solid fa-upload"></i>
+          <span id="clone_card_sub">Upload audio file — MP3 / WAV / M4A</span>
           <div id="kota_badge" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:100px;display:none;"></div>
         </div>
         <input type="file" id="clone_inp" hidden accept="audio/*,video/mp4" onchange="sesKlonla(this)">
       </div>
 
-      <!-- Altyazı da Ekle — dublaja özel -->
+      <!-- Add Subtitles — dubbing specific -->
       <div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;" onclick="document.getElementById('dub_altyazi_toggle').click()" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
         <span style="font-size:18px;">📝</span>
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;">Altyazı da Ekle</div>
-          <div style="font-size:11px;color:var(--muted2);">Dublajın yanı sıra videoya altyazı da göm</div>
+          <div style="font-size:13px;font-weight:600;">Add Subtitles Too</div>
+          <div style="font-size:11px;color:var(--muted2);">Burn subtitles into video alongside dubbing</div>
         </div>
         <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;" onclick="event.stopPropagation()">
           <input type="checkbox" id="dub_altyazi_toggle" style="opacity:0;width:0;height:0;" onchange="dubAltyaziToggle(this.checked)">
@@ -1254,10 +1257,10 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 
     <div class="mfoot" style="display:flex;gap:8px;">
       <button id="modal_back_btn" onclick="modalStep(1)" class="btn-dl" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);flex:0 0 auto;width:80px;justify-content:center;height:42px;border-radius:var(--r);font-family:inherit;display:none;">
-        ← Geri
+        ← Back
       </button>
       <button id="modal_main_btn" onclick="modalMainAction()" class="btn-dl" style="flex:1;justify-content:center;height:42px;font-size:14px;background:var(--accent);border-radius:var(--r);font-family:inherit;">
-        <i class="fa-solid fa-closed-captioning"></i> <span id="modal_btn_text">Otomatik Altyazı Başlat</span>
+        <i class="fa-solid fa-closed-captioning"></i> <span id="modal_btn_text">Start Auto-Subtitles</span>
       </button>
     </div>
   </div>
@@ -1266,7 +1269,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 <!-- STATUS -->
 <div class="sbox hidden" id="sbox">
   <div class="sbox-row">
-    <span class="stxt" id="stxt">İşleniyor...</span>
+    <span class="stxt" id="stxt">Processing...</span>
     <span class="spct" id="spct">0%</span>
   </div>
   <div class="prog"><div class="pfill" id="pfill"></div></div>
@@ -3440,84 +3443,189 @@ function updateSub(){
   });
 }
 
+/* ═══ VOICE CLONING — BROWSER RECORDING ═══ */
+let _mediaRec = null, _recChunks = [], _recTimer = null, _recSecs = 0;
+let _vizBars = [], _vizAnim = null, _analyser = null, _vizSrc = null;
+
+async function voiceRecordToggle() {
+  if (_mediaRec && _mediaRec.state === 'recording') {
+    // Stop recording
+    _mediaRec.stop();
+  } else {
+    // Start recording
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch(e) {
+      toast('Microphone access denied. Please allow microphone in your browser.', 'terr', 5000);
+      return;
+    }
+
+    // Visualizer setup
+    const viz = document.getElementById('clone_visualizer');
+    viz.style.display = 'flex';
+    viz.innerHTML = '';
+    for (let i = 0; i < 20; i++) {
+      const b = document.createElement('div');
+      b.style.cssText = 'flex:1;background:#34d399;border-radius:2px;min-height:3px;transition:height .08s;';
+      viz.appendChild(b);
+      _vizBars.push(b);
+    }
+    try {
+      const ctx = new AudioContext();
+      _analyser = ctx.createAnalyser();
+      _analyser.fftSize = 64;
+      _vizSrc = ctx.createMediaStreamSource(stream);
+      _vizSrc.connect(_analyser);
+      const data = new Uint8Array(_analyser.frequencyBinCount);
+      _vizAnim = setInterval(() => {
+        _analyser.getByteFrequencyData(data);
+        _vizBars.forEach((b, i) => {
+          const h = Math.max(3, (data[i] || 0) / 255 * 28);
+          b.style.height = h + 'px';
+        });
+      }, 80);
+    } catch(e) {}
+
+    _recChunks = [];
+    _recSecs = 0;
+    _mediaRec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg' });
+    _mediaRec.ondataavailable = e => { if (e.data.size > 0) _recChunks.push(e.data); };
+    _mediaRec.onstop = () => {
+      clearInterval(_recTimer);
+      clearInterval(_vizAnim);
+      stream.getTracks().forEach(t => t.stop());
+      document.getElementById('clone_visualizer').style.display = 'none';
+      _vizBars = [];
+      const btn = document.getElementById('clone_rec_btn');
+      const lbl = document.getElementById('clone_rec_label');
+      const sub = document.getElementById('clone_rec_sub');
+      const ico = document.getElementById('clone_rec_icon');
+      const tmr = document.getElementById('clone_rec_timer');
+      btn.style.background = 'linear-gradient(135deg,#065f46,#047857)';
+      lbl.textContent = '🎙️ Record Your Voice';
+      sub.textContent = 'Click to start — min 30 seconds recommended';
+      ico.className = 'fa-solid fa-microphone';
+      tmr.style.display = 'none';
+
+      if (_recSecs < 5) { toast('Recording too short. Please record at least 30 seconds.', 'twarn', 4000); return; }
+      const blob = new Blob(_recChunks, { type: _mediaRec.mimeType });
+      _uploadVoiceBlob(blob, _recSecs);
+    };
+    _mediaRec.start(200);
+
+    // UI: recording state
+    const btn = document.getElementById('clone_rec_btn');
+    const lbl = document.getElementById('clone_rec_label');
+    const sub = document.getElementById('clone_rec_sub');
+    const ico = document.getElementById('clone_rec_icon');
+    const tmr = document.getElementById('clone_rec_timer');
+    btn.style.background = 'linear-gradient(135deg,#7f1d1d,#dc2626)';
+    lbl.textContent = '⏹ Stop Recording';
+    ico.className = 'fa-solid fa-circle-stop';
+    tmr.style.display = 'inline';
+    tmr.textContent = '0:00';
+    _recTimer = setInterval(() => {
+      _recSecs++;
+      const m = Math.floor(_recSecs / 60);
+      const s = (_recSecs % 60).toString().padStart(2, '0');
+      tmr.textContent = m + ':' + s;
+      if (_recSecs === 30) sub.textContent = '✓ Good length! Keep going or stop now.';
+    }, 1000);
+  }
+}
+
+async function _uploadVoiceBlob(blob, durationSecs) {
+  const name = prompt('Name this voice clone:', 'My Voice') || 'My Voice';
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Cloning voice "' + name + '"... (30-60 sec)', 'tok', 60000);
+  try {
+    const fd = new FormData();
+    const ext = blob.type.includes('webm') ? 'webm' : 'ogg';
+    fd.append('ses_dosyasi', blob, 'recording.' + ext);
+    fd.append('isim', name);
+    const r = await fetch(B + '/api/ses_klonla/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.basari && d.voice_id) {
+      _onVoiceCloned(d.voice_id, name);
+      toast('✓ Voice "' + name + '" cloned and selected!');
+    } else if (d.plan_gerekli) {
+      toast('ElevenLabs Creator plan required ($22/mo) for voice cloning.', 'twarn', 8000);
+    } else {
+      toast('Clone error: ' + (d.hata || 'Unknown error'), 'terr', 6000);
+    }
+  } catch(e) {
+    toast('Connection error — cloning failed', 'terr');
+  }
+}
+
+function _onVoiceCloned(voiceId, name) {
+  voice = voiceId;
+  const yeniSes = { id: voiceId, name: name, desc: 'Your cloned voice', color: '#22c55e' };
+  VOICES.unshift(yeniSes);
+  const tl = document.getElementById('tts_voice_list');
+  if (tl) {
+    const el = document.createElement('div');
+    el.id = 'tvli_' + voiceId;
+    el.onclick = () => { selVoiceById(voiceId); _ttsHL(); };
+    el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--accent2);background:var(--s4);';
+    el.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span><span style="font-size:12px;font-weight:700;">' + name + ' ★</span><span style="font-size:11px;color:var(--muted2);flex:1;">Your cloned voice</span>';
+    tl.prepend(el);
+  }
+  buildVoiceList();
+  selVoiceById(voiceId);
+  try {
+    const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar') || '[]');
+    klonlar.push({ voice_id: voiceId, isim: name, tarih: Date.now() });
+    localStorage.setItem('voiceflow_klonlar', JSON.stringify(klonlar));
+  } catch(e) {}
+}
+
 /* ═══ SES KLONLAMA ═══ */
 async function sesKlonla(inp){
   if(!inp.files||!inp.files[0])return;
   const dosya = inp.files[0];
 
-  // Boyut kontrolü — 25MB max
+  // Size check — 25MB max
   if(dosya.size > 25*1024*1024){
-    toast('Dosya çok büyük. Maksimum 25MB yükleyebilirsiniz.','terr'); return;
+    toast('File too large. Maximum 25MB.','terr'); return;
   }
 
-  // Format kontrolü
+  // Format check
   const gecerliFormlar = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/mp4','audio/m4a','video/mp4'];
   if(!gecerliFormlar.includes(dosya.type) && !dosya.name.match(/\.(mp3|wav|ogg|m4a|mp4|flac)$/i)){
-    toast('Desteklenmeyen format. MP3, WAV, OGG veya M4A yükleyin.','terr'); return;
+    toast('Unsupported format. Please upload MP3, WAV, OGG or M4A.','terr'); return;
   }
 
-  // Önce kota kontrolü
+  // Quota check
   try{
     const kota = await fetch(B + '/api/kota/').then(r=>r.json());
     if(!kota.klonlama_destekli){
-      toast('⚠ Ses klonlama için ElevenLabs Creator planı (22$/ay) gereklidir.','twarn',6000);
+      toast('⚠ Voice cloning requires ElevenLabs Creator plan ($22/mo).','twarn',6000);
       return;
     }
   }catch(e){}
 
-  const klonAdi = prompt('Klonlanacak sesin adı:', 'Benim Sesim');
+  const klonAdi = prompt('Name this voice clone:', 'My Voice');
   if(!klonAdi)return;
 
-  // Progress toast
-  const tid = Date.now();
-  toast('<i class="fa-solid fa-spinner fa-spin"></i> "' + klonAdi + '" klonlanıyor... (30-60 saniye)','tok',60000);
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Cloning "' + klonAdi + '"... (30-60 sec)','tok',60000);
 
   try{
     const fd = new FormData();
     fd.append('ses_dosyasi', dosya);
     fd.append('isim', klonAdi);
-
     const r = await fetch(B + '/api/ses_klonla/', {method:'POST', body:fd});
     const d = await r.json();
-
     if(d.basari && d.voice_id){
-      voice = d.voice_id;
-
-      // Ses listelerine ekle
-      const yeniSes = {id: d.voice_id, name: klonAdi, desc:'Klonlanmış ses — sizin sesiniz', color:'#22c55e'};
-      VOICES.unshift(yeniSes);
-
-      // TTS listesini güncelle
-      const tl = document.getElementById('tts_voice_list');
-      if(tl){
-        const yeniEl = document.createElement('div');
-        yeniEl.id = 'tvli_' + d.voice_id;
-        yeniEl.onclick = ()=>{ selVoiceById(d.voice_id); _ttsHL(); };
-        yeniEl.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--accent2);background:var(--s4);';
-        yeniEl.innerHTML='<span style="width:9px;height:9px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span><span style="font-size:12px;font-weight:700;">' + klonAdi + ' ★</span><span style="font-size:11px;color:var(--muted2);flex:1;">Klonlanmış sesiniz</span>';
-        tl.prepend(yeniEl);
-      }
-
-      // Modal ses listesi güncelle
-      buildVoiceList();
-      selVoiceById(d.voice_id);
-
-      // localStorage'a kaydet
-      try{
-        const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
-        klonlar.push({voice_id:d.voice_id, isim:klonAdi, tarih:Date.now()});
-        localStorage.setItem('voiceflow_klonlar', JSON.stringify(klonlar));
-      }catch(e){}
-
-      toast('✓ "' + klonAdi + '" başarıyla klonlandı ve seçildi!');
-
+      _onVoiceCloned(d.voice_id, klonAdi);
+      toast('✓ "' + klonAdi + '" cloned and selected!');
     } else if(d.plan_gerekli){
-      toast('ElevenLabs Creator planı gereklidir (22$/ay). Ses klonlama free planda desteklenmez.','twarn',8000);
+      toast('ElevenLabs Creator plan required ($22/mo). Voice cloning is not available on free plan.','twarn',8000);
     } else {
-      toast('Klonlama hatası: ' + d.hata||'Bilinmeyen hata','terr',6000);
+      toast('Clone error: ' + (d.hata||'Unknown error'),'terr',6000);
     }
   }catch(e){
-    toast('Bağlantı hatası — klonlama başarısız','terr');
+    toast('Connection error — cloning failed','terr');
   }
 }
 

@@ -224,7 +224,8 @@ async def deepgram_desifre_et(audio_path: str, kaynak_dil: str = "tr"):
             **({"detect_language": True} if otomatik else {"language": kaynak_dil}),
         )
         response = await asyncio.to_thread(
-            deepgram.listen.rest.v("1").transcribe_file, payload, options
+            deepgram.listen.rest.v("1").transcribe_file, payload, options,
+            timeout=httpx.Timeout(300.0, connect=15.0)   # 5 dk timeout — büyük dosyalar için
         )
 
         # Algılanan dili logla

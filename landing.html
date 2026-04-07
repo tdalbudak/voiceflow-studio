@@ -1,832 +1,344 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceFlow Studio — AI Dublaj & Altyazı | Otomatik Video Çevirisi</title>
-<meta name="description" content="AI ile videolarınızı 60+ dile dublajlayın ve altyazı ekleyin. Deepgram, DeepL ve ElevenLabs destekli. Veed ve Rask'tan daha ucuz. Ücretsiz deneyin.">
-<meta name="keywords" content="AI dublaj, otomatik altyazı, video çeviri, TikTok altyazı, ses klonlama, VoiceFlow Studio">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://voiceflow-studio-production-395d.up.railway.app/">
-
-<!-- Open Graph / Facebook -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://voiceflow-studio-production-395d.up.railway.app/">
-<meta property="og:title" content="VoiceFlow Studio — AI Dublaj & Altyazı">
-<meta property="og:description" content="Videolarınızı 60+ dile AI ile dublajlayın. Ücretsiz başlayın, Veed'den ucuz, Rask'tan daha iyi.">
-<meta property="og:image" content="https://voiceflow-studio-production-395d.up.railway.app/og-image.png">
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="VoiceFlow Studio — AI Dublaj & Altyazı">
-<meta name="twitter:description" content="Videolarınızı 60+ dile AI ile dublajlayın. Ücretsiz başlayın.">
-<meta name="twitter:image" content="https://voiceflow-studio-production-395d.up.railway.app/og-image.png">
-
-<!-- Favicon -->
+<title>VoiceFlow Studio — AI Dubbing & Subtitles for Any Video</title>
+<meta name="description" content="Dub your videos into 60+ languages in minutes. AI-powered dubbing, voice cloning, auto-subtitles. Free to start.">
+<meta property="og:title" content="VoiceFlow Studio — AI Video Dubbing">
+<meta property="og:description" content="Dub any video into 60+ languages with AI. Voice cloning, auto-subtitles, TikTok captions.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>V</text></svg>">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const _sbLanding = supabase.createClient(
-  'https://scbnrgvpmdmmginezamj.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjYm5yZ3ZwbWRtbWdpbmV6YW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjU5OTMsImV4cCI6MjA5MDIwMTk5M30.9KntnaEQvbzCjw6t3iUd-PUker2_vtf8XaEnCoo3R2k'
-);
-</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-:root {
-  --bg: #09090b;
-  --bg2: #111113;
-  --bg3: #18181b;
-  --border: rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.14);
-  --txt: #fafafa;
-  --muted: #71717a;
-  --muted2: #a1a1aa;
-  --accent: #6366f1;
-  --accent2: #818cf8;
-  --accent3: #a5b4fc;
-  --green: #22c55e;
-  --yellow: #eab308;
-  --pink: #ec4899;
-  --r: 12px;
-  --r2: 20px;
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#07090f;--s1:#0d1117;--s2:#111827;--border:#1f2d42;
+  --txt:#e8edf5;--muted:#5a7090;--muted2:#8ba3be;
+  --accent:#2563eb;--accent2:#3b82f6;--purple2:#8b5cf6;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;}
+a{color:inherit;text-decoration:none;}
 
-/* NOISE TEXTURE */
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,15,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;letter-spacing:-.4px;}
+.nav-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--purple2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;}
+.nav-links{display:flex;gap:28px;font-size:14px;font-weight:500;color:var(--muted2);}
+.nav-links a:hover{color:var(--txt);}
+.nav-cta{background:var(--accent);color:#fff;padding:9px 22px;border-radius:100px;font-size:14px;font-weight:700;transition:all .18s;}
+.nav-cta:hover{background:#1d4ed8;transform:scale(1.03);}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;}
-.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
-.nav-links{display:flex;align-items:center;gap:8px;}
-.lang-btn{background:transparent;border:1px solid var(--border2);color:var(--muted2);padding:5px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
-.lang-btn.active,.lang-btn:hover{background:rgba(99,102,241,.15);border-color:var(--accent);color:var(--accent3);}
-.nav-cta{background:var(--accent);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
-.nav-cta:hover{background:#4f46e5;transform:translateY(-1px);}
+.hero{padding:140px 24px 100px;text-align:center;max-width:880px;margin:0 auto;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:26px;}
+.hero h1{font-size:clamp(36px,6vw,70px);font-weight:800;letter-spacing:-2.5px;line-height:1.06;margin-bottom:22px;}
+.grad{background:linear-gradient(135deg,#60a5fa,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:clamp(16px,2vw,20px);color:var(--muted2);max-width:580px;margin:0 auto 38px;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-primary{background:linear-gradient(135deg,var(--accent2),var(--purple2));color:#fff;padding:15px 34px;border-radius:100px;font-size:16px;font-weight:700;transition:all .2s;display:inline-flex;align-items:center;gap:9px;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(99,102,241,.4);}
+.btn-ghost{border:1px solid var(--border);color:var(--muted2);padding:15px 28px;border-radius:100px;font-size:15px;font-weight:600;transition:all .18s;}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--txt);}
 
-/* HERO — Maestra benzeri split layout */
-.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:120px 60px 80px;position:relative;gap:60px;max-width:1400px;margin:0 auto;}
-.hero-left{text-align:left;}
-.hero-right{display:flex;align-items:center;justify-content:center;}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:var(--accent3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;margin-bottom:28px;animation:fadeUp .6s ease both;}
-.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.social{text-align:center;padding:16px 24px 64px;color:var(--muted);font-size:13px;}
+.social span{margin:0 14px;}
 
-h1{font-family:'Syne',sans-serif;font-size:clamp(36px,5vw,72px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:20px;animation:fadeUp .7s .1s ease both;}
-.h1-accent{background:linear-gradient(135deg,var(--accent2),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hero-sub{font-size:clamp(15px,1.5vw,18px);color:var(--muted2);max-width:480px;margin:0 0 32px;font-weight:300;animation:fadeUp .7s .2s ease both;line-height:1.7;}
-.hero-btns{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp .7s .3s ease both;}
-.btn-primary{background:var(--accent);color:#fff;border:none;padding:14px 32px;border-radius:var(--r);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
-.btn-primary:hover{background:#4f46e5;transform:translateY(-2px);box-shadow:0 8px 30px rgba(99,102,241,.4);}
-.btn-secondary{background:transparent;color:var(--txt);border:1px solid var(--border2);padding:14px 32px;border-radius:var(--r);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
-.btn-secondary:hover{border-color:var(--accent);color:var(--accent3);transform:translateY(-2px);}
+section{padding:88px 24px;}
+.sec-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--accent2);text-align:center;margin-bottom:12px;}
+.sec-title{font-size:clamp(28px,4vw,46px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:14px;}
+.sec-sub{font-size:17px;color:var(--muted2);text-align:center;max-width:560px;margin:0 auto 56px;}
 
-/* Hero sağ — kayıt formu kartı */
-.hero-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:36px;width:100%;max-width:420px;backdrop-filter:blur(20px);animation:fadeUp .7s .3s ease both;}
-.hero-card-title{font-size:15px;color:var(--muted2);text-align:center;margin-bottom:6px;line-height:1.6;}
-.hero-card-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
-.hero-card-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box;transition:border .2s;}
-.hero-card-input:focus{border-color:var(--accent2);}
-.hero-card-btn{width:100%;background:var(--accent);border:none;color:#fff;padding:13px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-bottom:14px;}
-.hero-card-btn:hover{background:#4f46e5;}
-.hero-card-divider{display:flex;align-items:center;gap:12px;margin-bottom:14px;color:var(--muted);font-size:13px;}
-.hero-card-divider::before,.hero-card-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
-.hero-card-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:12px;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;}
-.hero-card-google:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
-.hero-card-stars{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:12px;color:var(--muted2);}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1100px;margin:0 auto;}
+.feat-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;transition:all .22s;position:relative;overflow:hidden;}
+.feat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(99,102,241,.06),transparent 60%);pointer-events:none;}
+.feat-card:hover{border-color:rgba(99,102,241,.4);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.5);}
+.feat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;}
+.feat-card h3{font-size:18px;font-weight:700;margin-bottom:8px;letter-spacing:-.3px;}
+.feat-card p{font-size:14px;color:var(--muted2);line-height:1.7;}
 
-/* GLOW */
-.glow{position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.12) 0%,transparent 70%);top:50%;left:30%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:32px;max-width:860px;margin:0 auto;}
+.step{text-align:center;padding:20px 14px;}
+.step-num{width:46px;height:46px;background:linear-gradient(135deg,var(--accent2),var(--purple2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;margin:0 auto 16px;}
+.step h3{font-size:16px;font-weight:700;margin-bottom:8px;}
+.step p{font-size:14px;color:var(--muted2);}
 
-/* STATS */
-.stats{display:flex;gap:48px;justify-content:flex-start;flex-wrap:wrap;margin-top:48px;animation:fadeUp .7s .4s ease both;}
-.stat{text-align:left;}
-.stat-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--txt);}
-.stat-lbl{font-size:13px;color:var(--muted);margin-top:4px;}
+.compare{max-width:820px;margin:0 auto;overflow-x:auto;}
+.compare table{width:100%;border-collapse:collapse;}
+.compare th{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);}
+.compare td{padding:12px 16px;font-size:14px;border-bottom:1px solid rgba(31,45,66,.5);}
+.compare tr:hover td{background:rgba(255,255,255,.02);}
+.us{color:#60a5fa;font-weight:700;}
+.chk{color:#22c55e;}
+.crs{color:#374151;}
 
-/* Mobile responsive */
-@media(max-width:900px){
-  .hero{grid-template-columns:1fr;padding:100px 24px 60px;text-align:center;}
-  .hero-left{order:1;}
-  .hero-right{order:2;}
-  .hero-sub,.stats{margin-left:auto;margin-right:auto;}
-  .stats{justify-content:center;}
-  .hero-btns{justify-content:center;}
-  .hero-card{max-width:100%;}
-}
+.lang-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:860px;margin:0 auto;}
+.lang-chip{background:var(--s2);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:13px;font-weight:500;color:var(--muted2);}
 
-/* SECTION */
-section{padding:100px 24px;max-width:1200px;margin:0 auto;}
-.section-tag{display:inline-block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--accent3);margin-bottom:16px;}
-.section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,52px);font-weight:800;letter-spacing:-1px;margin-bottom:16px;line-height:1.1;}
-.section-sub{font-size:18px;color:var(--muted2);max-width:560px;font-weight:300;}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:980px;margin:0 auto;}
+.price-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px 24px;transition:all .2s;}
+.price-card.featured{border-color:var(--accent2);background:linear-gradient(145deg,rgba(37,99,235,.08),var(--s1));position:relative;}
+.price-card.featured::after{content:'MOST POPULAR';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#fff;font-size:10px;font-weight:800;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:1px;}
+.price-name{font-size:13px;font-weight:700;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+.price-amount{font-size:40px;font-weight:800;letter-spacing:-1.5px;margin-bottom:4px;}
+.price-amount span{font-size:18px;font-weight:500;color:var(--muted2);}
+.price-mins{font-size:13px;color:var(--muted2);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:24px;}
+.price-features li{font-size:13px;display:flex;align-items:flex-start;gap:8px;}
+.price-features li::before{content:'✓';color:var(--accent2);font-weight:700;flex-shrink:0;}
+.btn-plan{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .18s;}
+.btn-plan.primary{background:var(--accent);color:#fff;}
+.btn-plan.primary:hover{background:#1d4ed8;}
+.btn-plan.ghost{background:var(--s2);color:var(--muted2);border:1px solid var(--border);}
+.btn-plan.ghost:hover{border-color:var(--accent2);color:var(--txt);}
 
-/* FEATURES GRID */
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:2px;margin-top:60px;border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
-.feat{background:var(--bg2);padding:36px;transition:background .2s;position:relative;overflow:hidden;}
-.feat:hover{background:var(--bg3);}
-.feat::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.05),transparent);opacity:0;transition:opacity .3s;}
-.feat:hover::before{opacity:1;}
-.feat-icon{font-size:32px;margin-bottom:20px;display:block;}
-.feat-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:10px;}
-.feat-desc{font-size:14px;color:var(--muted2);line-height:1.7;}
-.feat-tag{display:inline-block;background:rgba(99,102,241,.15);color:var(--accent3);font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;margin-top:14px;border:1px solid rgba(99,102,241,.2);}
-.feat-tag.green{background:rgba(34,197,94,.12);color:#4ade80;border-color:rgba(34,197,94,.2);}
-.feat-tag.yellow{background:rgba(234,179,8,.12);color:#fde047;border-color:rgba(234,179,8,.2);}
-.feat-tag.pink{background:rgba(236,72,153,.12);color:#f472b6;border-color:rgba(236,72,153,.2);}
+.cta-box{background:linear-gradient(135deg,rgba(37,99,235,.1),rgba(124,58,237,.1));border:1px solid rgba(99,102,241,.2);border-radius:24px;padding:68px 32px;text-align:center;max-width:740px;margin:0 auto;}
+.cta-box h2{font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-1.5px;margin-bottom:14px;}
+.cta-box p{font-size:17px;color:var(--muted2);margin-bottom:32px;}
 
-/* HOW IT WORKS */
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-top:60px;position:relative;}
-.steps::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);pointer-events:none;}
-.step{text-align:center;position:relative;}
-.step-num{width:64px;height:64px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent3);margin:0 auto 20px;}
-.step-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px;}
-.step-desc{font-size:13px;color:var(--muted2);}
+footer{border-top:1px solid var(--border);padding:40px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;max-width:1200px;margin:0 auto;}
+.foot-logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.foot-links{display:flex;gap:24px;font-size:13px;color:var(--muted);}
+.foot-links a:hover{color:var(--txt);}
 
-/* LANGUAGES */
-.lang-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px;}
-.lang-pill{background:var(--bg3);border:1px solid var(--border);padding:8px 16px;border-radius:100px;font-size:13px;color:var(--muted2);transition:all .2s;cursor:default;}
-.lang-pill:hover{border-color:var(--accent);color:var(--accent3);}
-
-/* PRICING */
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:60px;}
-.plan{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:36px;position:relative;transition:transform .2s;}
-.plan:hover{transform:translateY(-4px);}
-.plan.featured{border-color:var(--accent);background:linear-gradient(135deg,rgba(99,102,241,.08),var(--bg2));}
-.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 16px;border-radius:100px;white-space:nowrap;}
-.plan-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;}
-.plan-price{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;margin:16px 0 4px;line-height:1;}
-.plan-price span{font-size:20px;color:var(--muted2);font-family:'DM Sans',sans-serif;font-weight:300;}
-.plan-period{font-size:13px;color:var(--muted);margin-bottom:28px;}
-.plan-features{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:32px;}
-.plan-features li{font-size:14px;color:var(--muted2);display:flex;align-items:center;gap:10px;}
-.plan-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;}
-.plan-features li.no::before{content:'✕';color:var(--muted);}
-.plan-features li.no{color:var(--muted);}
-.plan-btn{width:100%;padding:13px;border-radius:var(--r);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;border:none;}
-.plan-btn.free{background:var(--bg3);color:var(--txt);border:1px solid var(--border2);}
-.plan-btn.free:hover{border-color:var(--accent);color:var(--accent3);}
-.plan-btn.pro{background:var(--accent);color:#fff;}
-.plan-btn.pro:hover{background:#4f46e5;}
-
-/* FOOTER */
-footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:14px;}
-footer a{color:var(--muted2);text-decoration:none;}
-footer a:hover{color:var(--accent3);}
-
-/* DIVIDER */
-.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);max-width:1200px;margin:0 auto;}
-
-/* SCROLL REVEAL */
-.reveal{opacity:0;transform:translateY(30px);transition:all .7s ease;}
-.reveal.visible{opacity:1;transform:translateY(0);}
-
-@media(max-width:768px){
-  nav{padding:14px 20px;}
-  .stats{gap:32px;}
-  .steps::before{display:none;}
-  section{padding:70px 20px;}
+@media(max-width:640px){
+  .nav-links{display:none;}
+  .hero{padding:110px 16px 60px;}
+  footer{flex-direction:column;text-align:center;}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <div class="logo">
-    <div class="logo-dot"></div>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">V</div>
     VoiceFlow Studio
   </div>
   <div class="nav-links">
-    <button class="lang-btn active" onclick="setLang('tr')">TR</button>
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" onclick="setLang('es')">ES</button>
-    <button class="lang-btn" onclick="setLang('de')">DE</button>
-    <button class="lang-btn" onclick="setLang('fr')">FR</button>
-    <button onclick="document.getElementById('google_popup').style.display='block'" id="nav_google_btn" style="display:flex;align-items:center;gap:8px;background:#fff;color:#1a1a1a;border:none;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
-      onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Google ile Giriş
-    </button>
-    <a href="/app" class="nav-cta" id="nav-cta-btn">
-      <span id="nav-cta-txt">Uygulamayı Aç</span> →
-    </a>
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#languages">Languages</a>
   </div>
+  <a href="/app" class="nav-cta">Open Editor →</a>
 </nav>
 
-<!-- HERO — Split Layout -->
 <div class="hero">
-  <div class="glow"></div>
-
-  <!-- SOL: Başlık + Açıklama -->
-  <div class="hero-left" style="position:relative;z-index:1;">
-    <div class="hero-badge">
-      <div class="badge-dot"></div>
-      <span id="badge-txt">AI Destekli · 100+ Dil · Saniyeler İçinde</span>
-    </div>
-    <h1 id="h1-txt">Videonuzu<br><span class="h1-accent" id="h1-accent">Dünyaya Açın</span></h1>
-    <p class="hero-sub" id="hero-sub">Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.</p>
-
-    <div class="hero-btns">
-      <button onclick="modalAc('sihirli')" class="btn-primary" style="cursor:pointer;border:none;">⚡ Ücretsiz Başla</button>
-      <button onclick="modalAc('pro')" class="btn-secondary" style="cursor:pointer;">🎛️ Pro Stüdyo →</button>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><div class="stat-num">100+</div><div class="stat-lbl" id="stat1">Desteklenen Dil</div></div>
-      <div class="stat"><div class="stat-num">~2dk</div><div class="stat-lbl" id="stat2">İşlem Süresi</div></div>
-      <div class="stat"><div class="stat-num">%95+</div><div class="stat-lbl" id="stat4">Doğruluk</div></div>
-    </div>
+  <div class="hero-badge">
+    <i class="fa-solid fa-waveform-lines"></i>
+    Powered by Deepgram · DeepL · ElevenLabs
   </div>
-
-  <!-- SAĞ: Kayıt Kartı -->
-  <div class="hero-right" style="position:relative;z-index:1;">
-    <div class="hero-card">
-      <div class="hero-card-title">Transkript, altyazı ve seslendirme<br><strong style="color:var(--txt);">tek platformda, anında.</strong></div>
-      <div class="hero-card-sub">Kredi kartı gerekmez · Ücretsiz başla</div>
-
-      <input class="hero-card-input" type="email" id="hero_email" placeholder="E-posta adresiniz">
-      <button class="hero-card-btn" onclick="heroKayitBaslat()">Ücretsiz Başla →</button>
-
-      <div class="hero-card-divider">veya</div>
-
-      <button class="hero-card-google" onclick="document.getElementById('google_popup').style.display='block'">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Google ile Kayıt Ol
-      </button>
-
-      <div class="hero-card-stars">
-        <span style="color:#eab308;">★★★★★</span>
-        <span>4.8 · 1,200+ kullanıcı</span>
-      </div>
-
-      <!-- Mini mod seçici -->
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-align:center;">Ne yapmak istiyorsun?</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-          <button onclick="modalAc('sihirli')" style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);color:#ec4899;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(236,72,153,.2)'" onmouseout="this.style.background='rgba(236,72,153,.1)'">
-            📱<br>TikTok
-          </button>
-          <button onclick="modalAc('pro')" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:var(--accent3);padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(99,102,241,.2)'" onmouseout="this.style.background='rgba(99,102,241,.1)'">
-            🎛️<br>Pro Editör
-          </button>
-          <button onclick="window.location='/app'" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='rgba(34,197,94,.2)'" onmouseout="this.style.background='rgba(34,197,94,.1)'">
-            🚀<br>Hızlı Aç
-          </button>
-        </div>
-      </div>
-    </div>
+  <h1>Dub any video into<br><span class="grad">60+ languages</span><br>in minutes.</h1>
+  <p>AI dubbing, voice cloning, and auto-subtitles — all in one studio. No editing skills required.</p>
+  <div class="hero-btns">
+    <a href="/app" class="btn-primary"><i class="fa-solid fa-play"></i> Try Free — No signup needed</a>
+    <a href="#how-it-works" class="btn-ghost">See how it works</a>
   </div>
 </div>
 
-<div class="divider"></div>
+<div class="social">
+  <span>🎬 YouTube Creators</span>
+  <span>🎓 Online Educators</span>
+  <span>🏢 Marketing Teams</span>
+  <span>🎙️ Podcasters</span>
+</div>
 
-<!-- INFLUENCER + FİYAT — HERO'NUN HEMEN ALTINDA -->
-<section style="padding:80px 24px 0;max-width:1100px;margin:0 auto;">
-
-  <!-- Influencer 3 kart -->
-  <div class="reveal" style="text-align:center;margin-bottom:40px;">
-    <div class="section-tag" style="background:rgba(236,72,153,.1);color:#ec4899;border-color:rgba(236,72,153,.2);">İçerik Üreticileri</div>
-    <h2 class="section-title">Influencer'lar İçin Neler Yapabiliriz?</h2>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;" class="reveal">
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:28px;cursor:pointer;transition:all .25s;display:flex;align-items:flex-start;gap:16px;"
-      onclick="modalAc('sihirli')" onmouseover="this.style.borderColor='#ec4899';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
-      <div style="font-size:36px;flex-shrink:0;">🔥</div>
-      <div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px;font-family:'Syne',sans-serif;">Hormozi Stili Altyazı</div>
-        <div style="font-size:13px;color:#71717a;line-height:1.6;">Her kelime ekranda tek tek parlar. TikTok'ta izlenme patlaması yaşa.</div>
-      </div>
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:28px;cursor:pointer;transition:all .25s;display:flex;align-items:flex-start;gap:16px;"
-      onclick="modalAc('sihirli')" onmouseover="this.style.borderColor='#a855f7';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
-      <div style="font-size:36px;flex-shrink:0;">🎙️</div>
-      <div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px;font-family:'Syne',sans-serif;">Kendi Sesinle AI Dublaj</div>
-        <div style="font-size:13px;color:#71717a;line-height:1.6;">Sesini klonla, 60+ dilde konuş. Global kitleye ulaş.</div>
-      </div>
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:28px;cursor:pointer;transition:all .25s;display:flex;align-items:flex-start;gap:16px;"
-      onclick="modalAc('sihirli')" onmouseover="this.style.borderColor='#22c55e';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform=''">
-      <div style="font-size:36px;flex-shrink:0;">✂️</div>
-      <div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px;font-family:'Syne',sans-serif;">Sessiz Boşlukları Kes</div>
-        <div style="font-size:13px;color:#71717a;line-height:1.6;">ıı, eee, hmm gibi dolgu sesler otomatik silinir. Video %30 daha dinamik.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fiyatlandırma -->
-  <div class="reveal" style="text-align:center;margin-bottom:32px;">
-    <div class="section-tag">Şeffaf Fiyatlar</div>
-    <h2 class="section-title" style="font-size:32px;">Planını Seç, Hemen Başla</h2>
-    <p style="color:#71717a;font-size:14px;">Kredi kartı gerekmez · İstediğin zaman iptal et</p>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;" class="reveal">
-    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 16px;text-align:center;">
-      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Lite</div>
-      <div style="font-size:32px;font-weight:800;font-family:'Syne',sans-serif;">$0</div>
-      <div style="font-size:11px;color:#71717a;margin:2px 0 12px;">/ay</div>
-      <div style="font-size:12px;color:#a1a1aa;margin-bottom:16px;line-height:1.6;">10 dk/ay<br>Altyazı & Transkript</div>
-      <button onclick="modalAc('sihirli')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
-        onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">Ücretsiz Başla</button>
-    </div>
-    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 16px;text-align:center;">
-      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Creator</div>
-      <div style="font-size:32px;font-weight:800;font-family:'Syne',sans-serif;">$9</div>
-      <div style="font-size:11px;color:#71717a;margin:2px 0 12px;">/ay</div>
-      <div style="font-size:12px;color:#a1a1aa;margin-bottom:16px;line-height:1.6;">75 dk/ay<br>AI Dublaj dahil</div>
-      <button onclick="modalAc('sihirli')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
-        onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">Seç</button>
-    </div>
-    <div style="background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(168,85,247,.08));border:1.5px solid rgba(99,102,241,.5);border-radius:16px;padding:22px 16px;text-align:center;position:relative;">
-      <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:100px;white-space:nowrap;">EN POPÜLER</div>
-      <div style="font-size:11px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Studio</div>
-      <div style="font-size:32px;font-weight:800;font-family:'Syne',sans-serif;">$19</div>
-      <div style="font-size:11px;color:#71717a;margin:2px 0 12px;">/ay</div>
-      <div style="font-size:12px;color:#a1a1aa;margin-bottom:16px;line-height:1.6;">200 dk/ay<br>Ses Klonlama + Öncelik</div>
-      <button onclick="modalAc('pro')" style="width:100%;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
-        onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='var(--accent)'">Seç</button>
-    </div>
-    <div style="background:#111113;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 16px;text-align:center;">
-      <div style="font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Business</div>
-      <div style="font-size:32px;font-weight:800;font-family:'Syne',sans-serif;">$49</div>
-      <div style="font-size:11px;color:#71717a;margin:2px 0 12px;">/ay</div>
-      <div style="font-size:12px;color:#a1a1aa;margin-bottom:16px;line-height:1.6;">600 dk/ay<br>API + Beyaz Etiket</div>
-      <button onclick="window.open('mailto:hello@voiceflow.studio')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;"
-        onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">İletişim</button>
-    </div>
-  </div>
-  <p style="text-align:center;font-size:12px;color:#52525b;padding-bottom:60px;">+50 Kredi tek seferlik: <strong style="color:#a1a1aa;">$5</strong> · Abonelik zorunlu değil</p>
-</section>
-
-<div class="divider"></div>
-
-<!-- FEATURES -->
 <section id="features">
-  <div class="reveal">
-    <div class="section-tag" id="feat-tag">Özellikler</div>
-    <h2 class="section-title" id="feat-title">Her şey bir arada</h2>
-    <p class="section-sub" id="feat-sub">Videonuzu yükleyin, gerisini bize bırakın.</p>
-  </div>
-  <div class="features-grid reveal">
-    <div class="feat">
-      <span class="feat-icon">🎙️</span>
-      <div class="feat-title" id="f1t">AI Dublaj</div>
-      <div class="feat-desc" id="f1d">Videonuzdaki konuşmaları otomatik deşifre edip hedef dile çevirir, gerçekçi AI sesiyle seslendirip orijinal videoya işler. Konuşmacı değişimini algılar, her konuşmacıya farklı ses atar.</div>
-      <span class="feat-tag" id="f1tag">ElevenLabs TTS</span>
+  <div class="sec-label">What you can do</div>
+  <div class="sec-title">Everything in one studio.</div>
+  <div class="sec-sub">From transcript to dubbed video — no switching between tools.</div>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(37,99,235,.15);">🎙️</div>
+      <h3>AI Dubbing</h3>
+      <p>Upload a video, pick a target language and voice — get a fully dubbed video with synced audio in minutes. 60+ languages supported.</p>
     </div>
-    <div class="feat">
-      <span class="feat-icon">📝</span>
-      <div class="feat-title" id="f2t">Otomatik Altyazı</div>
-      <div class="feat-desc" id="f2d">Deepgram Nova-2 ile %95+ doğrulukla transkript oluşturur. SRT, VTT, ASS formatlarında export edin. Gelişmiş font, renk ve pozisyon ayarları ile videoyu doğrudan gömmek mümkün.</div>
-      <span class="feat-tag green" id="f2tag">Deepgram Nova-2</span>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(124,58,237,.15);">🧬</div>
+      <h3>Voice Cloning</h3>
+      <p>Record 30 seconds of your voice or upload audio. The AI clones it exactly — dub videos with your own voice in any language.</p>
     </div>
-    <div class="feat">
-      <span class="feat-icon">🎵</span>
-      <div class="feat-title" id="f3t">TikTok Altyazı Modu</div>
-      <div class="feat-desc" id="f3d">Video oynarken her kelime tek tek parlar. İçerik üreticileri için tasarlanmış kaydırmalı altyazı modu. Kelime bazında zaman damgası ile mükemmel senkron.</div>
-      <span class="feat-tag pink" id="f3tag">İçerik Üreticisi</span>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(16,185,129,.15);">💬</div>
+      <h3>Auto-Subtitles</h3>
+      <p>Deepgram AI transcribes your video with speaker detection. Style them freely, then burn into the video.</p>
     </div>
-    <div class="feat">
-      <span class="feat-icon">🌍</span>
-      <div class="feat-title" id="f4t">60+ Dil Desteği</div>
-      <div class="feat-desc" id="f4d">DeepL ile profesyonel kalite çeviri. Türkçe, İngilizce, Almanca, Fransızca, İspanyolca, Rusça, Japonca, Çince, Arapça ve onlarca daha fazla dil.</div>
-      <span class="feat-tag yellow" id="f4tag">DeepL Pro</span>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(239,68,68,.15);">🔥</div>
+      <h3>TikTok / Hormozi Mode</h3>
+      <p>Word-by-word highlighting in bold TikTok style. The viral caption format used by top creators. One click to apply.</p>
     </div>
-    <div class="feat">
-      <span class="feat-icon">⌨️</span>
-      <div class="feat-title" id="f5t">Metin → Ses</div>
-      <div class="feat-desc" id="f5d">Yazdığınız metni 12 farklı AI sesiyle anında seslendirin. Bahadır ve İlknur ile Türkçe, Brian ve Sarah ile İngilizce — stüdyo kalitesinde ses üretimi.</div>
-      <span class="feat-tag" id="f5tag">12 Ses Aktörü</span>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(245,158,11,.15);">📝</div>
+      <h3>Transcript Editor</h3>
+      <p>Click any segment to jump to that moment. Edit text, merge or split segments. Export as SRT, VTT, TXT or ASS.</p>
     </div>
-    <div class="feat">
-      <span class="feat-icon">👥</span>
-      <div class="feat-title" id="f6t">Konuşmacı Ayrımı</div>
-      <div class="feat-desc" id="f6d">Birden fazla konuşmacı olan videolarda her konuşmacıyı otomatik olarak ayırt eder. Her konuşmacıya farklı renk badge, farklı ses aktörü atayın.</div>
-      <span class="feat-tag green" id="f6tag">Diarization</span>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(219,39,119,.15);">✍️</div>
+      <h3>Text-to-Speech</h3>
+      <p>Type or paste text — choose from 30+ professional AI voices with emotion controls — download studio-quality audio instantly.</p>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- HOW IT WORKS -->
-<section id="how">
-  <div class="reveal" style="text-align:center;">
-    <div class="section-tag" id="how-tag">Nasıl Çalışır</div>
-    <h2 class="section-title" id="how-title">3 adımda hazır</h2>
-  </div>
-  <div class="steps reveal">
+<section id="how-it-works" style="background:var(--s1);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="sec-label">Simple process</div>
+  <div class="sec-title">3 steps. Done.</div>
+  <div class="sec-sub">From upload to dubbed video in under 5 minutes.</div>
+  <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
-      <div class="step-title" id="s1t">Yükle</div>
-      <div class="step-desc" id="s1d">Video veya ses dosyanızı sürükleyip bırakın. MP4, MOV, MP3, WAV desteklenir.</div>
+      <h3>Upload your video</h3>
+      <p>Drop any video or audio file. MP4, MOV, AVI, MP3 — all supported.</p>
     </div>
     <div class="step">
       <div class="step-num">2</div>
-      <div class="step-title" id="s2t">Seç</div>
-      <div class="step-desc" id="s2d">Kaynak dili, hedef dili ve ses aktörünü seçin. AI gerisini halleder.</div>
+      <h3>Choose language & voice</h3>
+      <p>Pick target language, select an AI voice or clone your own. Adjust emotion and tone with sliders.</p>
     </div>
     <div class="step">
       <div class="step-num">3</div>
-      <div class="step-title" id="s3t">İndir</div>
-      <div class="step-desc" id="s3d">Dakikalar içinde işlenmiş videonuzu veya altyazı dosyanızı indirin.</div>
+      <h3>Download result</h3>
+      <p>Get your dubbed MP4, subtitle file (SRT/VTT), or audio — ready to publish anywhere.</p>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- LANGUAGES -->
-<section id="languages">
-  <div class="reveal">
-    <div class="section-tag" id="lang-tag">Dil Desteği</div>
-    <h2 class="section-title" id="lang-title">60+ dilde konuşun</h2>
-  </div>
-  <div class="lang-grid reveal">
-    <div class="lang-pill">🇹🇷 Türkçe</div>
-    <div class="lang-pill">🇺🇸 English</div>
-    <div class="lang-pill">🇩🇪 Deutsch</div>
-    <div class="lang-pill">🇫🇷 Français</div>
-    <div class="lang-pill">🇪🇸 Español</div>
-    <div class="lang-pill">🇮🇹 Italiano</div>
-    <div class="lang-pill">🇧🇷 Português</div>
-    <div class="lang-pill">🇷🇺 Русский</div>
-    <div class="lang-pill">🇯🇵 日本語</div>
-    <div class="lang-pill">🇨🇳 中文</div>
-    <div class="lang-pill">🇸🇦 العربية</div>
-    <div class="lang-pill">🇰🇷 한국어</div>
-    <div class="lang-pill">🇳🇱 Nederlands</div>
-    <div class="lang-pill">🇵🇱 Polski</div>
-    <div class="lang-pill">🇸🇪 Svenska</div>
-    <div class="lang-pill">🇩🇰 Dansk</div>
-    <div class="lang-pill">🇳🇴 Norsk</div>
-    <div class="lang-pill">🇫🇮 Suomi</div>
-    <div class="lang-pill">+ 42 daha fazla</div>
+<section>
+  <div class="sec-label">Comparison</div>
+  <div class="sec-title">How we stack up.</div>
+  <div class="sec-sub">More features, lower price than the leading AI dubbing tools.</div>
+  <div class="compare">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="us">VoiceFlow Studio</th>
+          <th>HeyGen</th>
+          <th>Rask AI</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Starting price</td><td class="us">Free / $9.99</td><td>$24/mo</td><td>$15/mo</td></tr>
+        <tr><td>Minutes included</td><td class="us">10 free / 75 paid</td><td>10 min only</td><td>Limited</td></tr>
+        <tr><td>AI Dubbing</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
+        <tr><td>Voice Cloning</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
+        <tr><td>Auto-Subtitles</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
+        <tr><td>TikTok word-by-word mode</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Browser voice recording</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Emotion control sliders</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Speaker detection</td><td class="us chk">✓</td><td class="crs">✗</td><td class="chk">✓</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
-<div class="divider"></div>
+<section id="languages" style="background:var(--s1);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="sec-label">Supported languages</div>
+  <div class="sec-title">60+ languages.</div>
+  <div class="sec-sub">Transcription, translation, and dubbing across the world's most spoken languages.</div>
+  <div class="lang-grid">
+    <div class="lang-chip">🇺🇸 English</div><div class="lang-chip">🇩🇪 German</div>
+    <div class="lang-chip">🇫🇷 French</div><div class="lang-chip">🇪🇸 Spanish</div>
+    <div class="lang-chip">🇮🇹 Italian</div><div class="lang-chip">🇵🇹 Portuguese</div>
+    <div class="lang-chip">🇳🇱 Dutch</div><div class="lang-chip">🇵🇱 Polish</div>
+    <div class="lang-chip">🇷🇺 Russian</div><div class="lang-chip">🇯🇵 Japanese</div>
+    <div class="lang-chip">🇰🇷 Korean</div><div class="lang-chip">🇨🇳 Chinese</div>
+    <div class="lang-chip">🇸🇦 Arabic</div><div class="lang-chip">🇮🇳 Hindi</div>
+    <div class="lang-chip">🇹🇷 Turkish</div><div class="lang-chip">🇸🇪 Swedish</div>
+    <div class="lang-chip">🇩🇰 Danish</div><div class="lang-chip">🇳🇴 Norwegian</div>
+    <div class="lang-chip">🇫🇮 Finnish</div><div class="lang-chip">🇬🇷 Greek</div>
+    <div class="lang-chip">🇨🇿 Czech</div><div class="lang-chip">🇷🇴 Romanian</div>
+    <div class="lang-chip">🇭🇺 Hungarian</div><div class="lang-chip">🇺🇦 Ukrainian</div>
+    <div class="lang-chip">+ 36 more</div>
+  </div>
+</section>
 
-<!-- PRICING -->
 <section id="pricing">
-  <div class="reveal" style="text-align:center;">
-    <div class="section-tag" id="price-tag">Fiyatlandırma</div>
-    <h2 class="section-title" id="price-title">Basit, şeffaf fiyatlar</h2>
-    <p class="section-sub" id="price-sub" style="margin:0 auto;">Kredi kartı gerekmez. İstediğiniz zaman yükseltebilirsiniz.</p>
-  </div>
-  <div class="pricing-grid reveal">
-    <!-- FREE -->
-    <div class="plan">
-      <div class="plan-name" id="plan1-name">Ücretsiz</div>
-      <div class="plan-price">$0<span>/ay</span></div>
-      <div class="plan-period" id="plan1-period">Sonsuza dek ücretsiz</div>
-      <ul class="plan-features">
-        <li id="pf1-1">10 dakika/ay video işleme</li>
-        <li id="pf1-2">Otomatik altyazı</li>
-        <li id="pf1-3">3 dil desteği</li>
-        <li id="pf1-4">SRT/VTT export</li>
-        <li class="no" id="pf1-5">AI Dublaj</li>
-        <li class="no" id="pf1-6">TikTok modu</li>
-        <li class="no" id="pf1-7">Öncelikli işleme</li>
+  <div class="sec-label">Simple pricing</div>
+  <div class="sec-title">Pay only for what you use.</div>
+  <div class="sec-sub">Start free. Scale when you grow. Cancel anytime.</div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">Lite</div>
+      <div class="price-amount">$0</div>
+      <div class="price-mins">10 minutes / month</div>
+      <ul class="price-features">
+        <li>AI Transcription</li>
+        <li>Auto-subtitles (SRT/VTT)</li>
+        <li>3 AI voices</li>
+        <li>TikTok caption mode</li>
+        <li>Transcript editor</li>
       </ul>
-      <button class="plan-btn free" onclick="window.location='/creator'" id="plan1-btn">Ücretsiz Başla</button>
+      <button class="btn-plan ghost" onclick="location.href='/app'">Get started free</button>
     </div>
-    <!-- PRO -->
-    <div class="plan featured">
-      <div class="plan-badge" id="plan2-badge">En Popüler</div>
-      <div class="plan-name" id="plan2-name">Pro</div>
-      <div class="plan-price">$29<span>/ay</span></div>
-      <div class="plan-period" id="plan2-period">Aylık faturalandırma</div>
-      <ul class="plan-features">
-        <li id="pf2-1">300 dakika/ay video işleme</li>
-        <li id="pf2-2">AI Dublaj (60+ dil)</li>
-        <li id="pf2-3">TikTok altyazı modu</li>
-        <li id="pf2-4">Tüm export formatları</li>
-        <li id="pf2-5">Konuşmacı ayrımı</li>
-        <li id="pf2-6">Öncelikli işleme</li>
-        <li id="pf2-7">Email destek</li>
+    <div class="price-card featured">
+      <div class="price-name">Creator</div>
+      <div class="price-amount">$9<span>/mo</span></div>
+      <div class="price-mins">75 minutes / month</div>
+      <ul class="price-features">
+        <li>Everything in Lite</li>
+        <li>AI Dubbing (60+ languages)</li>
+        <li>30+ premium voices</li>
+        <li>Voice cloning</li>
+        <li>Emotion control sliders</li>
+        <li>Priority processing</li>
       </ul>
-      <button class="plan-btn pro" onclick="window.location='/app'" id="plan2-btn">Pro'ya Geç →</button>
-    <div class="plan">
-      <div class="plan-name" id="plan3-name">Kurumsal</div>
-      <div class="plan-price" style="font-size:36px;" id="plan3-price">Özel</div>
-      <div class="plan-period" id="plan3-period">Hacme göre fiyat</div>
-      <ul class="plan-features">
-        <li id="pf3-1">Sınırsız işleme</li>
-        <li id="pf3-2">API erişimi</li>
-        <li id="pf3-3">Özel ses klonlama</li>
-        <li id="pf3-4">SLA garantisi</li>
-        <li id="pf3-5">Dedicated destek</li>
-        <li id="pf3-6">Beyaz etiket seçeneği</li>
-        <li id="pf3-7">Fatura / kurumsal ödeme</li>
+      <button class="btn-plan primary" onclick="location.href='/app'">Start Creator</button>
+    </div>
+    <div class="price-card">
+      <div class="price-name">Studio</div>
+      <div class="price-amount">$19<span>/mo</span></div>
+      <div class="price-mins">200 minutes / month</div>
+      <ul class="price-features">
+        <li>Everything in Creator</li>
+        <li>Batch processing</li>
+        <li>Multi-speaker dubbing</li>
+        <li>API access</li>
+        <li>A/B version compare</li>
       </ul>
-      <button class="plan-btn free" onclick="window.open('mailto:hello@voiceflow.studio')" id="plan3-btn">İletişime Geç</button>
+      <button class="btn-plan ghost" onclick="location.href='/app'">Start Studio</button>
+    </div>
+    <div class="price-card">
+      <div class="price-name">Business</div>
+      <div class="price-amount">$49<span>/mo</span></div>
+      <div class="price-mins">600 minutes / month</div>
+      <ul class="price-features">
+        <li>Everything in Studio</li>
+        <li>Unlimited voice clones</li>
+        <li>Custom brand kit</li>
+        <li>Priority support</li>
+        <li>Team seats</li>
+      </ul>
+      <button class="btn-plan ghost" onclick="location.href='/app'">Start Business</button>
     </div>
   </div>
 </section>
 
-<!-- MOD SEÇİM MODALİ -->
-<div id="mod_modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#111113;border:1px solid rgba(255,255,255,.12);border-radius:28px;padding:40px;width:480px;max-width:95vw;text-align:center;">
-    <div style="font-size:48px;margin-bottom:16px;" id="modal_icon">✨</div>
-    <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px;" id="modal_title">Sihirli Mod</div>
-    <div style="font-size:14px;color:#71717a;margin-bottom:32px;" id="modal_desc">İçerik üreticileri için basitleştirilmiş arayüz</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
-        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">1</div>
-        <div><div style="font-size:14px;font-weight:700;">Videonu yükle</div><div style="font-size:12px;color:#71717a;">MP4, MOV, MP3 — sürükle bırak</div></div>
-      </div>
-      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
-        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">2</div>
-        <div><div style="font-size:14px;font-weight:700;">Aksiyon seç</div><div style="font-size:12px;color:#71717a;">Altyazı, Dublaj veya Kes</div></div>
-      </div>
-      <div style="background:#18181b;border:1.5px solid rgba(99,102,241,.3);border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;text-align:left;">
-        <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">3</div>
-        <div><div style="font-size:14px;font-weight:700;">İndir</div><div style="font-size:12px;color:#71717a;">Saniyeler içinde hazır</div></div>
-      </div>
+<section style="padding:20px 24px 90px;">
+  <div class="cta-box">
+    <h2>Ready to go global?</h2>
+    <p>Your first 10 minutes are completely free. No signup, no credit card.</p>
+    <a href="/app" class="btn-primary" style="display:inline-flex;">
+      <i class="fa-solid fa-rocket"></i> Open VoiceFlow Studio
+    </a>
+  </div>
+</section>
+
+<div style="border-top:1px solid var(--border);">
+  <footer>
+    <div class="foot-logo">
+      <div style="width:28px;height:28px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;">V</div>
+      VoiceFlow Studio
     </div>
-    <button id="modal_cta" onclick="modalGit()" style="width:100%;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:12px;">Başla →</button>
-    <button onclick="document.getElementById('mod_modal').style.display='none'" style="background:none;border:none;color:#71717a;cursor:pointer;font-size:13px;font-family:inherit;">Vazgeç</button>
-  </div>
+    <div class="foot-links">
+      <a href="/app">Editor</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div style="font-size:12px;color:var(--muted);">© 2026 VoiceFlow Studio. All rights reserved.</div>
+  </footer>
 </div>
 
-<!-- GOOGLE GİRİŞ MİNİ POPUP -->
-<div id="google_popup" style="display:none;position:fixed;top:70px;right:24px;background:#111113;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:20px;width:300px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,.6);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-    <div style="font-size:14px;font-weight:700;">Giriş Yap</div>
-    <button onclick="document.getElementById('google_popup').style.display='none'" style="background:none;border:none;color:#71717a;cursor:pointer;font-size:18px;line-height:1;">×</button>
-  </div>
-  <button onclick="googleOAuthBaslat()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:none;color:#1a1a1a;padding:11px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:all .2s;"
-    onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
-    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-    Google ile Giriş Yap
-  </button>
-  <div style="text-align:center;font-size:11px;color:#52525b;margin-bottom:10px;">veya</div>
-  <button onclick="document.getElementById('google_popup').style.display='none';localStorage.setItem('vf_baslangic_mod','pro');window.location='/app'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#a1a1aa;padding:10px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;">
-    Giriş yapmadan devam et →
-  </button>
-  <p style="font-size:11px;color:#52525b;text-align:center;margin-top:10px;line-height:1.5;">Giriş yaparak kullanım verileriniz kaydedilir ve aylık kotanız takip edilir.</p>
-</div>
-
-<!-- FOOTER -->
-<footer>
-  <p style="margin-bottom:12px;">
-    <strong style="font-family:'Syne',sans-serif;font-size:16px;">VoiceFlow Studio</strong>
-  </p>
-  <p id="footer-txt" style="margin-bottom:16px;">AI destekli dublaj ve altyazı platformu</p>
-  <p>
-    <a href="/app" id="footer-app">Uygulamayı Aç</a> ·
-    <a href="mailto:hello@voiceflow.studio">İletişim</a> ·
-    <a href="#pricing" id="footer-price">Fiyatlar</a> ·
-    <a href="/app#gizlilik" onclick="window.location='/app';setTimeout(function(){if(typeof gizlilikAc==='function')gizlilikAc();},1000);return false;">Gizlilik Politikası</a> ·
-    <a href="/app#sartlar" onclick="window.location='/app';setTimeout(function(){if(typeof kullanımSartlariAc==='function')kullanımSartlariAc();},1000);return false;">Kullanım Şartları</a>
-  </p>
-  <p style="margin-top:20px;font-size:12px;color:#3f3f46;">© 2026 VoiceFlow Studio. Tüm hakları saklıdır.</p>
-</footer>
-
-<script>
-function heroKayitBaslat() {
-  const email = document.getElementById('hero_email')?.value.trim();
-  if (!email || !email.includes('@')) {
-    const inp = document.getElementById('hero_email');
-    if (inp) { inp.style.borderColor='#ef4444'; inp.placeholder='Geçerli e-posta girin'; }
-    return;
-  }
-  // E-postayı localStorage'a kaydet, editöre yönlendir
-  localStorage.setItem('vf_signup_email', email);
-  localStorage.setItem('vf_baslangic_mod', 'sihirli');
-  window.location.href = '/app';
-}
-
-/* ═══ GOOGLE GİRİŞ ═══ */
-async function googleOAuthBaslat() {
-  try {
-    const { error } = await _sbLanding.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/app' }
-    });
-    if (error) alert('Google giriş hatası: ' + error.message);
-  } catch(e) {
-    alert('Google giriş hatası: ' + e.message);
-  }
-}
-
-/* ═══ MOD SEÇİM MODALI ═══ */
-let _secilenMod = 'sihirli';
-
-function modalAc(mod) {
-  _secilenMod = mod;
-  const modal = document.getElementById('mod_modal');
-  const icon  = document.getElementById('modal_icon');
-  const title = document.getElementById('modal_title');
-  const desc  = document.getElementById('modal_desc');
-  const cta   = document.getElementById('modal_cta');
-  
-  if (mod === 'sihirli') {
-    icon.textContent  = '✨';
-    title.textContent = 'Sihirli Mod';
-    desc.textContent  = 'İçerik üreticileri için basitleştirilmiş arayüz — TikTok, Reels, Shorts';
-    cta.textContent   = '✨ Sihirli Mod ile Başla →';
-    cta.style.background = 'linear-gradient(135deg,#ec4899,#a855f7)';
-  } else {
-    icon.textContent  = '🎛️';
-    title.textContent = 'Pro Stüdyo';
-    desc.textContent  = 'Timeline editör, ses mikseri, gelişmiş ayarlar — profesyoneller için';
-    cta.textContent   = '🎛️ Pro Stüdyo\'ya Gir →';
-    cta.style.background = 'linear-gradient(135deg,#2563eb,#6366f1)';
-  }
-  
-  modal.style.display = 'flex';
-}
-
-function modalGit() {
-  // Editöre geçerken mod tercihini kaydet
-  localStorage.setItem('vf_baslangic_mod', _secilenMod);
-  window.location.href = '/app';
-}
-
-// Editör açılınca mod'u uygula
-if (window.location.pathname === '/app') {
-  const baslangicMod = localStorage.getItem('vf_baslangic_mod');
-  if (baslangicMod && typeof modGecis === 'function') {
-    setTimeout(function() { modGecis(baslangicMod); }, 500);
-  }
-}
-
-/* ═══ HERO BUTONLARI ═══ */
-const T = {
-  tr: {
-    'nav-cta-txt':'Ücretsiz Başla',
-    'badge-txt':'AI Destekli · 60+ Dil · Saniyeler İçinde',
-    'h1-txt':'Videonuzu<br><span class="h1-accent">Dünyaya Açın</span>',
-    'hero-sub':'Yapay zeka ile otomatik dublaj, altyazı ve metin seslendirme. Dakikalar içinde profesyonel kalite.',
-    'cta1-txt':'Ücretsiz Dene','cta2-txt':'Özellikleri Gör',
-    'stat1':'Desteklenen Dil','stat2':'Ortalama İşlem Süresi','stat3':'AI Motor','stat4':'Transkript Doğruluğu',
-    'feat-tag':'Özellikler','feat-title':'Her şey bir arada','feat-sub':'Videonuzu yükleyin, gerisini bize bırakın.',
-    'f1t':'AI Dublaj','f1d':'Videonuzdaki konuşmaları otomatik deşifre edip hedef dile çevirir, gerçekçi AI sesiyle seslendirip orijinal videoya işler.','f1tag':'ElevenLabs TTS',
-    'f2t':'Otomatik Altyazı','f2d':'Deepgram Nova-2 ile %95+ doğrulukla transkript oluşturur. SRT, VTT, ASS formatlarında export edin.','f2tag':'Deepgram Nova-2',
-    'f3t':'TikTok Altyazı Modu','f3d':'Video oynarken her kelime tek tek parlar. İçerik üreticileri için tasarlanmış kaydırmalı altyazı modu.','f3tag':'İçerik Üreticisi',
-    'f4t':'60+ Dil Desteği','f4d':'DeepL ile profesyonel kalite çeviri. Türkçe, İngilizce, Almanca ve onlarca daha fazla dil.','f4tag':'DeepL Pro',
-    'f5t':'Metin → Ses','f5d':'Yazdığınız metni 12 farklı AI sesiyle anında seslendirin. Stüdyo kalitesinde ses üretimi.','f5tag':'12 Ses Aktörü',
-    'f6t':'Konuşmacı Ayrımı','f6d':'Birden fazla konuşmacı olan videolarda her konuşmacıyı otomatik ayırt eder. Her konuşmacıya farklı ses atayın.','f6tag':'Diarization',
-    'how-tag':'Nasıl Çalışır','how-title':'3 adımda hazır',
-    's1t':'Yükle','s1d':'Video veya ses dosyanızı sürükleyip bırakın.','s2t':'Seç','s2d':'Kaynak dili, hedef dili ve ses aktörünü seçin.','s3t':'İndir','s3d':'Dakikalar içinde işlenmiş videonuzu indirin.',
-    'lang-tag':'Dil Desteği','lang-title':'60+ dilde konuşun',
-    'price-tag':'Fiyatlandırma','price-title':'Basit, şeffaf fiyatlar','price-sub':'Kredi kartı gerekmez.',
-    'plan1-name':'Ücretsiz','plan1-period':'Sonsuza dek ücretsiz','plan1-btn':'Ücretsiz Başla',
-    'pf1-1':'10 dakika/ay','pf1-2':'Otomatik altyazı','pf1-3':'3 dil','pf1-4':'SRT/VTT export','pf1-5':'AI Dublaj','pf1-6':'TikTok modu','pf1-7':'Öncelikli işleme',
-    'plan2-badge':'En Popüler','plan2-name':'Pro','plan2-period':'Aylık faturalandırma','plan2-btn':'Pro\'ya Geç →',
-    'pf2-1':'300 dakika/ay','pf2-2':'AI Dublaj (60+ dil)','pf2-3':'TikTok altyazı modu','pf2-4':'Tüm export formatları','pf2-5':'Konuşmacı ayrımı','pf2-6':'Öncelikli işleme','pf2-7':'Email destek',
-    'plan3-name':'Kurumsal','plan3-price':'Özel','plan3-period':'Hacme göre fiyat','plan3-btn':'İletişime Geç',
-    'pf3-1':'Sınırsız işleme','pf3-2':'API erişimi','pf3-3':'Özel ses klonlama','pf3-4':'SLA garantisi','pf3-5':'Dedicated destek','pf3-6':'Beyaz etiket','pf3-7':'Kurumsal ödeme',
-    'footer-txt':'AI destekli dublaj ve altyazı platformu','footer-app':'Uygulamayı Aç','footer-price':'Fiyatlar',
-  },
-  en: {
-    'nav-cta-txt':'Start Free',
-    'badge-txt':'AI Powered · 60+ Languages · Done in Seconds',
-    'h1-txt':'Take Your Video<br><span class="h1-accent">Global</span>',
-    'hero-sub':'Automatic dubbing, subtitles and text-to-speech powered by AI. Professional quality in minutes.',
-    'cta1-txt':'Try for Free','cta2-txt':'See Features',
-    'stat1':'Supported Languages','stat2':'Avg. Processing Time','stat3':'AI Engines','stat4':'Transcript Accuracy',
-    'feat-tag':'Features','feat-title':'Everything in one place','feat-sub':'Upload your video, we handle the rest.',
-    'f1t':'AI Dubbing','f1d':'Automatically transcribes speech, translates it, generates a realistic AI voice and mixes it into your video. Detects speaker changes and assigns different voices.','f1tag':'ElevenLabs TTS',
-    'f2t':'Auto Subtitles','f2d':'95%+ accurate transcription with Deepgram Nova-2. Export as SRT, VTT or ASS. Advanced font, color and position controls.','f2tag':'Deepgram Nova-2',
-    'f3t':'TikTok Caption Mode','f3d':'Each word lights up as video plays. Scrolling caption mode designed for content creators. Perfect sync with word-level timestamps.','f3tag':'Content Creator',
-    'f4t':'60+ Languages','f4d':'Professional quality translation with DeepL. English, Turkish, German, French, Spanish, Russian, Japanese, Chinese, Arabic and many more.','f4tag':'DeepL Pro',
-    'f5t':'Text to Speech','f5d':'Convert any text to audio with 12 different AI voices instantly. Studio-quality audio output.','f5tag':'12 Voice Actors',
-    'f6t':'Speaker Detection','f6d':'Automatically detects multiple speakers in your video. Assign different colors and voice actors to each speaker.','f6tag':'Diarization',
-    'how-tag':'How It Works','how-title':'Ready in 3 steps',
-    's1t':'Upload','s1d':'Drag and drop your video or audio file. MP4, MOV, MP3, WAV supported.','s2t':'Choose','s2d':'Select source language, target language and voice actor.','s3t':'Download','s3d':'Download your processed video or subtitle file in minutes.',
-    'lang-tag':'Language Support','lang-title':'Speak in 60+ languages',
-    'price-tag':'Pricing','price-title':'Simple, transparent pricing','price-sub':'No credit card required. Upgrade anytime.',
-    'plan1-name':'Free','plan1-period':'Free forever','plan1-btn':'Start Free',
-    'pf1-1':'10 min/month','pf1-2':'Auto subtitles','pf1-3':'3 languages','pf1-4':'SRT/VTT export','pf1-5':'AI Dubbing','pf1-6':'TikTok mode','pf1-7':'Priority processing',
-    'plan2-badge':'Most Popular','plan2-name':'Pro','plan2-period':'Billed monthly','plan2-btn':'Go Pro →',
-    'pf2-1':'300 min/month','pf2-2':'AI Dubbing (60+ languages)','pf2-3':'TikTok caption mode','pf2-4':'All export formats','pf2-5':'Speaker detection','pf2-6':'Priority processing','pf2-7':'Email support',
-    'plan3-name':'Enterprise','plan3-price':'Custom','plan3-period':'Volume pricing','plan3-btn':'Contact Us',
-    'pf3-1':'Unlimited processing','pf3-2':'API access','pf3-3':'Custom voice cloning','pf3-4':'SLA guarantee','pf3-5':'Dedicated support','pf3-6':'White label','pf3-7':'Invoice billing',
-    'footer-txt':'AI-powered dubbing and subtitle platform','footer-app':'Open App','footer-price':'Pricing',
-  },
-  es: {
-    'nav-cta-txt':'Empezar Gratis',
-    'badge-txt':'Con IA · +60 Idiomas · En Segundos',
-    'h1-txt':'Lleva Tu Video<br><span class="h1-accent">Al Mundo</span>',
-    'hero-sub':'Doblaje automático, subtítulos y voz en off con IA. Calidad profesional en minutos.',
-    'cta1-txt':'Probar Gratis','cta2-txt':'Ver Funciones',
-    'stat1':'Idiomas','stat2':'Tiempo Promedio','stat3':'Motores IA','stat4':'Precisión',
-    'feat-tag':'Funciones','feat-title':'Todo en un lugar','feat-sub':'Sube tu video, nosotros hacemos el resto.',
-    'f1t':'Doblaje IA','f1d':'Transcribe automáticamente, traduce y genera voz IA realista mezclada en tu video.','f1tag':'ElevenLabs TTS',
-    'f2t':'Subtítulos Auto','f2d':'Transcripción con 95%+ de precisión. Exporta en SRT, VTT o ASS.','f2tag':'Deepgram Nova-2',
-    'f3t':'Modo TikTok','f3d':'Cada palabra se ilumina mientras el video se reproduce. Para creadores de contenido.','f3tag':'Creador Contenido',
-    'f4t':'+60 Idiomas','f4d':'Traducción de calidad profesional con DeepL. Español, inglés, alemán, francés y muchos más.','f4tag':'DeepL Pro',
-    'f5t':'Texto a Voz','f5d':'Convierte texto en audio con 12 voces IA diferentes al instante.','f5tag':'12 Voces',
-    'f6t':'Detección Voces','f6d':'Detecta automáticamente múltiples hablantes. Asigna diferentes voces a cada uno.','f6tag':'Diarización',
-    'how-tag':'Cómo Funciona','how-title':'Listo en 3 pasos',
-    's1t':'Subir','s1d':'Arrastra tu video o archivo de audio.','s2t':'Elegir','s2d':'Selecciona idioma, destino y voz.','s3t':'Descargar','s3d':'Descarga tu video procesado en minutos.',
-    'lang-tag':'Idiomas','lang-title':'Habla en +60 idiomas',
-    'price-tag':'Precios','price-title':'Precios simples y transparentes','price-sub':'Sin tarjeta de crédito.',
-    'plan1-name':'Gratis','plan1-period':'Gratis para siempre','plan1-btn':'Empezar Gratis',
-    'pf1-1':'10 min/mes','pf1-2':'Subtítulos auto','pf1-3':'3 idiomas','pf1-4':'SRT/VTT','pf1-5':'Doblaje IA','pf1-6':'Modo TikTok','pf1-7':'Prioridad',
-    'plan2-badge':'Más Popular','plan2-name':'Pro','plan2-period':'Facturación mensual','plan2-btn':'Ir a Pro →',
-    'pf2-1':'300 min/mes','pf2-2':'Doblaje IA (+60 idiomas)','pf2-3':'Modo TikTok','pf2-4':'Todos los formatos','pf2-5':'Detección voces','pf2-6':'Prioridad','pf2-7':'Soporte email',
-    'plan3-name':'Empresa','plan3-price':'Personalizado','plan3-period':'Precio por volumen','plan3-btn':'Contactar',
-    'pf3-1':'Ilimitado','pf3-2':'Acceso API','pf3-3':'Voz personalizada','pf3-4':'Garantía SLA','pf3-5':'Soporte dedicado','pf3-6':'Marca blanca','pf3-7':'Factura',
-    'footer-txt':'Plataforma de doblaje y subtítulos con IA','footer-app':'Abrir App','footer-price':'Precios',
-  },
-  de: {
-    'nav-cta-txt':'Kostenlos Starten',
-    'badge-txt':'KI-Gestützt · 60+ Sprachen · In Sekunden',
-    'h1-txt':'Ihr Video<br><span class="h1-accent">Global Machen</span>',
-    'hero-sub':'Automatische Synchronisation, Untertitel und Text-zu-Sprache mit KI. Professionelle Qualität in Minuten.',
-    'cta1-txt':'Kostenlos Testen','cta2-txt':'Funktionen Sehen',
-    'stat1':'Sprachen','stat2':'Ø Bearbeitungszeit','stat3':'KI-Motoren','stat4':'Genauigkeit',
-    'feat-tag':'Funktionen','feat-title':'Alles an einem Ort','feat-sub':'Video hochladen, den Rest erledigen wir.',
-    'f1t':'KI-Synchronisation','f1d':'Transkribiert automatisch, übersetzt und generiert realistische KI-Stimmen direkt ins Video.','f1tag':'ElevenLabs TTS',
-    'f2t':'Auto-Untertitel','f2d':'95%+ genaue Transkription. Export als SRT, VTT oder ASS.','f2tag':'Deepgram Nova-2',
-    'f3t':'TikTok-Modus','f3d':'Jedes Wort leuchtet während der Videowiedergabe auf. Für Content Creator entwickelt.','f3tag':'Content Creator',
-    'f4t':'60+ Sprachen','f4d':'Professionelle Übersetzungsqualität mit DeepL. Deutsch, Englisch, Türkisch und viele mehr.','f4tag':'DeepL Pro',
-    'f5t':'Text zu Sprache','f5d':'Text in 12 verschiedenen KI-Stimmen sofort vertonen. Studioqualität.','f5tag':'12 Stimmen',
-    'f6t':'Sprecher-Erkennung','f6d':'Erkennt automatisch mehrere Sprecher. Weisen Sie jedem Sprecher verschiedene Stimmen zu.','f6tag':'Diarisierung',
-    'how-tag':'So Funktioniert Es','how-title':'In 3 Schritten fertig',
-    's1t':'Hochladen','s1d':'Video oder Audio per Drag & Drop hochladen.','s2t':'Auswählen','s2d':'Quell- und Zielsprache sowie Stimme wählen.','s3t':'Herunterladen','s3d':'Verarbeitetes Video in Minuten herunterladen.',
-    'lang-tag':'Sprachunterstützung','lang-title':'In 60+ Sprachen sprechen',
-    'price-tag':'Preise','price-title':'Einfache, transparente Preise','price-sub':'Keine Kreditkarte erforderlich.',
-    'plan1-name':'Kostenlos','plan1-period':'Für immer kostenlos','plan1-btn':'Kostenlos Starten',
-    'pf1-1':'10 Min/Monat','pf1-2':'Auto-Untertitel','pf1-3':'3 Sprachen','pf1-4':'SRT/VTT Export','pf1-5':'KI-Synchronisation','pf1-6':'TikTok-Modus','pf1-7':'Priorität',
-    'plan2-badge':'Beliebteste','plan2-name':'Pro','plan2-period':'Monatliche Abrechnung','plan2-btn':'Zu Pro →',
-    'pf2-1':'300 Min/Monat','pf2-2':'KI-Sync (60+ Sprachen)','pf2-3':'TikTok-Modus','pf2-4':'Alle Formate','pf2-5':'Sprecher-Erkennung','pf2-6':'Priorität','pf2-7':'E-Mail-Support',
-    'plan3-name':'Enterprise','plan3-price':'Individuell','plan3-period':'Volumenpreise','plan3-btn':'Kontakt',
-    'pf3-1':'Unbegrenzt','pf3-2':'API-Zugang','pf3-3':'Eigene Stimme','pf3-4':'SLA-Garantie','pf3-5':'Dedizierter Support','pf3-6':'White Label','pf3-7':'Rechnung',
-    'footer-txt':'KI-gestützte Synchron- und Untertitelplattform','footer-app':'App Öffnen','footer-price':'Preise',
-  },
-  fr: {
-    'nav-cta-txt':'Commencer Gratuitement',
-    'badge-txt':'Propulsé par IA · 60+ Langues · En Secondes',
-    'h1-txt':'Ouvrez Votre Vidéo<br><span class="h1-accent">Au Monde</span>',
-    'hero-sub':'Doublage automatique, sous-titres et synthèse vocale par IA. Qualité professionnelle en minutes.',
-    'cta1-txt':'Essayer Gratuitement','cta2-txt':'Voir les Fonctions',
-    'stat1':'Langues','stat2':'Temps Moyen','stat3':'Moteurs IA','stat4':'Précision',
-    'feat-tag':'Fonctionnalités','feat-title':'Tout en un','feat-sub':'Téléchargez votre vidéo, on s\'occupe du reste.',
-    'f1t':'Doublage IA','f1d':'Transcrit automatiquement, traduit et génère une voix IA réaliste intégrée à votre vidéo.','f1tag':'ElevenLabs TTS',
-    'f2t':'Sous-titres Auto','f2d':'Transcription à 95%+ de précision. Exportez en SRT, VTT ou ASS.','f2tag':'Deepgram Nova-2',
-    'f3t':'Mode TikTok','f3d':'Chaque mot s\'illumine pendant la lecture. Mode sous-titres défilants pour créateurs.','f3tag':'Créateur Contenu',
-    'f4t':'60+ Langues','f4d':'Traduction de qualité professionnelle avec DeepL. Français, anglais, allemand et bien plus.','f4tag':'DeepL Pro',
-    'f5t':'Texte en Parole','f5d':'Convertissez du texte en audio avec 12 voix IA différentes instantanément.','f5tag':'12 Voix',
-    'f6t':'Détection Locuteurs','f6d':'Détecte automatiquement plusieurs locuteurs. Attribuez des voix différentes à chacun.','f6tag':'Diarisation',
-    'how-tag':'Comment Ça Marche','how-title':'Prêt en 3 étapes',
-    's1t':'Télécharger','s1d':'Glissez-déposez votre fichier vidéo ou audio.','s2t':'Choisir','s2d':'Sélectionnez la langue source, cible et la voix.','s3t':'Télécharger','s3d':'Récupérez votre vidéo traitée en minutes.',
-    'lang-tag':'Langues Supportées','lang-title':'Parlez en 60+ langues',
-    'price-tag':'Tarifs','price-title':'Tarifs simples et transparents','price-sub':'Pas de carte bancaire requise.',
-    'plan1-name':'Gratuit','plan1-period':'Gratuit pour toujours','plan1-btn':'Commencer Gratuitement',
-    'pf1-1':'10 min/mois','pf1-2':'Sous-titres auto','pf1-3':'3 langues','pf1-4':'Export SRT/VTT','pf1-5':'Doublage IA','pf1-6':'Mode TikTok','pf1-7':'Priorité',
-    'plan2-badge':'Le Plus Populaire','plan2-name':'Pro','plan2-period':'Facturation mensuelle','plan2-btn':'Passer Pro →',
-    'pf2-1':'300 min/mois','pf2-2':'Doublage IA (60+ langues)','pf2-3':'Mode TikTok','pf2-4':'Tous les formats','pf2-5':'Détection locuteurs','pf2-6':'Priorité','pf2-7':'Support email',
-    'plan3-name':'Entreprise','plan3-price':'Sur Mesure','plan3-period':'Prix sur volume','plan3-btn':'Nous Contacter',
-    'pf3-1':'Illimité','pf3-2':'Accès API','pf3-3':'Voix personnalisée','pf3-4':'Garantie SLA','pf3-5':'Support dédié','pf3-6':'Marque blanche','pf3-7':'Facturation',
-    'footer-txt':'Plateforme de doublage et sous-titres par IA','footer-app':'Ouvrir l\'App','footer-price':'Tarifs',
-  }
-};
-
-let currentLang = 'tr';
-
-function setLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
-  const t = T[lang];
-  Object.entries(t).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = val;
-  });
-  document.documentElement.lang = lang;
-}
-
-/* ═══ SCROLL REVEAL ═══ */
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.1 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-/* ═══ /app YÖNLENDIRME — uygulama aynı domainde ise / yoksa ayrı link ═══ */
-document.querySelectorAll('a[href="/app"],button[onclick*="/app"]').forEach(el => {
-  if(el.tagName==='A') el.href = '/app';
-});
-// Plan butonları
-document.querySelectorAll('[id^="plan"][id$="-btn"]').forEach(btn => {
-  btn.onclick = () => window.location.href = '/creator';
-});
-document.getElementById('plan2-btn') && (document.getElementById('plan2-btn').onclick = () => window.location.href = '/app');
-document.getElementById('plan3-btn') && (document.getElementById('plan3-btn').onclick = () => window.open('mailto:hello@voiceflow.studio'));
-
-</script>
 </body>
 </html>
