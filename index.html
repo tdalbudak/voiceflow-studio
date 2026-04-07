@@ -634,6 +634,26 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <span id="tts_secili_isim" style="font-size:12px;font-weight:700;flex:1;">Ses seçilmedi</span>
           <span id="tts_secili_desc" style="font-size:10px;color:var(--muted2);"></span>
         </div>
+        <!-- TTS Duygu Kontrolü -->
+        <div style="padding:10px 12px;border-top:1px solid var(--border);background:var(--s2);">
+          <div style="font-size:10px;font-weight:700;color:var(--purple2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+            <i class="fa-solid fa-masks-theater"></i> Duygu (isteğe bağlı)
+          </div>
+          <div class="mix-row" style="margin-bottom:6px;">
+            <i class="fa-solid fa-fire" style="color:#f97316;font-size:11px;flex-shrink:0;"></i>
+            <div class="mix-lbl"><b>Duygu</b><small id="tts_style_pct">0%</small></div>
+            <input type="range" min="0" max="100" value="0" id="tts_emo_style"
+              oninput="document.getElementById('tts_style_pct').textContent=this.value+'%'"
+              title="0: nötr, 100: maksimum ifade">
+          </div>
+          <div class="mix-row">
+            <i class="fa-solid fa-gauge" style="color:#8b5cf6;font-size:11px;flex-shrink:0;"></i>
+            <div class="mix-lbl"><b>Kararlılık</b><small id="tts_stab_pct">55%</small></div>
+            <input type="range" min="0" max="100" value="55" id="tts_emo_stability"
+              oninput="document.getElementById('tts_stab_pct').textContent=this.value+'%'"
+              title="Yüksek = tutarlı, Düşük = dinamik">
+          </div>
+        </div>
       </div>
 
       <!-- ORTA: Metin Editörü -->
@@ -935,6 +955,34 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <i class="fa-solid fa-microphone" style="color:var(--accent2);"></i>
         <div class="mix-lbl"><b>AI Dublaj</b><small id="dub_vol_pct">100%</small></div>
         <input type="range" min="0" max="100" value="100" id="dub_vol" oninput="document.getElementById('dub_vol_pct').textContent=this.value+'%'">
+      </div>
+
+      <!-- Duygu Kontrolü (isteğe bağlı) -->
+      <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">
+          <i class="fa-solid fa-masks-theater" style="color:var(--purple2);font-size:11px;"></i>
+          <span style="font-size:10px;font-weight:700;color:var(--purple2);text-transform:uppercase;letter-spacing:.5px;">Duygu Kontrolü</span>
+          <span style="font-size:9px;color:var(--muted2);margin-left:2px;">(isteğe bağlı)</span>
+        </div>
+        <!-- Duygu Yoğunluğu (style) -->
+        <div class="mix-row">
+          <i class="fa-solid fa-fire" style="color:#f97316;font-size:12px;"></i>
+          <div class="mix-lbl"><b>Duygu</b><small id="style_pct">0%</small></div>
+          <input type="range" min="0" max="100" value="0" id="emo_style"
+            oninput="document.getElementById('style_pct').textContent=this.value+'%'"
+            title="Duygu yoğunluğu — 0: nötr, 100: maksimum ifade">
+        </div>
+        <!-- Kararlılık/Rastlantısallık (stability) -->
+        <div class="mix-row">
+          <i class="fa-solid fa-gauge" style="color:#8b5cf6;font-size:12px;"></i>
+          <div class="mix-lbl"><b>Kararlılık</b><small id="stab_pct">55%</small></div>
+          <input type="range" min="0" max="100" value="55" id="emo_stability"
+            oninput="document.getElementById('stab_pct').textContent=this.value+'%'"
+            title="Yüksek = daha tutarlı/monoton, Düşük = daha dinamik/doğal">
+        </div>
+        <div style="font-size:9px;color:var(--muted2);line-height:1.4;margin-top:4px;">
+          Duygu 0 bırakılırsa varsayılan (nötr) kullanılır. Yüksek duygu bazı seslerde farklı sonuçlar verebilir.
+        </div>
       </div>
 
       <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;flex-direction:column;gap:6px;">
@@ -3603,6 +3651,12 @@ async function startProcess(){
   const dubVol = (document.getElementById('dub_vol')?.value || 100) / 100;
   fd.append('orig_vol', srcVol.toFixed(2));
   fd.append('dub_vol_param', dubVol.toFixed(2));
+  // Duygu parametreleri — dublaj: emo_style/emo_stability, TTS: tts_emo_style/tts_emo_stability
+  const isTTS = mod === 'metinden_sese';
+  const styleVal     = ((document.getElementById(isTTS ? 'tts_emo_style' : 'emo_style')?.value || 0) / 100).toFixed(2);
+  const stabilityVal = ((document.getElementById(isTTS ? 'tts_emo_stability' : 'emo_stability')?.value || 55) / 100).toFixed(2);
+  fd.append('style', styleVal);
+  fd.append('stability', stabilityVal);
   if(mod==='metinden_sese'){
     const metin = document.getElementById('txt_input')?.value.trim();
     if(!metin){ alert('Metin girin!'); return; }

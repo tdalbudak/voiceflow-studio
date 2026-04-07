@@ -498,7 +498,7 @@ def _tts_cache_temizle(max_mb: int = 500):
             log.info(f"[TTS Cache] Temizlendi: {os.path.basename(sil)}")
     except Exception as e:
         log.warning(f"[TTS Cache] Temizleme hatası: {e}")
-async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2) -> bool:
+async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2, style: float = 0.0, stability: float = 0.5) -> bool:
     if not metin or not metin.strip():
         log.warning("[ElevenLabs] Boş metin gönderildi")
         return False
@@ -522,7 +522,12 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
     data = {
         "text": metin[:5000],
         "model_id": "eleven_multilingual_v2",
-        "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+        "voice_settings": {
+            "stability": max(0.0, min(1.0, stability)),
+            "similarity_boost": 0.75,
+            "style": max(0.0, min(1.0, style)),
+            "use_speaker_boost": True,
+        },
     }
     for deneme in range(retry + 1):
         try:
@@ -1055,6 +1060,8 @@ async def elevenlabs_segment_uret(
     hedef_sure: float,
     retry: int = 2,
     dil: str = "en",
+    style: float = 0.0,
+    stability: float = 0.55,
 ) -> bool:
     """
     Segment metni sese çevirir.
@@ -1077,9 +1084,9 @@ async def elevenlabs_segment_uret(
         "text": metin_temiz,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.55,
+            "stability": max(0.0, min(1.0, stability)),
             "similarity_boost": 0.80,
-            "style": 0.0,
+            "style": max(0.0, min(1.0, style)),
             "use_speaker_boost": True,
         },
     }
@@ -1088,6 +1095,8 @@ async def elevenlabs_segment_uret(
             async with httpx.AsyncClient() as client:
                 r = await client.post(url, json=data, headers=headers, timeout=90.0)
 
+            log.debug(f"[ElevenLabs] {r.status_code} ses_id={ses_id[:8]} metin='{metin_temiz[:30]}'")
+
             if r.status_code == 429:
                 bekle = 6 * (deneme + 1)
                 log.warning(f"[ElevenLabs] Rate limit → {bekle}s bekleniyor...")
@@ -1095,10 +1104,10 @@ async def elevenlabs_segment_uret(
                 continue
 
             if r.status_code == 402:
-                log.error("[ElevenLabs 402] Bu ses Free plan'da kullanılamaz. Starter plan gerekli ($5/ay).")
+                log.error(f"[ElevenLabs 402] ses_id={ses_id} — Bu ses Free plan'da kullanılamaz (paid_plan_required).")
                 return False
             if r.status_code in (401, 403):
-                log.error("[ElevenLabs] API key geçersiz veya plan yetersiz")
+                log.error(f"[ElevenLabs {r.status_code}] API key geçersiz — ses_id={ses_id}, yanıt: {r.text[:200]}")
                 return False
 
             if r.status_code == 422:
@@ -1254,7 +1263,7 @@ def deepgram_to_srt(dg_response, path: str):
 # ============================================================
 # ANA İŞLEM MOTORU
 # ============================================================
-async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0):
+async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55):
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
     os.makedirs(gecici, exist_ok=True)
@@ -1314,7 +1323,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             metin_final = metin_normalize(metin_final, hedef_dil.lower() if hedef_dil else "tr")
 
             islem_durumlari[out_file] = {"durum": "ElevenLabs sesi sentezliyor...", "yuzde": 60}
-            ok = await elevenlabs_ses_uret(metin_final, ses_id, os.path.join(OUTPUT_DIR, out_file))
+            ok = await elevenlabs_ses_uret(metin_final, ses_id, os.path.join(OUTPUT_DIR, out_file), style=style, stability=stability)
             if ok:
                 islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             else:
@@ -1505,7 +1514,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         sure = max(1.0, seg["bitis"] - seg["baslangic"])
 
                     ses_yol = os.path.join(ses_klasor, f"seg_{idx:04d}.mp3")
-                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en")
+                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en", style=style, stability=stability)
                     tamamlanan[0] += 1
                     pct = 20 + int((tamamlanan[0] / toplam) * 55)
                     islem_durumlari[out_file] = {
@@ -1522,7 +1531,15 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             if not ses_liste:
                 islem_durumlari[out_file] = {
-                    "durum": "Hata: Ses üretilemedi — Seçilen ses ElevenLabs Free plan'da kullanılamıyor olabilir (Türkçe/Almanca/Fransızca sesler paid plan gerektirir). İngilizce bir ses seçin veya ElevenLabs Starter planına geçin ($5/ay).",
+                    "durum": (
+                        "Hata: Ses üretilemedi. Olası nedenler: "
+                        "1) Türkçe/Almanca/Fransızca sesler ElevenLabs Starter plan gerektirir ($5/ay) — "
+                        "İngilizce ses (Brian, Sarah vb.) seçin. "
+                        "2) Railway'de ELEVENLABS_API_KEY hatalı girilmiş. "
+                        "3) ElevenLabs kotanız dolmuş. "
+                        f"Seçili ses: {ses_id[:8]}... | "
+                        "Detay için Railway loglarını kontrol edin."
+                    ),
                     "yuzde": 0
                 }
                 return
@@ -1576,8 +1593,10 @@ async def islem_baslat(
     is_bold: str      = Form("true"),
     is_shadow: str    = Form("true"),
     m_v: str          = Form("20"),
-    orig_vol: str     = Form("0.03"),   # Konuşmacı ses seviyesi
-    dub_vol_param: str = Form("1.0"),   # Dublaj ses seviyesi
+    orig_vol: str     = Form("0.03"),
+    dub_vol_param: str = Form("1.0"),
+    style: str        = Form("0.0"),      # Duygu yoğunluğu (0.0-1.0)
+    stability: str    = Form("0.55"),     # Kararlılık (düşük = daha duygusal)
 ):
     b_id   = uuid.uuid4().hex[:8]
     tmp_in = ""
@@ -1600,17 +1619,21 @@ async def islem_baslat(
             shutil.copyfileobj(dosya.file, buf)
 
     try:
-        orig_vol_f = float(orig_vol)
-        dub_vol_f  = float(dub_vol_param)
+        orig_vol_f  = float(orig_vol)
+        dub_vol_f   = float(dub_vol_param)
+        style_f     = max(0.0, min(1.0, float(style)))
+        stability_f = max(0.0, min(1.0, float(stability)))
     except ValueError:
-        orig_vol_f = 0.03
-        dub_vol_f  = 1.0
+        orig_vol_f  = 0.03
+        dub_vol_f   = 1.0
+        style_f     = 0.0
+        stability_f = 0.55
 
     arka_plan.add_task(
         islem_motoru, out_file, modul, hedef_dil,
         ses_id, tmp_in, yazili_metin, kaynak_dil,
         f_name, f_size, f_color, is_bold, is_shadow, m_v,
-        orig_vol_f, dub_vol_f,
+        orig_vol_f, dub_vol_f, style_f, stability_f,
     )
     return JSONResponse({"beklenen_dosya_adi": out_file})
 
