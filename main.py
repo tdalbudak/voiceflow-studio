@@ -3326,7 +3326,7 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
                 json={
                     "system_instruction": {"parts": [{"text": system_prompt}]},
                     "contents": [{"parts": [{"text": sorgu}]}],
@@ -3342,6 +3342,34 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
             return JSONResponse({"hata": f"Gemini error {r.status_code}"}, status_code=500)
     except Exception as e:
         log.error(f"[Gemini] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
+# AI TEXT EDITOR — TTS metin düzeltme/kısaltma/çeviri
+# ============================================================
+@app.post("/api/ai_text/")
+async def ai_text(prompt: str = Form(...)):
+    if not GEMINI_API_KEY:
+        return JSONResponse({"hata": "Gemini API key not configured."}, status_code=500)
+    if not prompt or len(prompt.strip()) < 5:
+        return JSONResponse({"hata": "Prompt too short."}, status_code=400)
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"maxOutputTokens": 1500, "temperature": 0.4}
+                }
+            )
+        if r.status_code == 200:
+            text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+            return JSONResponse({"yanit": text})
+        else:
+            return JSONResponse({"hata": f"Gemini error {r.status_code}"}, status_code=500)
+    except Exception as e:
+        log.error(f"[AI Text] {e}")
         return JSONResponse({"hata": str(e)}, status_code=500)
 
 

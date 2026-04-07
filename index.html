@@ -329,10 +329,12 @@ input[type=range]{flex:1;accent-color:var(--accent2);cursor:pointer;}
 .sp-voice-sel{flex:1;padding:5px 7px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:11px;font-family:inherit;outline:none;cursor:pointer;}
 
 /* ── TİKTOK ALTYAZI OVERLAY ── */
-.tiktok-overlay{position:absolute;bottom:12%;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;padding:0 12px;pointer-events:none;z-index:15;}
+.tiktok-overlay{position:absolute;bottom:12%;left:0;right:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;padding:0 12px;pointer-events:none;z-index:15;}
 .tiktok-word{font-size:22px;font-weight:900;color:#fff;text-shadow:2px 2px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000;transition:all .08s;opacity:.7;transform:scale(.95);}
 .tiktok-word.tw-active{opacity:1;transform:scale(1.12);color:#facc15;text-shadow:0 0 12px rgba(250,204,21,.8),2px 2px 0 #000,-2px -2px 0 #000;}
 .tiktok-word.tw-done{opacity:.5;}
+/* tiktok açıkken live_sub_overlay tamamen gizle */
+.tiktok-mode .live-sub-overlay{display:none!important;}
 
 /* TikTok toggle */
 .tiktok-btn{background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;}
@@ -390,17 +392,107 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 .ob-dot.on{background:#fff;}
 @keyframes ob-pulse{0%,100%{box-shadow:0 4px 24px rgba(99,102,241,.5);}50%{box-shadow:0 4px 32px rgba(99,102,241,.9),0 0 0 5px rgba(99,102,241,.15);}}
 
-/* ── Mobile ── */
+/* ══ MOBİL RESPONSIVE ══ */
 @media(max-width:768px){
+
+  /* Navbar */
+  .nav{padding:0 10px;gap:6px;}
   .nav-tabs{display:none;}
-  .lp{width:100%;min-width:0;max-width:100%;}
+  .nav-right .btn-run{padding:8px 14px;font-size:12px;}
+  .nav-logo span{display:none;} /* logo metni gizle, sadece ikon */
+
+  /* Workspace: dikey yığılma */
+  .ws{flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+
+  /* Sol panel: tam genişlik, daraltılmış */
+  .lp{width:100%;min-width:0;max-width:100%;border-right:none;border-bottom:1px solid var(--border);overflow-y:visible;}
+
+  /* Sağ panel: tam genişlik */
   .rp{width:100%;border-left:none;border-top:1px solid var(--border);}
-  .ws{flex-direction:column;}
-  .vbox{aspect-ratio:16/9;}
+
+  /* Merkez panel */
+  .cp{min-height:50vw;}
+  .cp-head{flex-wrap:wrap;gap:6px;}
+
+  /* Video kutusu */
+  .vbox{aspect-ratio:16/9;min-height:0;}
+
+  /* Mod geçiş butonları */
   .mod-toggle .mod-toggle-btn span{display:none;}
-  .mod-toggle-btn{padding:5px 8px;font-size:10px;}
+  .mod-toggle-btn{padding:7px 10px;font-size:11px;}
+
+  /* Sihirli mod */
   .magic-btn-desc{display:none;}
   .magic-btn{padding:12px 14px;}
+
+  /* Mod seçenekleri satırı */
+  .mod-toggle{flex-wrap:nowrap;overflow-x:auto;gap:3px;padding-bottom:2px;}
+
+  /* Modal: tam ekran mobilde */
+  .modal{width:100%!important;max-width:100%!important;max-height:100vh!important;border-radius:0!important;margin:0!important;}
+  .mbg{align-items:flex-end!important;}
+
+  /* Voice picker 4 sütun → 2 sütun */
+  #_vp_body > div > div[style*="grid-template-columns:repeat(4"]{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+
+  /* Modal voice grid 2 sütun → 1 sütun */
+  #voice_list{grid-template-columns:1fr!important;}
+
+  /* Altyazı stil grid */
+  .sub-template-grid{grid-template-columns:repeat(3,1fr)!important;}
+
+  /* Dosya yükleme alanı */
+  .drop-zone{padding:24px 12px!important;}
+
+  /* Butonlar dokunmatik için büyük */
+  .vtool-btn{padding:8px 10px!important;font-size:12px!important;}
+  .btn-lp{padding:11px!important;}
+
+  /* Nav tabs mobil bottom bar olarak */
+  .nav-tabs-mobile{
+    display:flex!important;
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:var(--s1);
+    border-top:1px solid var(--border);
+    z-index:500;
+    padding:6px 0 max(6px, env(safe-area-inset-bottom));
+    justify-content:space-around;
+    gap:0;
+  }
+
+  /* Altta çubuk boşluğu için body padding */
+  body{padding-bottom:64px;}
+
+  /* Workspace maestra */
+  .ws-maestra{flex-direction:column!important;}
+  .ws-right{width:100%!important;border-left:none!important;border-top:1px solid var(--border)!important;}
+
+  /* Toast */
+  .toast-container{bottom:74px!important;right:12px!important;left:12px!important;}
+  .toast-container > *{font-size:12px!important;}
+
+  /* Ses picker filter bar wrap */
+  #_voice_picker > div:nth-child(2){flex-wrap:wrap!important;gap:6px!important;}
+
+  /* Büyük butonlar için min dokunma alanı */
+  button{min-height:36px;}
+  select{font-size:16px!important;} /* iOS zoom engelle */
+  input[type=text],input[type=email],input[type=password],textarea{font-size:16px!important;}
+
+  /* Navbar üst butonları gizle (mobilde bottom bar var) */
+  .cloud-btn{display:none!important;}
+  .mod-toggle{display:none!important;}
+  .btn-run{padding:7px 12px!important;font-size:12px!important;}
+  #btn_run{display:flex!important;}
+
+  /* Sol panel scroll için esneklik */
+  .lp-sec{padding:10px 12px;}
+
+  /* Voice picker filtre barı mobil */
+  #_voice_picker > div:nth-child(2) > select{min-width:90px;padding:5px 8px!important;}
 }
 
 /* ── Progress bar animasyonu ── */
@@ -474,6 +566,25 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <div class="xitem" onclick="cokluDilExport()" id="xitem_multidil" style="display:none;"><i class="fa-solid fa-globe" style="color:var(--yellow2)"></i>Multi-lang SRT 🌍</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MOBİL ALT ÇUBUK (sadece mobile gösterilir) -->
+<div class="nav-tabs-mobile" style="display:none;">
+  <div onclick="sw('desifre')"   id="mtab_desifre"   style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:600;">
+    <span style="font-size:20px;">📝</span>Transcript
+  </div>
+  <div onclick="sw('altyazi')"   id="mtab_altyazi"   style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:600;">
+    <span style="font-size:20px;">💬</span>Altyazı
+  </div>
+  <div onclick="sw('seslendirme')" id="mtab_seslendirme" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0;cursor:pointer;color:var(--accent3);font-size:10px;font-weight:600;">
+    <span style="font-size:20px;">🎙</span>Dublaj
+  </div>
+  <div onclick="sw('metinden_sese')" id="mtab_metinden_sese" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:600;">
+    <span style="font-size:20px;">✍</span>TTS
+  </div>
+  <div onclick="openModal()" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 0;cursor:pointer;color:var(--muted2);font-size:10px;font-weight:600;">
+    <span style="font-size:20px;">▶</span>Başla
   </div>
 </div>
 
@@ -1125,89 +1236,45 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <div style="font-size:12px;color:var(--muted2);">Çeviri dilini ve ses tipini seçin.</div>
       </div>
 
-      <div style="display:flex;gap:12px;margin-bottom:4px;">
-        <div style="flex:1;">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Çeviri Dili</div>
-          <select id="m_tgt2" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
-            <option value="en" selected>English 🇺🇸</option>
-            <option value="tr">Türkçe 🇹🇷</option>
-            <option value="es">Spanish 🇪🇸</option>
-            <option value="fr">French 🇫🇷</option>
-            <option value="de">German 🇩🇪</option>
-            <option value="ru">Russian 🇷🇺</option>
-            <option value="zh">Chinese 🇨🇳</option>
-            <option value="ja">Japanese 🇯🇵</option>
-            <option value="ar">Arabic 🇸🇦</option>
-          </select>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Ses</div>
-          <select id="voice_select" onchange="voiceSecildi(this)" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
-            <option value="">Seç...</option>
-            <optgroup label="🇹🇷 Türkçe [Starter plan gerekli]">
-              <option value="E7GwUhgj9sbeAZgubRba">★ Bahadır — Derin, Belgesel (paid)</option>
-              <option value="xFsOR54lR471QiCvQ5re">★ İlknur — Net, Sıcak (paid)</option>
-            </optgroup>
-            <optgroup label="🇩🇪 Almanca [Starter plan gerekli]">
-              <option value="dFA3XRddYScy6ylAYTIO">★ Helmut — Warm, Gentle (paid)</option>
-              <option value="60UU378MZ8YbeLyaF7TI">★ Jonas — Confident, Trustworthy (paid)</option>
-              <option value="kAzI34nYjizE0zON6rXv">★ Sami — Energetic, Expressive (paid)</option>
-              <option value="KSyQzmsYhFbuOhqj1Xxv">★ Lea — UGC Creator (paid)</option>
-            </optgroup>
-            <optgroup label="🇫🇷 Fransızca [Starter plan gerekli]">
-              <option value="8qnuneLiGjGrT4A62CCe">★ Jules — Conversational (paid)</option>
-              <option value="p2Wol3C7j3rHbfOrbL18">★ Lisa — Lovely and Emotional (paid)</option>
-            </optgroup>
-            <optgroup label="🇮🇹 İtalyanca [Starter plan gerekli]">
-              <option value="RXoaSpLaWTEckJgPUBG3">★ Tiziana — Smart, Balanced (paid)</option>
-              <option value="7WZPc0ZjFzsx74E5qoQV">★ Andrea — Mature, Rich (paid)</option>
-              <option value="f8NAZK1ciwrVujah7clz">★ Valerio — Warm Storyteller (paid)</option>
-            </optgroup>
-            <optgroup label="🇺🇸🇬🇧 English">
-              <option value="nPczCjzI2devNBz1zQrb">Brian — Deep, Resonant</option>
-              <option value="EXAVITQu4vr4xnSDxMaL">Sarah — Mature, Confident</option>
-              <option value="pNInz6obpgDQGcFmaJgB">Adam — Dominant, Firm</option>
-              <option value="JBFqnCBsd6RMkjVDRZzb">George 🇬🇧 — Warm Storyteller</option>
-              <option value="iP95p4xoKVk53GoZ742B">Chris — Charming</option>
-              <option value="cgSgspJ2msm6clMCkdW9">Jessica — Playful, Warm</option>
-              <option value="FGY2WhTYpPnrIDTdsKH5">Laura — Energetic</option>
-              <option value="TX3LPaxmHKxFdv7VOQHJ">Liam — Dynamic</option>
-              <option value="onwK4e9ZLuTAKqWW03F9">Daniel 🇬🇧 — Broadcaster</option>
-              <option value="SAz9YHcvj6GT2YYXdXww">River — Relaxed, Neutral</option>
-              <option value="Xb7hH8MSUJpSbSDYk0k2">Alice 🇬🇧 — Clear, Educator</option>
-              <option value="pFZP5JQG7iQjIQuC4Bku">Lily 🇬🇧 — Velvety Actress</option>
-              <option value="XrExE9yKIg1WjnnlVkGX">Matilda — Professional</option>
-              <option value="UaYTS0wayjmO9KD1LR4R">Asher 🇬🇧 — Charismatic</option>
-              <option value="CwhRBWXzGAHq8TQ4Fs17">Roger — Laid-Back, Casual</option>
-              <option value="bIHbv24MWmeRgasZH58o">Will — Relaxed Optimist</option>
-              <option value="cjVigY5qzO86Huf0OWal">Eric — Smooth, Trustworthy</option>
-              <option value="hpp4J3VqNfWAUOO0d1Us">Bella — Professional, Warm</option>
-              <option value="SOYHLrjzK2X1ezoPC6cr">Harry — Fierce Warrior</option>
-              <option value="IKne3meq5aSn9XLyUdCD">Charlie 🇦🇺 — Deep, Energetic</option>
-              <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Husky</option>
-              <option value="pqHfZKP75CvOlQylNhV4">Bill — Wise, Mature</option>
-              <option value="cCwaxHZZF7rVaQK2aOys">Mark — Confident, Striking</option>
-              <option value="jdKpAe6rxAe99tFGbsAc">Daniel Pro — Corporate</option>
-              <option value="vmVmHDKBkkCgbLVIOJRb">Charlie C. — Real & Casual</option>
-              <option value="EmZGlxI7QPvCEMOkFhB9">Liam Pro — Sharp, Professional</option>
-              <option value="TGAegA0zNRi8I6nUdq3i">Adam Pro — Instructor</option>
-            </optgroup>
-          </select>
-        </div>
+      <!-- Çeviri Dili -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Çeviri Dili</div>
+        <select id="m_tgt2" onchange="buildVoiceList()" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
+          <option value="en" selected>🇺🇸 English</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="zh">🇨🇳 中文</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="ar">🇸🇦 العربية</option>
+        </select>
       </div>
 
-      <!-- Voice Actor seçici -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Voice Actor</div>
-      <div id="voice_current_card" onclick="voicePickerAc('main')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">
-        <div id="vpc_dot" style="width:36px;height:36px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0;">B</div>
-        <div style="flex:1;min-width:0;">
-          <div id="vpc_name" style="font-size:13px;font-weight:700;">Brian</div>
-          <div id="vpc_desc" style="font-size:11px;color:var(--muted2);">Deep, Comforting · 🇺🇸</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="color:var(--muted2);font-size:11px;"></i>
+      <!-- Ses Aktörleri — inline kart grid -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ses Aktörleri</div>
+
+      <!-- Arama -->
+      <div style="position:relative;margin-bottom:8px;">
+        <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#5a7090;font-size:11px;pointer-events:none;"></i>
+        <input id="modal_voice_search" oninput="buildVoiceList()" placeholder="Ses ara…" style="width:100%;padding:7px 12px 7px 28px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;">
       </div>
-      <!-- Eski voice_list gizli kalıyor — JS uyumluluğu için -->
-      <div id="voice_list" style="display:none;"></div>
+
+      <!-- Kart grid (scrollable) -->
+      <div id="voice_list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:240px;overflow-y:auto;padding-right:2px;"></div>
+
+      <!-- Eski select — JS uyumluluğu için gizli -->
+      <select id="voice_select" onchange="voiceSecildi(this)" style="display:none;">
+        <option value="nPczCjzI2devNBz1zQrb">Brian</option>
+      </select>
+      <!-- Eski card — JS uyumluluğu için gizli -->
+      <div id="voice_current_card" style="display:none;">
+        <div id="vpc_dot"></div>
+        <div id="vpc_name">Brian</div>
+        <div id="vpc_desc"></div>
+      </div>
 
       <!-- Arka plan sesi koru -->
       <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:4px;">
@@ -1389,13 +1456,17 @@ function toggleTikTok() {
   const btn     = document.getElementById('tiktok_btn');
   const overlay = document.getElementById('tiktok_overlay');
   const liveSub = document.getElementById('live_sub_overlay');
+  const vbox    = document.getElementById('vbox');
   btn?.classList.toggle('on', _tiktokOn);
   if (_tiktokOn) {
-    if (liveSub) liveSub.style.display = 'none';
+    if (vbox) vbox.classList.add('tiktok-mode');
+    if (liveSub) { liveSub.style.display = 'none'; liveSub.textContent = ''; }
+    if (overlay) overlay.style.display = 'flex';
     _loadTikTokWords();
     toast('🎵 TikTok modu açık — kelimeler video ile yanıp söner');
   } else {
-    if (overlay) overlay.innerHTML = '';
+    if (vbox) vbox.classList.remove('tiktok-mode');
+    if (overlay) { overlay.innerHTML = ''; overlay.style.display = 'none'; }
     if (liveSub) liveSub.style.display = '';
     toast('TikTok modu kapatıldı');
   }
@@ -1447,9 +1518,13 @@ function _buildTikTokOverlay() {
 }
 
 function _updateTikTokHighlight(currentTime) {
-  if (!_tiktokOn || !_tiktokWords.length) return;
   const overlay = document.getElementById('tiktok_overlay');
   if (!overlay) return;
+  if (!_tiktokOn) {
+    if (overlay.innerHTML !== '') { overlay.innerHTML = ''; overlay.style.display = 'none'; }
+    return;
+  }
+  if (!_tiktokWords.length) return;
 
   // Find active segment
   const activeSeg = segs.find(s => currentTime >= s.start && currentTime < s.end);
@@ -1463,6 +1538,8 @@ function _updateTikTokHighlight(currentTime) {
   const bold  = document.getElementById('btn_bold')?.classList.contains('on');
   const fw    = bold ? '900' : '700';
   const fs    = parseInt(size) + 'px';
+
+  overlay.style.display = 'flex';
 
   // Rebuild overlay when segment changes
   if (activeSeg.start !== _tiktokLastSegStart) {
@@ -2438,12 +2515,14 @@ const VOICES = [
 
 function selVoiceById(id) {
   voice = id;
+  // Tüm kart vurgularını sıfırla
   document.querySelectorAll('[id^="vli_"]').forEach(el => {
-    el.style.background  = '';
-    el.style.borderColor = 'transparent';
+    el.style.background  = 'var(--s3)';
+    el.style.borderColor = 'var(--border2)';
   });
+  // Seçili kartı vurgula
   const el = document.getElementById('vli_' + id);
-  if (el) { el.style.background = 'var(--s4)'; el.style.borderColor = 'var(--accent2)'; }
+  if (el) { el.style.background = 'rgba(59,130,246,.12)'; el.style.borderColor = '#3b82f6'; }
   const sel = document.getElementById('voice_select');
   if (sel) sel.value = id;
   _ttsHL();
@@ -2907,37 +2986,27 @@ async function ttsAIDuzelt(islem) {
   const prompt = talimatlar[islem] || talimatlar['duzelt'];
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const fd = new FormData();
+    fd.append('prompt', prompt);
+    const r = await fetch(B + '/api/ai_text/', { method: 'POST', body: fd });
     const d = await r.json();
-    const yeniMetin = d.content?.[0]?.text?.trim();
+    const yeniMetin = (d.yanit || '').trim();
     if (yeniMetin) {
-      // Önce orijinali göster, sonra değiştir
-      const orijinal = ta.value;
       ta.value = yeniMetin;
       ta.dispatchEvent(new Event('input'));
-
-      // Geri al butonu göster
-const islemAdi = islem==='duzelt'?'Duzeltildi':islem==='kisalt'?'Kisaltildi':islem==='uzat'?'Genisletildi':islem==='tarz'?(tarz+' tarzi uygulandı'):'Cevrildi';
+      const islemAdi = islem==='duzelt'?'Düzeltildi':islem==='kisalt'?'Kısaltıldı':islem==='uzat'?'Genişletildi':islem==='tarz'?(tarz+' tarzı uygulandı'):'Çevrildi';
       toast('✓ ' + islemAdi, 'tok', 3000);
     } else {
       toast('AI yanıt vermedi','terr');
     }
   } catch(e) {
-    toast('AI bağlantı hatası — Backend üzerinden deniyor...','twarn', 2000);
-    // Fallback: Backend normalize endpoint
+    toast('AI bağlantı hatası','terr', 3000);
+    // Eski fallback (artık kullanılmıyor)
     try {
-      const fd = new FormData();
-      fd.append('metin', metin);
-      fd.append('dil', document.getElementById('src_lang')?.value || 'tr');
-      const r2 = await fetch(B + '/api/normalize_test/', { method:'POST', body:fd });
+      const fd2 = new FormData();
+      fd2.append('metin', metin);
+      fd2.append('dil', document.getElementById('src_lang')?.value || 'tr');
+      const r2 = await fetch(B + '/api/normalize_test/', { method:'POST', body:fd2 });
       const d2 = await r2.json();
       if (d2.normalize_edilmis) {
         ta.value = d2.normalize_edilmis;
@@ -3193,6 +3262,10 @@ function sw(m){
   mod=m;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab_' + m)?.classList.add('on');
+  // Mobil alt tab güncelle
+  document.querySelectorAll('[id^="mtab_"]').forEach(t=>{t.style.color='var(--muted2)';});
+  const mtab = document.getElementById('mtab_' + m);
+  if (mtab) mtab.style.color = 'var(--accent3)';
 
   // Hepsini gizle
   ['sec_sub_design','sec_audio','sec_voice_btn','mixer','tl','sec_style'].forEach(id=>{
@@ -3953,18 +4026,53 @@ async function startProcess(){
     fd.append('m_v','20');
   }
   document.getElementById('sbox')?.classList.remove('hidden');
-  try{
-    const r=await fetch(B + '/api/islem/',{method:'POST',body:fd});
-    if(r.ok){const d=await r.json();pollStatus(d.beklenen_dosya_adi);}
-    else {
-      const err = await r.json().catch(()=>({hata:'Sunucu hatası'}));
-      toast(err.hata||'İstek başarısız','terr',4000);
+
+  // Upload ilerlemesini XHR ile göster
+  const fill = document.getElementById('pfill');
+  const tx   = document.getElementById('stxt');
+  const pc   = document.getElementById('spct');
+
+  await new Promise(function(resolve, reject) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', B + '/api/islem/');
+
+    xhr.upload.onprogress = function(e) {
+      if (!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 40); // upload = 0–40%
+      if (fill) fill.style.width = pct + '%';
+      if (pc)   pc.textContent   = pct + '%';
+      if (tx)   tx.textContent   = 'Yükleniyor… ' + Math.round(e.loaded/1024/1024*10)/10 + ' MB / ' + Math.round(e.total/1024/1024*10)/10 + ' MB';
+    };
+
+    xhr.onload = function() {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const d = JSON.parse(xhr.responseText);
+          pollStatus(d.beklenen_dosya_adi);
+          resolve();
+        } catch(e) {
+          toast('Sunucu yanıtı okunamadı','terr',4000);
+          document.getElementById('sbox')?.classList.add('hidden');
+          reject(e);
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          toast(err.hata||'İstek başarısız','terr',4000);
+        } catch(e) { toast('Sunucu hatası','terr',4000); }
+        document.getElementById('sbox')?.classList.add('hidden');
+        reject();
+      }
+    };
+
+    xhr.onerror = function() {
+      toast('Backend bağlantı hatası','terr',4000);
       document.getElementById('sbox')?.classList.add('hidden');
-    }
-  }catch(e){
-    toast('Backend bağlantı hatası','terr',4000);
-    document.getElementById('sbox')?.classList.add('hidden');
-  }
+      reject();
+    };
+
+    xhr.send(fd);
+  }).catch(function(){});
 }
 
 function pollStatus(fn){
@@ -4037,7 +4145,7 @@ function showResult(fn){
     var _xmd=document.getElementById('xitem_multidil'); if(_xmd) _xmd.style.display='flex';
   }else if(mod==='altyazi'){
     const v=document.getElementById('vid');
-    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play();}
+    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play().catch(function(){});}
     const empty=document.getElementById('vbox_empty'); if(empty) empty.style.display='none';
     (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
@@ -4054,7 +4162,7 @@ function showResult(fn){
     (function(){var _oa=document.getElementById('live_badge');if(_oa)_oa.style.display='inline';})();
     aSrt=fn.replace('.mp4','.srt');
     const v=document.getElementById('vid');
-    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play();}
+    if(v){v.src=B+'/dinle/'+fn+'?v='+Date.now();v.style.display='block';v.play().catch(function(){});}
     const empty=document.getElementById('vbox_empty'); if(empty) empty.style.display='none';
     fetch(B+'/dinle/'+aSrt).then(function(r){return r.text();}).then(function(c){renderSegs(c,aSrt);}).catch(function(){});
     setTimeout(function(){waveform(fn);},1800);
@@ -4638,206 +4746,167 @@ function isVoiceFree(sesId) {
   return v ? !v.paid : true;
 }
 
-// buildVoiceList'i güncelle — ücretsiz/pro badge göster
-/* ═══ SES FİLTRE DURUMU ═══ */
-let _voiceFilter = { gender: 'all', tone: 'all', search: '' };
+/* ═══ SES LİSTESİ (modal step2 — kart grid) ═══ */
+const _langFlag = { tr:'🇹🇷', de:'🇩🇪', fr:'🇫🇷', it:'🇮🇹', en:'🇺🇸' };
 
 function buildVoiceList() {
   const el = document.getElementById('voice_list');
   if (!el) return;
 
-  // Filtre UI'ı ekle (sadece bir kez)
-  if (!document.getElementById('voice_filter_bar')) {
-    const filterBar = document.createElement('div');
-    filterBar.id = 'voice_filter_bar';
-    filterBar.style.cssText = 'padding:8px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;';
-    filterBar.innerHTML = ''
-    + '      <!-- Arama -->'
-    + '      <div style="position:relative;">'
-    + '        <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;"></i>'
-    + '        <input id="voice_search" type="text" placeholder="Ses ara..." oninput="voiceFiltreUygula()"'
-    + '          style="width:100%;padding:6px 8px 6px 26px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;box-sizing:border-box;outline:none;">'
-    + '      </div>'
-    + '      <!-- Cinsiyet + Ton filtreleri -->'
-    + '      <div style="display:flex;gap:4px;flex-wrap:wrap;">'
-    + '        <button onclick="voiceFiltreSet(\'gender\',\'all\',this)" class="_vf_btn _vf_active" data-f="gender" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tümü</button>'
-    + '        <button onclick="voiceFiltreSet(\'gender\',\'male\',this)" class="_vf_btn" data-f="gender" data-v="male" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👨 Erkek</button>'
-    + '        <button onclick="voiceFiltreSet(\'gender\',\'female\',this)" class="_vf_btn" data-f="gender" data-v="female" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">👩 Kadın</button>'
-    + '        <div style="width:0.5px;background:var(--border2);margin:0 2px;"></div>'
-    + '        <button onclick="voiceFiltreSet(\'tone\',\'all\',this)" class="_vf_btn _vf_tone_active" data-f="tone" data-v="all" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Tüm Ton</button>'
-    + '        <button onclick="voiceFiltreSet(\'tone\',\'deep\',this)" class="_vf_btn" data-f="tone" data-v="deep" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🔉 Derin</button>'
-    + '        <button onclick="voiceFiltreSet(\'tone\',\'warm\',this)" class="_vf_btn" data-f="tone" data-v="warm" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">🌡 Sıcak</button>'
-    + '        <button onclick="voiceFiltreSet(\'tone\',\'energetic\',this)" class="_vf_btn" data-f="tone" data-v="energetic" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">⚡ Enerjik</button>'
-    + '        <button onclick="voiceFiltreSet(\'tone\',\'neutral\',this)" class="_vf_btn" data-f="tone" data-v="neutral" style="font-size:10px;padding:3px 8px;border-radius:100px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);cursor:pointer;font-family:inherit;">😐 Nötr</button>'
-    + '      </div>';
-    el.parentNode.insertBefore(filterBar, el);
-  }
+  const hedefDil = document.getElementById('m_tgt2')?.value
+                || document.getElementById('m_tgt')?.value
+                || 'en';
+  const arama    = (document.getElementById('modal_voice_search')?.value || '').toLowerCase();
 
-  voiceFiltreUygula();
-}
-
-function voiceFiltreSet(key, val, btn) {
-  _voiceFilter[key] = val;
-  // Aktif buton stilini güncelle
-  const sinif = key === 'gender' ? '_vf_btn:not([data-f="tone"])' : '[data-f="tone"]';
-  document.querySelectorAll('[data-f="' + key + '"]').forEach(b => {
-    const isActive = b.dataset.v === val;
-    b.style.background = isActive ? 'var(--accent)' : 'var(--s3)';
-    b.style.color      = isActive ? '#fff' : 'var(--muted2)';
-    b.style.borderColor= isActive ? 'var(--accent)' : 'var(--border2)';
-  });
-  voiceFiltreUygula();
-}
-
-function voiceFiltreUygula() {
-  const el = document.getElementById('voice_list');
-  if (!el) return;
-
-  const arama   = (document.getElementById('voice_search')?.value || '').toLowerCase();
-  const hedefDil = document.getElementById('m_tgt')?.value || document.getElementById('tgt_lang')?.value || 'en';
-
-  // Dile göre uyumlu sesler
-  const dilUyumMap = { tr:'tr', de:'de', fr:'fr', it:'it', es:'es', pt:'pt' };
-  const gerekliLang = dilUyumMap[hedefDil] || null; // null = en/çok dilli
-
-  const sirali = [...VOICES].sort((a,b) => {
-    const aOnce = (a.lang === hedefDil) ? -3 : (a.lang === 'en') ? -1 : 0;
-    const bOnce = (b.lang === hedefDil) ? -3 : (b.lang === 'en') ? -1 : 0;
-    return aOnce - bOnce;
+  // Önce hedef dil sesleri, sonra İngilizce, sonra diğerleri
+  const sirali = [...VOICES].sort((a, b) => {
+    const aP = a.lang === hedefDil ? 0 : a.lang === 'en' ? 1 : 2;
+    const bP = b.lang === hedefDil ? 0 : b.lang === 'en' ? 1 : 2;
+    return aP - bP;
   });
 
   const filtreli = sirali.filter(v => {
-    if (_voiceFilter.gender !== 'all' && v.gender !== _voiceFilter.gender) return false;
-    if (_voiceFilter.tone   !== 'all' && v.tone   !== _voiceFilter.tone)   return false;
-    if (arama && !v.name.toLowerCase().includes(arama) && !v.desc.toLowerCase().includes(arama)) return false;
+    if (arama && !v.name.toLowerCase().includes(arama) && !(v.desc||'').toLowerCase().includes(arama)) return false;
     return true;
   });
 
   if (!filtreli.length) {
-    el.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
+    el.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;font-size:12px;color:var(--muted2);">Ses bulunamadı</div>';
     return;
   }
 
-  const dilBadge = {
-    'tr':'<span style="font-size:9px;background:rgba(249,115,22,.15);color:#f97316;padding:1px 5px;border-radius:3px;">🇹🇷 TR</span>',
-    'de':'<span style="font-size:9px;background:rgba(220,38,38,.15);color:#dc2626;padding:1px 5px;border-radius:3px;">🇩🇪 DE</span>',
-    'fr':'<span style="font-size:9px;background:rgba(59,130,246,.15);color:#3b82f6;padding:1px 5px;border-radius:3px;">🇫🇷 FR</span>',
-    'it':'<span style="font-size:9px;background:rgba(34,197,94,.15);color:#16a34a;padding:1px 5px;border-radius:3px;">🇮🇹 IT</span>',
-    'en':'',
-  };
+  el.innerHTML = filtreli.map(function(v) {
+    const isSel   = voice === v.id;
+    const isFree  = isVoiceFree(v.id);
+    const flag    = _langFlag[v.lang] || '🌐';
+    const selBg   = isSel ? 'background:rgba(59,130,246,.12);border-color:#3b82f6;' : 'background:var(--s3);border-color:var(--border2);';
+    const proBadge = isFree
+      ? '<span style="font-size:9px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;white-space:nowrap;">Ücretsiz</span>'
+      : '<span style="font-size:9px;background:#1a1200;border:1px solid #713f12;color:#fde68a;padding:1px 5px;border-radius:3px;white-space:nowrap;">★ Pro</span>';
 
-  el.innerHTML = filtreli.map(v => {
-    const isFree = isVoiceFree(v.id);
-    const badge  = isFree
-      ? '<span style="font-size:9px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;">ÜCRETSİZ</span>'
-      : '<span style="font-size:9px;background:rgba(99,102,241,.15);color:var(--accent3);padding:1px 5px;border-radius:3px;">PRO</span>';
-
-    // Dil uyumsuzsa soluk göster
-    const uyumsuz = gerekliLang && v.lang !== gerekliLang && v.lang !== 'en';
-    const opacity  = uyumsuz ? '0.35' : '1';
-    const title    = uyumsuz ? 'Bu ses ' + hedefDil.toUpperCase() + ' dilini desteklemiyor' : '';
-    const cursor   = uyumsuz ? 'not-allowed' : 'pointer';
-
-    const tonIcon = { deep:'🔉', warm:'🌡', energetic:'⚡', neutral:'😐' }[v.tone] || '';
-
-    return ''
-    + '    <div onclick="' + uyumsuz ? "toast('Bu ses seçili dili desteklemiyor — farklı bir ses seçin','twarn',3000)" : 'selVoiceById(\'' + v.id + '\')' + '"'
-    + '      id="vli_' + v.id + '"'
-    + '      title="' + title + '"'
-    + '      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:' + cursor + ';transition:all .12s;border:1.5px solid transparent;opacity:' + opacity + ';"'
-    + '      ' + !uyumsuz ? 'onmouseover="this.style.background=\'var(--s4)\'" onmouseout="if(voice!==\'' + v.id + '\')this.style.background=\'\';this.style.borderColor=voice===\'' + v.id + '\'?\'var(--accent2)\':\'transparent\'"' : '' + '>'
-    + '      <span style="width:9px;height:9px;border-radius:50%;background:' + v.color + ';flex-shrink:0;"></span>'
-    + '      <div style="flex:1;min-width:0;">'
-    + '        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'
-    + '          <span style="font-size:12px;font-weight:600;">' + v.flag || '' + ' ' + v.name + '</span>'
-    + '          ' + badge
-    + '          ' + dilBadge[v.lang] || ''
-    + '          ' + tonIcon ? '<span style="font-size:10px;">' + tonIcon + '</span>' : ''
-    + '        </div>'
-    + '        <span style="font-size:10px;color:var(--muted2);">' + v.desc + '</span>'
-    + '      </div>'
-    + '      <button onclick="event.stopPropagation();' + uyumsuz ? "toast('Bu ses bu dili desteklemiyor','twarn')" : 'sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')' + '"'
-    + '        style="background:transparent;border:1px solid var(--border2);color:var(--muted2);width:24px;height:24px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"'
-    + '        onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
-    + '        <i class="fa-solid fa-play" style="font-size:8px;"></i>'
-    + '      </button>'
-    + '    </div>';
+    return '<div id="vli_' + v.id + '" onclick="selVoiceById(\'' + v.id + '\')"'
+      + ' style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:8px;border:1.5px solid;cursor:pointer;transition:all .15s;' + selBg + '"'
+      + ' onmouseover="if(voice!==\'' + v.id + '\')this.style.borderColor=\'#3b82f6\'"'
+      + ' onmouseout="if(voice!==\'' + v.id + '\')this.style.borderColor=\'var(--border2)\'">'
+      /* Avatar */
+      + '<div style="width:42px;height:42px;border-radius:8px;background:' + v.color + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">' + v.name[0] + '</div>'
+      /* İsim + bayrak + badge */
+      + '<div style="flex:1;min-width:0;">'
+      + '  <div style="font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + flag + ' ' + v.name + '</div>'
+      + '  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">'
+      + proBadge
+      + '  </div>'
+      + '</div>'
+      /* Mavi kulaklık butonu */
+      + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')"'
+      + ' style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;"'
+      + ' onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'">'
+      + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:11px;"></i>'
+      + '</button>'
+      + '</div>';
   }).join('');
-
-  selVoiceById(voice);
 }
 
 /* ═══ VOICE PICKER MODAL ═══ */
 let _vpFavs = JSON.parse(localStorage.getItem('vf_fav_voices') || '[]');
-let _vpFilter = { gender:'all', favOnly:false, proOnly:false, search:'' };
+let _vpFilter = { genderF:false, genderM:false, favOnly:false, proOnly:false };
 
 function voicePickerAc(ctx) {
   document.getElementById('_voice_picker')?.remove();
   const ov = document.createElement('div');
   ov.id = '_voice_picker';
-  ov.style.cssText = 'position:fixed;inset:0;background:#07090f;z-index:10002;display:flex;flex-direction:column;font-family:inherit;';
-
-  // Gruplar
-  const groups = [
-    { label:'🇹🇷 Turkish',  lang:'tr' },
-    { label:'🇩🇪 German',   lang:'de' },
-    { label:'🇫🇷 French',   lang:'fr' },
-    { label:'🇮🇹 Italian',  lang:'it' },
-    { label:'Common',        lang:'en' },
-  ];
+  ov.style.cssText = 'position:fixed;inset:0;background:#0d1117;z-index:10002;display:flex;flex-direction:column;font-family:inherit;';
 
   ov.innerHTML = ''
-  + '<div style="background:#0d1117;border-bottom:1px solid #1f2d42;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;">'
-  + '  <div style="background:#eab308;color:#000;font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px;">Speaker 1</div>'
-  + '  <div style="flex:1;"></div>'
-  + '  <!-- Filtreler -->'
-  + '  <button onclick="_vpGender(\'all\',this)" id="_vpg_all" style="background:#1f2d42;border:none;color:#e8edf5;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">All</button>'
-  + '  <button onclick="_vpGender(\'female\',this)" id="_vpg_female" style="background:transparent;border:1px solid #1f2d42;color:#8ba3be;padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;" title="Female">♀</button>'
-  + '  <button onclick="_vpGender(\'male\',this)" id="_vpg_male" style="background:transparent;border:1px solid #1f2d42;color:#8ba3be;padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;" title="Male">♂</button>'
-  + '  <div style="width:1px;height:20px;background:#1f2d42;"></div>'
-  + '  <button onclick="_vpFavToggle(this)" id="_vpb_fav" style="background:transparent;border:1px solid #1f2d42;color:#8ba3be;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">❤ Favorites</button>'
-  + '  <button onclick="_vpProToggle(this)" id="_vpb_pro" style="background:transparent;border:1px solid #1f2d42;color:#8ba3be;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⭐ Pro</button>'
-  + '  <div style="position:relative;margin-left:4px;">'
-  + '    <i class="fa-solid fa-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#5a7090;font-size:11px;"></i>'
-  + '    <input id="_vp_search" oninput="_vpRender()" placeholder="Search for a speaker..." style="padding:7px 12px 7px 28px;background:#111827;border:1px solid #1f2d42;border-radius:6px;color:#e8edf5;font-size:12px;width:200px;font-family:inherit;outline:none;">'
+  /* ── Top bar ── */
+  + '<div style="background:#0a0d14;border-bottom:1px solid #1a2235;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;">'
+  + '  <div style="background:#ca8a04;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.3px;">Speaker 1</div>'
+  + '  <div style="flex:1;background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:9px 16px;text-align:center;font-size:12px;color:#60a5fa;font-weight:600;cursor:pointer;" onclick="alert(\'Voice cloning available on Pro plans\')">'
+  + '    🔒 Unlock Voice Cloning'
   + '  </div>'
-  + '  <button onclick="document.getElementById(\'_voice_picker\').remove()" style="background:none;border:none;color:#5a7090;font-size:22px;cursor:pointer;line-height:1;padding:0 4px;">×</button>'
+  + '  <button onclick="document.getElementById(\'_voice_picker\').remove()" style="background:none;border:none;color:#5a7090;font-size:24px;cursor:pointer;line-height:1;padding:0 2px;margin-left:4px;">×</button>'
   + '</div>'
+  /* ── Filter bar ── */
+  + '<div style="background:#0a0d14;border-bottom:1px solid #1a2235;padding:9px 20px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">'
+  /* gender checkboxes */
+  + '  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#8ba3be;user-select:none;">'
+  + '    <div id="_vpc_f" onclick="_vpGenderToggle(\'female\')" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #3b5478;background:#111827;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:.15s;"></div>♀'
+  + '  </label>'
+  + '  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#8ba3be;user-select:none;">'
+  + '    <div id="_vpc_m" onclick="_vpGenderToggle(\'male\')" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #3b5478;background:#111827;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:.15s;"></div>♂'
+  + '  </label>'
+  + '  <div style="width:1px;height:18px;background:#1a2235;margin:0 2px;"></div>'
+  /* dropdowns */
+  + '  <select id="_vp_expr" onchange="_vpRender()" style="background:#111827;border:1px solid #1e2d42;border-radius:6px;color:#8ba3be;padding:5px 24px 5px 10px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url(\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 6%22><path fill=%22%235a7090%22 d=%22M0 0l5 6 5-6z%22/></svg>\');background-repeat:no-repeat;background-position:right 8px center;background-size:8px;">'
+  + '    <option value="">Expressions</option>'
+  + '    <option value="narration">Narration</option>'
+  + '    <option value="newscast">Newscast</option>'
+  + '    <option value="conversational">Conversational</option>'
+  + '  </select>'
+  + '  <select id="_vp_dial" onchange="_vpRender()" style="background:#111827;border:1px solid #1e2d42;border-radius:6px;color:#8ba3be;padding:5px 24px 5px 10px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url(\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 6%22><path fill=%22%235a7090%22 d=%22M0 0l5 6 5-6z%22/></svg>\');background-repeat:no-repeat;background-position:right 8px center;background-size:8px;">'
+  + '    <option value="">Dialects</option>'
+  + '    <option value="tr">Turkish</option>'
+  + '    <option value="en">English</option>'
+  + '    <option value="de">German</option>'
+  + '    <option value="fr">French</option>'
+  + '    <option value="it">Italian</option>'
+  + '  </select>'
+  + '  <div style="width:1px;height:18px;background:#1a2235;margin:0 2px;"></div>'
+  /* fav + pro pills */
+  + '  <button id="_vpb_fav" onclick="_vpFavToggle(this)" style="display:flex;align-items:center;gap:5px;background:transparent;border:1.5px solid #3b5478;color:#8ba3be;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;">'
+  + '    <span style="color:#ef4444;font-size:13px;">❤</span> Favorites'
+  + '  </button>'
+  + '  <button id="_vpb_pro" onclick="_vpProToggle(this)" style="display:flex;align-items:center;gap:5px;background:transparent;border:1.5px solid #3b5478;color:#8ba3be;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;">'
+  + '    <span style="color:#eab308;font-size:12px;">⭐</span> Pro'
+  + '  </button>'
+  + '  <div style="flex:1;min-width:120px;position:relative;">'
+  + '    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#5a7090;font-size:11px;"></i>'
+  + '    <input id="_vp_search" oninput="_vpRender()" placeholder="Search voices…" style="width:100%;padding:6px 12px 6px 28px;background:#111827;border:1px solid #1e2d42;border-radius:6px;color:#e8edf5;font-size:12px;font-family:inherit;outline:none;">'
+  + '  </div>'
+  + '</div>'
+  /* ── Body ── */
   + '<div id="_vp_body" style="flex:1;overflow-y:auto;padding:16px 20px;"></div>'
-  + '<div style="background:#0d1117;border-top:1px solid #1f2d42;padding:14px 20px;text-align:center;flex-shrink:0;">'
-  + '  <button onclick="document.getElementById(\'_voice_picker\').remove()" style="background:#1f2d42;border:none;color:#e8edf5;padding:12px 40px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;max-width:400px;">Close</button>'
+  /* ── Bottom bar ── */
+  + '<div style="background:#0a0d14;border-top:1px solid #1a2235;padding:12px 20px;flex-shrink:0;">'
+  + '  <button onclick="document.getElementById(\'_voice_picker\').remove()" style="width:100%;background:#161d2b;border:1px solid #1e2d42;color:#e8edf5;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;">Voiceover</button>'
   + '</div>';
 
   document.body.appendChild(ov);
+  _vpFilter.genderF = false;
+  _vpFilter.genderM = false;
   _vpRender();
 }
 
-function _vpGender(g, btn) {
-  _vpFilter.gender = g;
-  ['all','female','male'].forEach(function(k) {
-    const b = document.getElementById('_vpg_' + k);
-    if (!b) return;
-    const on = k === g;
-    b.style.background = on ? '#1f2d42' : 'transparent';
-    b.style.color      = on ? '#e8edf5' : '#8ba3be';
-    b.style.border     = on ? 'none' : '1px solid #1f2d42';
-  });
+function _vpGenderToggle(g) {
+  const key = g === 'female' ? 'genderF' : 'genderM';
+  _vpFilter[key] = !_vpFilter[key];
+  const box = document.getElementById(g === 'female' ? '_vpc_f' : '_vpc_m');
+  if (box) {
+    box.style.background  = _vpFilter[key] ? '#3b82f6' : '#111827';
+    box.style.borderColor = _vpFilter[key] ? '#3b82f6' : '#3b5478';
+    box.innerHTML         = _vpFilter[key] ? '✓' : '';
+    box.style.color       = '#fff';
+  }
   _vpRender();
 }
 
 function _vpFavToggle(btn) {
   _vpFilter.favOnly = !_vpFilter.favOnly;
-  btn.style.background = _vpFilter.favOnly ? '#be185d22' : 'transparent';
-  btn.style.color      = _vpFilter.favOnly ? '#f9a8d4' : '#8ba3be';
-  btn.style.borderColor= _vpFilter.favOnly ? '#be185d' : '#1f2d42';
+  btn.style.background  = _vpFilter.favOnly ? '#3f0d1222' : 'transparent';
+  btn.style.color       = _vpFilter.favOnly ? '#f9a8d4'   : '#8ba3be';
+  btn.style.borderColor = _vpFilter.favOnly ? '#ef4444'   : '#3b5478';
+  if (_vpFilter.favOnly) btn.insertAdjacentHTML('afterbegin','<span id="_vp_fck" style="color:#22c55e;font-size:11px;margin-right:3px;">✓</span>');
+  else document.getElementById('_vp_fck')?.remove();
   _vpRender();
 }
 
 function _vpProToggle(btn) {
   _vpFilter.proOnly = !_vpFilter.proOnly;
   btn.style.background  = _vpFilter.proOnly ? '#eab30822' : 'transparent';
-  btn.style.color       = _vpFilter.proOnly ? '#fde68a' : '#8ba3be';
-  btn.style.borderColor = _vpFilter.proOnly ? '#eab308' : '#1f2d42';
+  btn.style.color       = _vpFilter.proOnly ? '#fde68a'   : '#8ba3be';
+  btn.style.borderColor = _vpFilter.proOnly ? '#eab308'   : '#3b5478';
+  if (_vpFilter.proOnly) btn.insertAdjacentHTML('afterbegin','<span id="_vp_pck" style="color:#22c55e;font-size:11px;margin-right:3px;">✓</span>');
+  else document.getElementById('_vp_pck')?.remove();
   _vpRender();
 }
 
@@ -4851,55 +4920,73 @@ function _vpFavSet(id, btn) {
 function _vpRender() {
   const body = document.getElementById('_vp_body');
   if (!body) return;
-  const q = (document.getElementById('_vp_search')?.value || '').toLowerCase();
+  const q    = (document.getElementById('_vp_search')?.value || '').toLowerCase();
+  const dial = document.getElementById('_vp_dial')?.value || '';
 
   const groups = [
     { label:'🇹🇷 Turkish',  lang:'tr' },
     { label:'🇩🇪 German',   lang:'de' },
     { label:'🇫🇷 French',   lang:'fr' },
     { label:'🇮🇹 Italian',  lang:'it' },
-    { label:'Common',        lang:'en' },
+    { label:'🌐 Common',    lang:'en' },
   ];
 
   let html = '';
   groups.forEach(function(g) {
+    if (dial && dial !== g.lang) return;
     let voices = VOICES.filter(function(v) {
       if (v.lang !== g.lang) return false;
-      if (_vpFilter.gender !== 'all' && v.gender !== _vpFilter.gender) return false;
+      if (_vpFilter.genderF && v.gender !== 'female') return false;
+      if (_vpFilter.genderM && v.gender !== 'male')   return false;
       if (_vpFilter.favOnly && !_vpFavs.includes(v.id)) return false;
       if (_vpFilter.proOnly && !v.paid) return false;
-      if (q && !v.name.toLowerCase().includes(q) && !v.desc.toLowerCase().includes(q)) return false;
+      if (q && !v.name.toLowerCase().includes(q) && !(v.desc||'').toLowerCase().includes(q)) return false;
       return true;
     });
     if (!voices.length) return;
 
-    html += '<div style="margin-bottom:20px;">'
-      + '<div style="font-size:13px;font-weight:700;color:#e8edf5;margin-bottom:10px;">' + g.label + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;">';
+    // 4-column grid; each cell = horizontal row item
+    html += '<div style="margin-bottom:24px;">'
+      + '<div style="font-size:11px;font-weight:700;color:#5a7090;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1a2235;">' + g.label + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
 
     voices.forEach(function(v) {
-      const isFav = _vpFavs.includes(v.id);
-      const isSelected = voice === v.id;
-      html += '<div onclick="selVoiceById(\'' + v.id + '\')" style="background:' + (isSelected?'#1a2744':'#111827') + ';border:1.5px solid ' + (isSelected?'#3b82f6':'#1f2d42') + ';border-radius:10px;padding:12px;cursor:pointer;position:relative;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#3b82f6\'" onmouseout="this.style.borderColor=\'' + (isSelected?'#3b82f6':'#1f2d42') + '\'">'
-        // Avatar
-        + '<div style="width:52px;height:52px;border-radius:50%;background:' + v.color + ';display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;margin:0 auto 8px;">' + v.name[0] + '</div>'
-        // Name
-        + '<div style="font-size:12px;font-weight:700;color:#e8edf5;text-align:center;margin-bottom:2px;">' + v.name + '</div>'
-        // Heart
-        + '<div style="text-align:center;margin-bottom:6px;">'
-        + '  <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:' + (isFav?'#f43f5e':'#5a7090') + ';padding:0;">♥</button>'
-        + (v.paid ? '  <span style="font-size:9px;background:#eab30822;color:#fde68a;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px;">★ Pro</span>' : '')
+      const isFav     = _vpFavs.includes(v.id);
+      const isSel     = voice === v.id;
+      const selBg     = isSel ? '#0f1e38' : '#111827';
+      const selBorder = isSel ? '#3b82f6' : '#1a2235';
+
+      html += '<div onclick="selVoiceById(\'' + v.id + '\')" '
+        + 'style="display:flex;align-items:center;gap:10px;background:' + selBg + ';border:1.5px solid ' + selBorder + ';border-radius:10px;padding:9px 10px;cursor:pointer;transition:border-color .15s;" '
+        + 'onmouseover="this.style.borderColor=\'#3b82f6\'" onmouseout="this.style.borderColor=\'' + selBorder + '\'">'
+
+        /* Rectangular avatar */
+        + '<div style="width:48px;height:48px;border-radius:8px;background:' + v.color + ';display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;flex-shrink:0;">'
+        + v.name[0]
         + '</div>'
-        // Preview button
-        + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" style="width:100%;background:#1f2d42;border:none;border-radius:6px;color:#8ba3be;padding:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;font-family:inherit;">'
-        + '  <i class="fa-solid fa-headphones" style="font-size:10px;"></i> Preview'
+
+        /* Name + meta */
+        + '<div style="flex:1;min-width:0;">'
+        + '  <div style="font-size:12px;font-weight:700;color:#e8edf5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</div>'
+        + '  <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">'
+        + '    <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:' + (isFav?'#f43f5e':'#3b5478') + ';padding:0;line-height:1;" title="Favorite">♥</button>'
+        + (v.paid ? '<span style="font-size:9px;background:#1a1200;border:1px solid #713f12;color:#fde68a;padding:1px 6px;border-radius:4px;font-weight:700;">★ Pro</span>' : '')
+        + '  </div>'
+        + '</div>'
+
+        /* Blue headphone circle */
+        + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" '
+        + 'style="width:34px;height:34px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;" '
+        + 'onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'" title="Preview">'
+        + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:13px;"></i>'
         + '</button>'
+
         + '</div>';
     });
     html += '</div></div>';
   });
 
-  if (!html) html = '<div style="text-align:center;padding:60px;color:#5a7090;">No voices found</div>';
+  if (!html) html = '<div style="text-align:center;padding:60px 20px;color:#5a7090;font-size:14px;">No voices match the current filters</div>';
   body.innerHTML = html;
 }
 
