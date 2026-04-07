@@ -28,6 +28,8 @@ STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "re_2gmxFeh5_41LqREVjBxppazRu5RXk5Ui2")
 RESEND_FROM         = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
+SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://scbnrgvpmdmmginezamj.supabase.co")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 # Stripe fiyat ID'leri — Stripe Dashboard'dan alınacak
 STRIPE_PRICES = {
@@ -681,6 +683,93 @@ def ses_sure_olc(dosya: str) -> float:
         return 0.0
 
 
+# ============================================================
+# SUPABASE YARDIMCI FONKSİYONLAR
+# ============================================================
+def _sb_headers() -> dict:
+    return {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+
+async def sb_profil_getir(user_id: str) -> dict | None:
+    """Kullanıcının profil verisini Supabase'den çeker."""
+    if not SUPABASE_SERVICE_KEY or not user_id:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.get(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                params={"id": f"eq.{user_id}", "select": "id,email,plan,kullanim_dakika,ay_baslangic,stripe_customer_id"},
+                headers=_sb_headers(),
+            )
+            rows = r.json()
+            return rows[0] if rows else None
+    except Exception as e:
+        log.warning(f"[Supabase] profil_getir hata: {e}")
+        return None
+
+async def sb_plan_guncelle(email: str, plan: str, customer_id: str = "", sub_id: str = "") -> bool:
+    """Kullanıcının planını e-posta ile günceller (Stripe webhook'tan çağrılır)."""
+    if not SUPABASE_SERVICE_KEY or not email:
+        return False
+    try:
+        payload: dict = {"plan": plan, "updated_at": "now()"}
+        if customer_id:
+            payload["stripe_customer_id"] = customer_id
+        if sub_id:
+            payload["stripe_subscription_id"] = sub_id
+        if plan == "lite":
+            payload["kullanim_dakika"] = 0  # downgrade'de sıfırla
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.patch(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                params={"email": f"eq.{email}"},
+                headers=_sb_headers(),
+                json=payload,
+            )
+        log.info(f"[Supabase] Plan güncellendi email={email} plan={plan} status={r.status_code}")
+        return r.status_code in (200, 204)
+    except Exception as e:
+        log.error(f"[Supabase] plan_guncelle hata: {e}")
+        return False
+
+async def sb_kullanim_ekle(user_id: str, dakika: float) -> bool:
+    """İşlem sonrası kullanılan dakikayı Supabase'e yazar. Aylık reset de kontrol eder."""
+    if not SUPABASE_SERVICE_KEY or not user_id or dakika <= 0:
+        return False
+    try:
+        profil = await sb_profil_getir(user_id)
+        if not profil:
+            return False
+        import datetime
+        bugun = datetime.date.today()
+        ay_bas_str = profil.get("ay_baslangic") or str(bugun)
+        ay_bas = datetime.date.fromisoformat(ay_bas_str[:10])
+        # Yeni ay başladıysa sıfırla
+        if bugun.year != ay_bas.year or bugun.month != ay_bas.month:
+            mevcut = 0.0
+            yeni_ay_bas = bugun.replace(day=1).isoformat()
+        else:
+            mevcut = float(profil.get("kullanim_dakika") or 0)
+            yeni_ay_bas = ay_bas_str[:10]
+        yeni_toplam = round(mevcut + dakika, 2)
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.patch(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                params={"id": f"eq.{user_id}"},
+                headers=_sb_headers(),
+                json={"kullanim_dakika": yeni_toplam, "ay_baslangic": yeni_ay_bas, "updated_at": "now()"},
+            )
+        log.info(f"[Supabase] Kullanım eklendi user={user_id[:8]} +{dakika:.1f}dk toplam={yeni_toplam:.1f}dk")
+        return r.status_code in (200, 204)
+    except Exception as e:
+        log.error(f"[Supabase] kullanim_ekle hata: {e}")
+        return False
+
+
 def _sessizlik_olustur(sure: float, cikis: str) -> bool:
     """Verilen sürede sessiz stereo WAV üretir."""
     sure = max(0.05, round(sure, 4))
@@ -1274,7 +1363,7 @@ def deepgram_to_srt(dg_response, path: str):
 # ============================================================
 # ANA İŞLEM MOTORU
 # ============================================================
-async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55):
+async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55, user_id=""):
     import time as _time
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
@@ -1664,6 +1753,19 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
         log.error(f"[Motor FATAL] {e}\n{traceback.format_exc()}")
         islem_durumlari[out_file] = {"durum": f"Hata: Sistem işleyemedi — {e}", "yuzde": 0}
     finally:
+        # Başarılıysa kullanım dakikasını Supabase'e kaydet
+        try:
+            durum = islem_durumlari.get(out_file, {})
+            if durum.get("yuzde") == 100 and user_id:
+                cikti_tam = os.path.join(OUTPUT_DIR, out_file)
+                sure_sn = ses_sure_olc(cikti_tam) if os.path.exists(cikti_tam) else 0.0
+                if sure_sn <= 0 and tmp_in and os.path.exists(tmp_in):
+                    sure_sn = ses_sure_olc(tmp_in)
+                sure_dk = round(sure_sn / 60, 2) if sure_sn > 0 else 1.0
+                islem_durumlari[out_file]["sure_dakika"] = sure_dk
+                await sb_kullanim_ekle(user_id, sure_dk)
+        except Exception as _eu:
+            log.warning(f"[Motor] Kullanım kaydı hatası: {_eu}")
         if tmp_in and os.path.exists(tmp_in):
             try: os.remove(tmp_in)
             except: pass
@@ -1692,6 +1794,7 @@ async def islem_baslat(
     dub_vol_param: str = Form("1.0"),
     style: str        = Form("0.0"),      # Duygu yoğunluğu (0.0-1.0)
     stability: str    = Form("0.55"),     # Kararlılık (düşük = daha duygusal)
+    user_id: str      = Form(""),         # Supabase user UUID (boş = demo mod)
 ):
     b_id   = uuid.uuid4().hex[:8]
     tmp_in = ""
@@ -1729,6 +1832,7 @@ async def islem_baslat(
         ses_id, tmp_in, yazili_metin, kaynak_dil,
         f_name, f_size, f_color, is_bold, is_shadow, m_v,
         orig_vol_f, dub_vol_f, style_f, stability_f,
+        user_id.strip() or "",
     )
     return JSONResponse({"beklenen_dosya_adi": out_file})
 
@@ -2478,16 +2582,36 @@ async def bakiye_kontrol(request: Request):
     if not user_id:
         return JSONResponse({"yeterli": True, "bakiye": 999, "maliyet": maliyet, "mod": "demo"})
 
-    # TODO: Supabase'den gerçek bakiye çek
-    # Şimdilik mock: 15 kredi var gibi davran
-    mock_bakiye = 15
-    yeterli = mock_bakiye >= maliyet
+    profil = await sb_profil_getir(user_id)
+    if not profil:
+        # Supabase bağlantısı yoksa serbest geç
+        return JSONResponse({"yeterli": True, "bakiye": 999, "maliyet": maliyet, "mod": "demo"})
+
+    import datetime
+    plan = profil.get("plan", "lite")
+    limitler = {"lite": 10, "creator": 75, "studio": 200, "business": 600}
+    limit = limitler.get(plan, 10)
+
+    # Aylık reset kontrolü
+    bugun = datetime.date.today()
+    ay_bas_str = profil.get("ay_baslangic") or str(bugun)
+    ay_bas = datetime.date.fromisoformat(ay_bas_str[:10])
+    if bugun.year != ay_bas.year or bugun.month != ay_bas.month:
+        kullanim = 0.0  # Yeni ay, sıfırdan say
+    else:
+        kullanim = float(profil.get("kullanim_dakika") or 0)
+
+    kalan = max(0.0, limit - kullanim)
+    yeterli = kalan >= maliyet
 
     return JSONResponse({
         "yeterli": yeterli,
-        "bakiye": mock_bakiye,
+        "bakiye": round(kalan, 1),
+        "kullanim": round(kullanim, 1),
+        "limit": limit,
+        "plan": plan,
         "maliyet": maliyet,
-        "mod": "supabase_mock"
+        "mod": "supabase",
     })
 
 
@@ -3265,6 +3389,7 @@ async def dosyalari_listele():
 async def stripe_checkout(
     plan: str = Form(...),
     email: str = Form(""),
+    user_id: str = Form(""),
     success_url: str = Form(""),
     cancel_url: str = Form(""),
 ):
@@ -3291,6 +3416,7 @@ async def stripe_checkout(
             "cancel_url":  ko_url,
             "allow_promotion_codes": True,
             "billing_address_collection": "auto",
+            "metadata": {"plan": plan, "user_id": user_id},
         }
         if email:
             params["customer_email"] = email
@@ -3321,14 +3447,86 @@ async def stripe_webhook(request: Request):
     log.info(f"[Stripe Webhook] {etype}")
 
     if etype == "checkout.session.completed":
-        session = event["data"]["object"]
-        email   = session.get("customer_email") or session.get("customer_details", {}).get("email", "")
-        plan    = session.get("metadata", {}).get("plan", "creator")
-        log.info(f"[Stripe] Payment OK — email={email} plan={plan}")
-        # TODO: Supabase ile kullanıcı planını güncelle
-        # await update_user_plan(email, plan)
+        session     = event["data"]["object"]
+        email       = session.get("customer_email") or session.get("customer_details", {}).get("email", "")
+        plan        = session.get("metadata", {}).get("plan", "creator")
+        customer_id = session.get("customer", "")
+        sub_id      = session.get("subscription", "")
+        log.info(f"[Stripe] Payment OK — email={email} plan={plan} customer={customer_id}")
+        await sb_plan_guncelle(email, plan, customer_id, sub_id)
 
     elif etype in ("customer.subscription.deleted", "customer.subscription.paused"):
-        log.info(f"[Stripe] Subscription cancelled/paused")
+        import stripe as _stripe2
+        sub = event["data"]["object"]
+        customer_id = sub.get("customer", "")
+        log.info(f"[Stripe] Subscription cancelled — customer={customer_id}")
+        # Müşteri e-postasını Stripe'dan çek
+        if customer_id and STRIPE_SECRET_KEY:
+            try:
+                _stripe2.api_key = STRIPE_SECRET_KEY
+                cust = _stripe2.Customer.retrieve(customer_id)
+                email = cust.get("email", "")
+                if email:
+                    await sb_plan_guncelle(email, "lite", customer_id)
+            except Exception as _se:
+                log.error(f"[Stripe] Müşteri bilgisi alınamadı: {_se}")
 
     return JSONResponse({"received": True})
+
+@app.get("/api/profil/")
+async def profil_getir(user_id: str):
+    """Kullanıcının güncel plan ve kullanım bilgisini döner."""
+    if not user_id:
+        return JSONResponse({"hata": "user_id gerekli"}, status_code=400)
+    profil = await sb_profil_getir(user_id)
+    if not profil:
+        return JSONResponse({"hata": "Profil bulunamadı"}, status_code=404)
+
+    import datetime
+    plan = profil.get("plan", "lite")
+    limitler = {"lite": 10, "creator": 75, "studio": 200, "business": 600}
+    limit = limitler.get(plan, 10)
+
+    bugun = datetime.date.today()
+    ay_bas_str = profil.get("ay_baslangic") or str(bugun)
+    ay_bas = datetime.date.fromisoformat(ay_bas_str[:10])
+    if bugun.year != ay_bas.year or bugun.month != ay_bas.month:
+        kullanim = 0.0
+    else:
+        kullanim = float(profil.get("kullanim_dakika") or 0)
+
+    return JSONResponse({
+        "plan": plan,
+        "kullanim_dakika": round(kullanim, 1),
+        "limit_dakika": limit,
+        "kalan_dakika": round(max(0, limit - kullanim), 1),
+        "email": profil.get("email", ""),
+    })
+
+
+@app.post("/api/kullanim_kaydet/")
+async def kullanim_kaydet(user_id: str = Form(...), dosya_adi: str = Form(""), dakika: str = Form("0")):
+    """İşlem sonrası kullanılan dakikayı Supabase'e yazar."""
+    if not user_id:
+        return JSONResponse({"ok": False, "sebep": "user_id eksik"})
+
+    dk = 0.0
+    # Önce dosyadan süre hesapla
+    if dosya_adi:
+        cikti_yolu = os.path.join(OUTPUT_DIR, dosya_adi)
+        if os.path.exists(cikti_yolu):
+            sure_sn = ses_sure_olc(cikti_yolu)
+            dk = round(sure_sn / 60, 2) if sure_sn > 0 else 0.0
+
+    # Dosya yoksa frontend'den gelen değeri kullan
+    if dk <= 0:
+        try:
+            dk = float(dakika)
+        except ValueError:
+            dk = 0.0
+
+    if dk <= 0:
+        return JSONResponse({"ok": False, "sebep": "süre hesaplanamadı"})
+
+    ok = await sb_kullanim_ekle(user_id, dk)
+    return JSONResponse({"ok": ok, "eklenen_dakika": dk})

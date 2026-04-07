@@ -3286,11 +3286,11 @@ async function dashboardAc() {
   ov.id = '_dashboard_modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
-  // Kullanıcı bilgileri
+  // Kullanıcı bilgileri — Supabase profilini öncelikle kullan
   const email = _sbUser ? _sbUser.email : null;
-  const isim  = email ? email.split('@')[0] : 'Misafir';
-  const plan  = localStorage.getItem('vf_plan') || 'lite';
-  const kulDk = parseInt(localStorage.getItem('vf_kullanim_dk') || '0');
+  const isim  = email ? email.split('@')[0] : 'Guest';
+  const plan  = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
+  const kulDk = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
   const planLimit = {lite:10, creator:75, studio:200, business:600}[plan] || 10;
   const planRenk  = {lite:'#71717a', creator:'#22c55e', studio:'#6366f1', business:'#ec4899'}[plan] || '#71717a';
   const pct = Math.min(100, Math.round((kulDk/planLimit)*100));
@@ -3310,9 +3310,9 @@ async function dashboardAc() {
     + '</div>'
     // Kullanım
     + '<div style="padding:16px 24px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
-    + dashKart('⏱️', 'Kullanım', kulDk + ' / ' + planLimit + ' dk', pct + '%')
-    + dashKart('💳', 'Plan', plan.charAt(0).toUpperCase()+plan.slice(1), plan==='lite'?'Ücretsiz':'Aktif')
-    + dashKart('⚡', 'Bu Ay Kalan', (planLimit-kulDk) + ' dk', pct<80?'Normal':'Az kaldı')
+    + dashKart('⏱️', 'Usage', kulDk.toFixed(1) + ' / ' + planLimit + ' min', pct + '%')
+    + dashKart('💳', 'Plan', plan.charAt(0).toUpperCase()+plan.slice(1), plan==='lite'?'Free':'Active')
+    + dashKart('⚡', 'Remaining', Math.max(0, planLimit-kulDk).toFixed(1) + ' min', pct<80?'Good':'Low')
     + '</div>'
     // Kullanım bar
     + '<div style="padding:0 24px 14px;border-bottom:1px solid var(--border);">'
@@ -3326,7 +3326,7 @@ async function dashboardAc() {
     + '<button onclick="dosyaYukleYeni()" style="background:var(--accent);border:none;color:#fff;padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">+ New File</button>'
     + '</div>'
     + '<div id="dashboard_dosyalar" style="flex:1;overflow-y:auto;padding:8px 16px;">'
-    + '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>'
+    + '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>'
     + '</div>'
     // Alt butonlar
     + '<div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;">'
@@ -3817,6 +3817,7 @@ async function startProcess(){
   const fd=new FormData();
   fd.append('modul',mod);
   fd.append('ses_id',voice);
+  if (_sbUser) fd.append('user_id', _sbUser.id);
   fd.append('kaynak_dil', document.getElementById('src_lang')?.value || 'tr');
   fd.append('hedef_dil',document.getElementById('tgt_lang')?.value||'');
   // Mixer değerleri
@@ -3915,6 +3916,8 @@ function pollStatus(fn){
 function showResult(fn){
   aDosya=fn;
   sonDosyayiKaydet(fn, mod);
+  // Kullanımı Supabase'e kaydet (giriş yapılmışsa)
+  if (_sbUser) _kullanimi_kaydet(fn);
   document.getElementById('xwrap')?.classList.remove('hidden');
   if(mod==='metinden_sese'){
     document.getElementById('tts_player')?.classList.remove('hidden');
@@ -5228,19 +5231,19 @@ function profilAc() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
 
   const plan     = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
-  const kullanim = (_sbProfil && _sbProfil.kullanim_dakika) || parseFloat(localStorage.getItem('vf_kullanim_dk')||'0');
+  const kullanim = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
   const limitler = { lite:10, creator:75, studio:200, business:600 };
   const limit    = limitler[plan.toLowerCase()] || 10;
   const yuzde    = Math.min(100, (kullanim / limit) * 100);
   const renk     = yuzde > 85 ? '#ef4444' : yuzde > 60 ? '#f59e0b' : '#22c55e';
-  const email    = (_sbUser && _sbUser.email) ? _sbUser.email : 'Giriş yapılmadı';
+  const email    = (_sbUser && _sbUser.email) ? _sbUser.email : 'Not signed in';
   const ilk      = email[0] ? email[0].toUpperCase() : '?';
-  const hesapTxt = _sbUser ? 'Aktif hesap' : 'Demo mod';
+  const hesapTxt = _sbUser ? 'Active account' : 'Demo mode';
   const girisBtn = _sbUser
-    ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Çıkış</button>'
-    : '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Giriş Yap</button>';
+    ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign Out</button>'
+    : '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign In</button>';
 
-  const planlar = [['lite','$0','10 dk'],['creator','$9','75 dk'],['studio','$19','200 dk'],['business','$49','600 dk']];
+  const planlar = [['lite','$0','10 min'],['creator','$9','75 min'],['studio','$19','200 min'],['business','$49','600 min']];
   const planHtml = planlar.map(function(pfd) {
     const p = pfd[0], f = pfd[1], d = pfd[2];
     const aktif = p === plan.toLowerCase();
@@ -5250,14 +5253,14 @@ function profilAc() {
     const isim = p.charAt(0).toUpperCase() + p.slice(1) + (aktif ? ' ✓' : '');
     return '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:var(--r);padding:8px 10px;">'
       + '<div style="font-size:11px;font-weight:700;color:' + color + ';">' + isim + '</div>'
-      + '<div style="font-size:13px;font-weight:700;">' + f + '<span style="font-size:10px;font-weight:400;color:var(--muted2);">/ay</span></div>'
-      + '<div style="font-size:10px;color:var(--muted2);">' + d + '/ay</div>'
+      + '<div style="font-size:13px;font-weight:700;">' + f + '<span style="font-size:10px;font-weight:400;color:var(--muted2);">/mo</span></div>'
+      + '<div style="font-size:10px;color:var(--muted2);">' + d + '/mo</div>'
       + '</div>';
   }).join('');
 
   overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:400px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div style="font-size:15px;font-weight:700;">Profil</div>'
+    + '<div style="font-size:15px;font-weight:700;">Profile</div>'
     + '<button onclick="document.getElementById(\'_profil_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
     + '</div>'
     + '<div style="background:var(--s3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">'
@@ -5270,18 +5273,18 @@ function profilAc() {
     + '</div>'
     + '<div style="background:var(--s3);border-radius:var(--r);padding:14px;margin-bottom:12px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-    + '<div><div style="font-size:11px;color:var(--muted2);">Aktif Plan</div>'
+    + '<div><div style="font-size:11px;color:var(--muted2);">Active Plan</div>'
     + '<div style="font-size:18px;font-weight:700;color:var(--accent3);text-transform:capitalize;">' + plan + '</div></div>'
-    + '<button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Yükselt ↑</button>'
+    + '<button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Upgrade ↑</button>'
     + '</div>'
-    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + kullanim.toFixed(1) + ' / ' + limit + ' dakika</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + kullanim.toFixed(1) + ' / ' + limit + ' minutes used this month</div>'
     + '<div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">'
     + '<div style="height:100%;background:' + renk + ';border-radius:100px;width:' + yuzde + '%;"></div>'
     + '</div></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">' + planHtml + '</div>'
     + '<div style="display:flex;gap:8px;">'
-    + '<button onclick="gizlilikAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Gizlilik</button>'
-    + '<button onclick="kullanımSartlariAc()" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Sartlar</button>'
+    + '<button onclick="window.open(\'/privacy\',\'_blank\')" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Privacy</button>'
+    + '<button onclick="window.open(\'/terms\',\'_blank\')" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Terms</button>'
     + '</div></div>';
   document.body.appendChild(overlay);
 }
@@ -5310,10 +5313,12 @@ async function planYukselt(plan) {
     return;
   }
   // Stripe checkout'a yönlendir
+  document.getElementById('_plan_modal')?.remove();
   toast('<i class="fa-solid fa-spinner fa-spin"></i> Redirecting to checkout...', 'tok', 5000);
   try {
     const fd = new FormData();
     fd.append('plan', plan);
+    if (_sbUser) { fd.append('user_id', _sbUser.id); fd.append('email', _sbUser.email || ''); }
     fd.append('success_url', window.location.origin);
     fd.append('cancel_url', window.location.origin);
     const r = await fetch(B + '/api/stripe/checkout/', { method: 'POST', body: fd });
@@ -5481,21 +5486,50 @@ async function authBaslat() {
 async function authGirisYapildi(user) {
   _sbUser = user;
   document.getElementById('auth_modal')?.remove();
+  // Backend'den profil çek (Supabase service key ile)
   try {
-    const { data } = await _sb.from('profiles').select('*').eq('id', user.id).single();
-    _sbProfil = data;
-    if (data) {
-      localStorage.setItem('vf_plan', data.plan || 'lite');
-      localStorage.setItem('vf_kullanim_dk', data.kullanim_dakika || 0);
+    const pr = await fetch(B + '/api/profil/?user_id=' + user.id);
+    if (pr.ok) {
+      const pd = await pr.json();
+      _sbProfil = pd;
+      localStorage.setItem('vf_plan', pd.plan || 'lite');
+      localStorage.setItem('vf_kullanim_dk', pd.kullanim_dakika || 0);
+    } else {
+      // Fallback: Supabase client ile dene
+      const { data } = await _sb.from('profiles').select('*').eq('id', user.id).single();
+      _sbProfil = data;
+      if (data) {
+        localStorage.setItem('vf_plan', data.plan || 'lite');
+        localStorage.setItem('vf_kullanim_dk', data.kullanim_dakika || 0);
+      }
     }
-  } catch(e) {}
+  } catch(e) { console.warn('Profil yüklenemedi:', e); }
   const navName = document.getElementById('nav_user_name');
   if (navName) {
     navName.textContent = user.email ? user.email.split('@')[0] : '';
     navName.style.display = 'inline';
   }
-  const isim = user.email ? user.email.split('@')[0] : 'Kullanıcı';
-  toast('Hos geldin, ' + isim + '!');
+  const isim = user.email ? user.email.split('@')[0] : 'User';
+  toast('Welcome, ' + isim + '!');
+}
+
+async function _kullanimi_kaydet(dosya_adi) {
+  if (!_sbUser) return;
+  try {
+    const fd = new FormData();
+    fd.append('user_id', _sbUser.id);
+    fd.append('dosya_adi', dosya_adi);
+    const r = await fetch(B + '/api/kullanim_kaydet/', { method: 'POST', body: fd });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.ok && d.eklenen_dakika) {
+        // Locale state güncelle
+        const mevcut = parseFloat(localStorage.getItem('vf_kullanim_dk') || '0');
+        localStorage.setItem('vf_kullanim_dk', String(Math.round((mevcut + d.eklenen_dakika) * 100) / 100));
+        if (_sbProfil) _sbProfil.kullanim_dakika = (parseFloat(_sbProfil.kullanim_dakika || 0) + d.eklenen_dakika);
+      }
+    }
+  } catch(e) { console.warn('Kullanım kaydı hatası:', e); }
 }
 
 function authCikisYapildi() {
@@ -5507,7 +5541,7 @@ function authCikisYapildi() {
 async function authCikis() {
   await _sb.auth.signOut();
   document.getElementById('_profil_overlay')?.remove();
-  toast('Cıkıs yapıldı');
+  toast('Signed out');
 }
 
 function loginModalAc(mesaj) {
@@ -5515,24 +5549,24 @@ function loginModalAc(mesaj) {
   const ov = document.createElement('div');
   ov.id = 'auth_modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;';
-  const msg = mesaj || 'Devam etmek icin giris yapin';
+  const msg = mesaj || 'Sign in to continue';
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;width:380px;max-width:95vw;">'
     + '<div style="text-align:center;margin-bottom:24px;">'
     + '<div style="font-size:36px;margin-bottom:8px;">&#127897;</div>'
-    + '<div style="font-size:18px;font-weight:700;">VoiceFlow Studio</div>'
+    + '<div style="font-size:18px;font-weight:700;">[SITE_NAME]</div>'
     + '<div style="font-size:12px;color:var(--muted2);margin-top:4px;">' + msg + '</div>'
     + '</div>'
     + '<div style="display:flex;background:var(--s3);border-radius:var(--r);padding:3px;margin-bottom:20px;">'
-    + '<button id="tab_giris" onclick="authTabSec(\'giris\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Giris Yap</button>'
-    + '<button id="tab_kayit" onclick="authTabSec(\'kayit\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:transparent;color:var(--muted2);font-size:13px;cursor:pointer;font-family:inherit;">Kayit Ol</button>'
+    + '<button id="tab_giris" onclick="authTabSec(\'giris\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Sign In</button>'
+    + '<button id="tab_kayit" onclick="authTabSec(\'kayit\')" style="flex:1;padding:8px;border:none;border-radius:5px;background:transparent;color:var(--muted2);font-size:13px;cursor:pointer;font-family:inherit;">Create Account</button>'
     + '</div>'
-    + '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">E-posta</label>'
-    + '<input id="auth_email" type="email" placeholder="ornek@email.com" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
-    + '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Sifre</label>'
-    + '<input id="auth_pass" type="password" placeholder="..." onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
+    + '<div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Email</label>'
+    + '<input id="auth_email" type="email" placeholder="you@example.com" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
+    + '<div style="margin-bottom:16px;"><label style="font-size:11px;color:var(--muted2);display:block;margin-bottom:4px;">Password</label>'
+    + '<input id="auth_pass" type="password" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')authGonder()" style="width:100%;padding:10px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;"></div>'
     + '<div id="auth_err" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--red2);margin-bottom:12px;"></div>'
-    + '<button id="auth_btn" onclick="authGonder()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;margin-bottom:10px;">Giris Yap</button>'
-    + '<button onclick="authDevamEt()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Giris yapmadan devam et (Demo)</button>'
+    + '<button id="auth_btn" onclick="authGonder()" style="width:100%;background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;margin-bottom:10px;">Sign In</button>'
+    + '<button onclick="authDevamEt()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px;border-radius:var(--r);cursor:pointer;font-size:12px;font-family:inherit;">Continue without signing in (Demo)</button>'
     + '</div>';
   document.body.appendChild(ov);
   setTimeout(function(){ const e=document.getElementById('auth_email'); if(e) e.focus(); }, 100);
@@ -5546,7 +5580,7 @@ function authTabSec(mod) {
     if (b) { b.style.background = m===mod?'var(--accent)':'transparent'; b.style.color = m===mod?'#fff':'var(--muted2)'; }
   });
   const btn = document.getElementById('auth_btn');
-  if (btn) btn.textContent = mod==='giris' ? 'Giris Yap' : 'Hesap Olustur';
+  if (btn) btn.textContent = mod==='giris' ? 'Sign In' : 'Create Account';
 }
 
 async function authGonder() {
@@ -5564,13 +5598,13 @@ async function authGonder() {
   if (btn) { btn.textContent=_authMod==='giris'?'Giris Yap':'Hesap Olustur'; btn.disabled=false; }
   if (r.error) { if(errEl){errEl.textContent=hatalar[r.error.message]||r.error.message; errEl.style.display='block';} }
   else if (_authMod==='kayit' && !r.data?.session) {
-    if(errEl){errEl.style.cssText='display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;'; errEl.textContent='Kayit basarılı! E-postanızı onaylayın.';}
+    if(errEl){errEl.style.cssText='display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;'; errEl.textContent='Account created! Please check your email to confirm.';}
   }
 }
 
 function authDevamEt() {
   document.getElementById('auth_modal')?.remove();
-  toast('Demo modunda devam ediyorsunuz','twarn',3000);
+  toast('Continuing in demo mode','twarn',3000);
 }
 
 authBaslat();
