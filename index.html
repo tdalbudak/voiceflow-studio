@@ -3365,7 +3365,7 @@ async function dashboardDosyalariYukle() {
         dosyalar = d.dosyalar.map(function(f) {
           return {
             dosya: f.ad,
-            isim: f.ad,
+            isim: f.goster_ad || f.ad,
             tarih: new Date(f.tarih).toLocaleDateString('en-US'),
             modul: f.tur.toUpperCase(),
             tip: f.tur,
@@ -3389,16 +3389,19 @@ async function dashboardDosyalariYukle() {
       el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">No processed files yet.<br>Upload a video and start processing.</div>';
       return;
     }
-    el.innerHTML = dosyalar.map(function(d) {
+    el.innerHTML = dosyalar.map(function(d, idx) {
       const iconMap = { mp4:'🎬', mp3:'🎵', srt:'📝', vtt:'📝', txt:'📄', ass:'🎞️' };
       const ico = iconMap[d.tip] || '📁';
-      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--r);transition:background .15s;border-bottom:1px solid var(--border);" onmouseover="this.style.background=\'var(--s3)\'" onmouseout="this.style.background=\'\'">'
+      const safeIsim = (d.isim||d.dosya).replace(/'/g,'&#39;');
+      const safeDosya = d.dosya.replace(/'/g,'&#39;');
+      return '<div id="dosya_row_' + idx + '" style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--r);transition:background .15s;border-bottom:1px solid var(--border);" onmouseover="this.style.background=\'var(--s3)\'" onmouseout="this.style.background=\'\'">'
         + '<div style="width:36px;height:36px;background:var(--s3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + ico + '</div>'
         + '<div style="flex:1;min-width:0;">'
-        + '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (d.isim||d.dosya) + '</div>'
-        + '<div style="font-size:11px;color:var(--muted2);">' + (d.tarih||'') + ' · ' + (d.modul||'') + (d.boyut?' · '+d.boyut+'MB':'') + '</div>'
+        + '<div id="dosya_isim_' + idx + '" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + safeIsim + '</div>'
+        + '<div style="font-size:11px;color:var(--muted2);">' + (d.tarih||'') + ' · ' + (d.modul||'') + (d.boyut?' · '+d.boyut+' MB':'') + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:4px;">'
+        + '<button onclick="dosyaAdlandir(\'' + safeDosya + '\',' + idx + ')" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;" title="Rename"><i class="fa-solid fa-pen"></i></button>'
         + '<a href="' + (d.url || B+'/indir/'+d.dosya) + '" download style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 8px;border-radius:6px;font-size:11px;cursor:pointer;text-decoration:none;display:flex;align-items:center;" title="Download"><i class="fa-solid fa-download"></i></a>'
         + '</div>'
         + '</div>';
@@ -3416,6 +3419,45 @@ function dosyaIndir(dosya) {
 function dosyaYukleYeni() {
   document.getElementById('_dashboard_modal')?.remove();
   document.getElementById('finput')?.click();
+}
+
+function dosyaAdlandir(dosyaAdi, idx) {
+  const isimEl = document.getElementById('dosya_isim_' + idx);
+  if (!isimEl) return;
+  const mevcutAd = isimEl.textContent.trim();
+  // Inline input yap
+  isimEl.innerHTML = '<input id="rename_inp_' + idx + '" value="' + mevcutAd.replace(/"/g, '&quot;') + '" '
+    + 'style="width:100%;background:var(--s3);border:1px solid var(--accent);border-radius:5px;padding:3px 7px;color:var(--txt);font-size:13px;font-weight:600;font-family:inherit;outline:none;" '
+    + 'onkeydown="if(event.key===\'Enter\')_dosyaAdlandir_kaydet(\'' + dosyaAdi.replace(/'/g,"\\'") + '\',' + idx + ');if(event.key===\'Escape\')_dosyaAdlandir_iptal(' + idx + ',\'' + mevcutAd.replace(/'/g,"\\'") + '\');"'
+    + ' onblur="_dosyaAdlandir_kaydet(\'' + dosyaAdi.replace(/'/g,"\\'") + '\',' + idx + ')">';
+  const inp = document.getElementById('rename_inp_' + idx);
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+async function _dosyaAdlandir_kaydet(dosyaAdi, idx) {
+  const inp = document.getElementById('rename_inp_' + idx);
+  if (!inp) return;
+  const yeniAd = inp.value.trim();
+  const isimEl = document.getElementById('dosya_isim_' + idx);
+  if (!yeniAd) { if (isimEl) isimEl.textContent = inp.defaultValue; return; }
+  if (isimEl) isimEl.textContent = yeniAd; // optimistic update
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', dosyaAdi);
+    fd.append('yeni_ad', yeniAd);
+    const r = await fetch(B + '/api/dosya_adlandir/', { method:'POST', body:fd });
+    const d = await r.json();
+    if (!d.ok && d.hata) { toast(d.hata, 'terr'); if (isimEl) isimEl.textContent = inp.defaultValue; }
+    else toast('Renamed ✓', 'tok', 2000);
+  } catch(e) {
+    toast('Rename failed', 'terr');
+    if (isimEl) isimEl.textContent = inp.defaultValue || dosyaAdi;
+  }
+}
+
+function _dosyaAdlandir_iptal(idx, eskiAd) {
+  const isimEl = document.getElementById('dosya_isim_' + idx);
+  if (isimEl) isimEl.textContent = eskiAd;
 }
 
 // İşlem bitince localStorage'a kaydet

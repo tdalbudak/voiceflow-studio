@@ -3356,11 +3356,29 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
 
 
 # ============================================================
-# MY FILES — Output dosyalarını listele
+# MY FILES — Output dosyalarını listele + yeniden adlandır
 # ============================================================
+_NAMES_FILE = os.path.join(OUTPUT_DIR, "_names.json")
+
+def _names_oku() -> dict:
+    try:
+        with open(_NAMES_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _names_yaz(names: dict):
+    try:
+        with open(_NAMES_FILE, "w", encoding="utf-8") as f:
+            json.dump(names, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        log.warning(f"[Names] Yazma hatası: {e}")
+
+
 @app.get("/api/dosyalar/")
 async def dosyalari_listele():
     try:
+        names = _names_oku()
         dosyalar = []
         for fname in sorted(os.listdir(OUTPUT_DIR), key=lambda f: os.path.getmtime(os.path.join(OUTPUT_DIR, f)), reverse=True):
             fpath = os.path.join(OUTPUT_DIR, fname)
@@ -3371,15 +3389,33 @@ async def dosyalari_listele():
                 continue
             stat = os.stat(fpath)
             dosyalar.append({
-                "ad":    fname,
-                "boyut": round(stat.st_size / (1024*1024), 2),
-                "tarih": int(stat.st_mtime * 1000),
-                "tur":   ext.lstrip("."),
-                "url":   f"/ciktilar/{fname}",
+                "ad":         fname,
+                "goster_ad":  names.get(fname, ""),   # kullanıcının verdiği ad (boşsa fname kullanılır)
+                "boyut":      round(stat.st_size / (1024*1024), 2),
+                "tarih":      int(stat.st_mtime * 1000),
+                "tur":        ext.lstrip("."),
+                "url":        f"/ciktilar/{fname}",
             })
-        return JSONResponse({"dosyalar": dosyalar[:50]})   # son 50 dosya
+        return JSONResponse({"dosyalar": dosyalar[:50]})
     except Exception as e:
         return JSONResponse({"dosyalar": [], "hata": str(e)})
+
+
+@app.post("/api/dosya_adlandir/")
+async def dosya_adlandir(dosya_adi: str = Form(...), yeni_ad: str = Form(...)):
+    """Dosyaya kullanıcı dostu bir görüntü adı atar (fiziksel dosyayı değiştirmez)."""
+    yeni_ad = yeni_ad.strip()[:120]
+    if not yeni_ad:
+        return JSONResponse({"hata": "Ad boş olamaz"}, status_code=400)
+    # Güvenlik: sadece bilinen çıktı dosyalarına izin ver
+    fpath = os.path.join(OUTPUT_DIR, dosya_adi)
+    if not os.path.isfile(fpath):
+        return JSONResponse({"hata": "Dosya bulunamadı"}, status_code=404)
+    names = _names_oku()
+    names[dosya_adi] = yeni_ad
+    _names_yaz(names)
+    log.info(f"[Names] {dosya_adi} → '{yeni_ad}'")
+    return JSONResponse({"ok": True, "ad": yeni_ad})
 
 
 # ============================================================
