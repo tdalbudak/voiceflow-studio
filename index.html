@@ -1088,24 +1088,24 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Ses</div>
           <select id="voice_select" onchange="voiceSecildi(this)" style="width:100%;padding:9px 11px;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:13px;font-family:inherit;outline:none;cursor:pointer;">
             <option value="">Seç...</option>
-            <optgroup label="🇹🇷 Türkçe">
-              <option value="E7GwUhgj9sbeAZgubRba">Bahadır — Derin, Belgesel</option>
-              <option value="xFsOR54lR471QiCvQ5re">İlknur — Net, Sıcak</option>
+            <optgroup label="🇹🇷 Türkçe [Starter plan gerekli]">
+              <option value="E7GwUhgj9sbeAZgubRba">★ Bahadır — Derin, Belgesel (paid)</option>
+              <option value="xFsOR54lR471QiCvQ5re">★ İlknur — Net, Sıcak (paid)</option>
             </optgroup>
-            <optgroup label="🇩🇪 Almanca">
-              <option value="dFA3XRddYScy6ylAYTIO">Helmut — Warm, Gentle</option>
-              <option value="60UU378MZ8YbeLyaF7TI">Jonas — Confident, Trustworthy</option>
-              <option value="kAzI34nYjizE0zON6rXv">Sami — Energetic, Expressive</option>
-              <option value="KSyQzmsYhFbuOhqj1Xxv">Lea — UGC Creator</option>
+            <optgroup label="🇩🇪 Almanca [Starter plan gerekli]">
+              <option value="dFA3XRddYScy6ylAYTIO">★ Helmut — Warm, Gentle (paid)</option>
+              <option value="60UU378MZ8YbeLyaF7TI">★ Jonas — Confident, Trustworthy (paid)</option>
+              <option value="kAzI34nYjizE0zON6rXv">★ Sami — Energetic, Expressive (paid)</option>
+              <option value="KSyQzmsYhFbuOhqj1Xxv">★ Lea — UGC Creator (paid)</option>
             </optgroup>
-            <optgroup label="🇫🇷 Fransızca">
-              <option value="8qnuneLiGjGrT4A62CCe">Jules — Conversational</option>
-              <option value="p2Wol3C7j3rHbfOrbL18">Lisa — Lovely and Emotional</option>
+            <optgroup label="🇫🇷 Fransızca [Starter plan gerekli]">
+              <option value="8qnuneLiGjGrT4A62CCe">★ Jules — Conversational (paid)</option>
+              <option value="p2Wol3C7j3rHbfOrbL18">★ Lisa — Lovely and Emotional (paid)</option>
             </optgroup>
-            <optgroup label="🇮🇹 İtalyanca">
-              <option value="RXoaSpLaWTEckJgPUBG3">Tiziana — Smart, Balanced</option>
-              <option value="7WZPc0ZjFzsx74E5qoQV">Andrea — Mature, Rich</option>
-              <option value="f8NAZK1ciwrVujah7clz">Valerio — Warm Storyteller</option>
+            <optgroup label="🇮🇹 İtalyanca [Starter plan gerekli]">
+              <option value="RXoaSpLaWTEckJgPUBG3">★ Tiziana — Smart, Balanced (paid)</option>
+              <option value="7WZPc0ZjFzsx74E5qoQV">★ Andrea — Mature, Rich (paid)</option>
+              <option value="f8NAZK1ciwrVujah7clz">★ Valerio — Warm Storyteller (paid)</option>
             </optgroup>
             <optgroup label="🇺🇸🇬🇧 English">
               <option value="nPczCjzI2devNBz1zQrb">Brian — Deep, Resonant</option>
@@ -2288,24 +2288,24 @@ function _ttsHL(){
   });
 }
 
+// paid:true = ElevenLabs Free plan'da çalışmıyor (library voice, 402 döner)
 const VOICES = [
-  // ── Türkçe ──
-  // ── Türkçe ──
-  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep'         },
-  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm'         },
-  // ── Almanca ──
-  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Gentle',          color:'#dc2626', lang:'de', gender:'male',   tone:'warm'         },
-  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Confident, Trustworthy',color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral'      },
-  { id:'kAzI34nYjizE0zON6rXv', name:'Sami',     flag:'🇩🇪', desc:'Energetic, Expressive', color:'#ef4444', lang:'de', gender:'male',   tone:'energetic'    },
-  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea',      flag:'🇩🇪', desc:'UGC Creator',           color:'#f87171', lang:'de', gender:'female', tone:'energetic'    },
-  // ── Fransızca ──
-  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversational',        color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral'      },
-  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Lovely, Emotional',     color:'#60a5fa', lang:'fr', gender:'female', tone:'warm'         },
-  // ── İtalyanca ──
-  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana',  flag:'🇮🇹', desc:'Smart, Credible',       color:'#22c55e', lang:'it', gender:'female', tone:'neutral'      },
-  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea',   flag:'🇮🇹', desc:'Mature, Empathetic',    color:'#4ade80', lang:'it', gender:'male',   tone:'warm'         },
-  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio',  flag:'🇮🇹', desc:'Storyteller',           color:'#86efac', lang:'it', gender:'male',   tone:'deep'         },
-  // ── İngilizce Erkek ──
+  // ── Türkçe — paid plan gerekli ──
+  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep',     paid:true },
+  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm',     paid:true },
+  // ── Almanca — paid plan gerekli ──
+  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Gentle',          color:'#dc2626', lang:'de', gender:'male',   tone:'warm',     paid:true },
+  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Confident, Trustworthy',color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral',  paid:true },
+  { id:'kAzI34nYjizE0zON6rXv', name:'Sami',     flag:'🇩🇪', desc:'Energetic, Expressive', color:'#ef4444', lang:'de', gender:'male',   tone:'energetic',paid:true },
+  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea',      flag:'🇩🇪', desc:'UGC Creator',           color:'#f87171', lang:'de', gender:'female', tone:'energetic',paid:true },
+  // ── Fransızca — paid plan gerekli ──
+  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversational',        color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral',  paid:true },
+  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Lovely, Emotional',     color:'#60a5fa', lang:'fr', gender:'female', tone:'warm',     paid:true },
+  // ── İtalyanca — paid plan gerekli ──
+  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana',  flag:'🇮🇹', desc:'Smart, Credible',       color:'#22c55e', lang:'it', gender:'female', tone:'neutral',  paid:true },
+  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea',   flag:'🇮🇹', desc:'Mature, Empathetic',    color:'#4ade80', lang:'it', gender:'male',   tone:'warm',     paid:true },
+  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio',  flag:'🇮🇹', desc:'Storyteller',           color:'#86efac', lang:'it', gender:'male',   tone:'deep',     paid:true },
+  // ── İngilizce Erkek — free plan ──
   { id:'nPczCjzI2devNBz1zQrb', name:'Brian',    flag:'🇺🇸', desc:'Deep, Comforting',      color:'#6366f1', lang:'en', gender:'male',   tone:'deep'         },
   { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',     flag:'🇺🇸', desc:'Dominant, Firm',        color:'#a78bfa', lang:'en', gender:'male',   tone:'deep'         },
   { id:'JBFqnCBsd6RMkjVDRZzb', name:'George',   flag:'🇬🇧', desc:'Captivating Storyteller',color:'#f59e0b',lang:'en', gender:'male',   tone:'warm'         },
@@ -2313,7 +2313,7 @@ const VOICES = [
   { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',     flag:'🇺🇸', desc:'Social Media Creator',  color:'#84cc16', lang:'en', gender:'male',   tone:'energetic'    },
   { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',   flag:'🇬🇧', desc:'Steady Broadcaster',    color:'#0ea5e9', lang:'en', gender:'male',   tone:'neutral'      },
   { id:'SAz9YHcvj6GT2YYXdXww', name:'River',    flag:'🇺🇸', desc:'Relaxed, Informative',  color:'#14b8a6', lang:'en', gender:'male',   tone:'neutral'      },
-  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher',    flag:'🇬🇧', desc:'Charismatic, Playful',  color:'#0f766e', lang:'en', gender:'male',   tone:'energetic'    },
+  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher',    flag:'🇬🇧', desc:'Charismatic, Playful',  color:'#0f766e', lang:'en', gender:'male',   tone:'energetic',paid:true },
   { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',    flag:'🇺🇸', desc:'Laid-Back, Resonant',   color:'#64748b', lang:'en', gender:'male',   tone:'deep'         },
   { id:'bIHbv24MWmeRgasZH58o', name:'Will',     flag:'🇺🇸', desc:'Relaxed Optimist',      color:'#475569', lang:'en', gender:'male',   tone:'warm'         },
   { id:'cjVigY5qzO86Huf0OWal', name:'Eric',     flag:'🇺🇸', desc:'Smooth, Trustworthy',   color:'#1d4ed8', lang:'en', gender:'male',   tone:'neutral'      },
@@ -2321,12 +2321,12 @@ const VOICES = [
   { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie',  flag:'🇦🇺', desc:'Deep, Energetic',       color:'#b45309', lang:'en', gender:'male',   tone:'energetic'    },
   { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',   flag:'🇬🇧', desc:'Husky Trickster',       color:'#92400e', lang:'en', gender:'male',   tone:'deep'         },
   { id:'pqHfZKP75CvOlQylNhV4', name:'Bill',     flag:'🇺🇸', desc:'Wise, Mature',          color:'#374151', lang:'en', gender:'male',   tone:'deep'         },
-  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',     flag:'🇺🇸', desc:'Confident, Striking',   color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral'      },
-  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',flag:'🇺🇸',desc:'Corporate Narrator',    color:'#1e40af', lang:'en', gender:'male',   tone:'neutral'      },
-  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',flag:'🇺🇸',desc:'Real & Casual',         color:'#78350f', lang:'en', gender:'male',   tone:'neutral'      },
-  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro', flag:'🇺🇸', desc:'Sharp, Professional',   color:'#166534', lang:'en', gender:'male',   tone:'energetic'    },
-  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro', flag:'🇺🇸', desc:'Instructor',            color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral'      },
-  // ── İngilizce Kadın ──
+  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',     flag:'🇺🇸', desc:'Confident, Striking',   color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral', paid:true },
+  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',flag:'🇺🇸',desc:'Corporate Narrator',    color:'#1e40af', lang:'en', gender:'male',   tone:'neutral', paid:true },
+  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',flag:'🇺🇸',desc:'Real & Casual',         color:'#78350f', lang:'en', gender:'male',   tone:'neutral', paid:true },
+  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro', flag:'🇺🇸', desc:'Sharp, Professional',   color:'#166534', lang:'en', gender:'male',   tone:'energetic',paid:true },
+  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro', flag:'🇺🇸', desc:'Instructor',            color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral',  paid:true },
+  // ── İngilizce Kadın — free plan ──
   { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',    flag:'🇺🇸', desc:'Mature, Confident',     color:'#8b5cf6', lang:'en', gender:'female', tone:'neutral'      },
   { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica',  flag:'🇺🇸', desc:'Playful, Bright',       color:'#ec4899', lang:'en', gender:'female', tone:'energetic'    },
   { id:'FGY2WhTYpPnrIDTdsKH5', name:'Laura',    flag:'🇺🇸', desc:'Enthusiastic, Quirky',  color:'#06b6d4', lang:'en', gender:'female', tone:'energetic'    },
@@ -2359,12 +2359,18 @@ function selVoiceById(id) {
     if (name) name.textContent = v.name;
     if (desc) desc.textContent = v.desc;
   }
+  // Ücretli ses seçildiyse uyar
+  if (v && v.paid) {
+    toast('⚠ ' + v.name + ' ElevenLabs Starter plan gerektirir ($5/ay). Free plan\'da çalışmaz.', 'twarn', 5000);
+  }
   // Dropdown'ı kapat
   const dd = document.getElementById('tts_voice_dropdown');
   if (dd) dd.style.display = 'none';
 }
 
-function voiceSecildi(sel) { selVoiceById(sel.value); }
+function voiceSecildi(sel) {
+  selVoiceById(sel.value);
+}
 
 /* ═══ TTS SES DEĞİŞTİR — dropdown aç/kapat ═══ */
 function ttsSesDegistir() {
@@ -4297,7 +4303,8 @@ const VOICE_TIERS = {
 const userPlan = 'free'; // 'free' | 'creator' | 'studio' | 'business'
 
 function isVoiceFree(sesId) {
-  return VOICE_TIERS.free.includes(sesId);
+  const v = VOICES.find(x => x.id === sesId);
+  return v ? !v.paid : true;
 }
 
 // buildVoiceList'i güncelle — ücretsiz/pro badge göster

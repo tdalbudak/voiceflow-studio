@@ -536,6 +536,9 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
                 _tts_cache_temizle()
                 return True
             # Kota doldu veya API key geçersiz — retry YOK, direkt çık
+            elif r.status_code == 402:
+                log.error(f"[ElevenLabs 402] Bu ses Free plan'da kullanılamaz (paid_plan_required). Starter plan gerekli.")
+                return False
             elif r.status_code in (401, 403):
                 log.error(f"[ElevenLabs] API key geçersiz ({r.status_code}) — işlem iptal")
                 return False
@@ -1091,6 +1094,9 @@ async def elevenlabs_segment_uret(
                 await asyncio.sleep(bekle)
                 continue
 
+            if r.status_code == 402:
+                log.error("[ElevenLabs 402] Bu ses Free plan'da kullanılamaz. Starter plan gerekli ($5/ay).")
+                return False
             if r.status_code in (401, 403):
                 log.error("[ElevenLabs] API key geçersiz veya plan yetersiz")
                 return False
@@ -1516,7 +1522,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             if not ses_liste:
                 islem_durumlari[out_file] = {
-                    "durum": "Hata: Ses üretilemedi — ElevenLabs API key'i kontrol edin. Railway'de ELEVENLABS_API_KEY environment variable doğru mu? ElevenLabs planınız seslendirmeye izin veriyor mu?",
+                    "durum": "Hata: Ses üretilemedi — Seçilen ses ElevenLabs Free plan'da kullanılamıyor olabilir (Türkçe/Almanca/Fransızca sesler paid plan gerektirir). İngilizce bir ses seçin veya ElevenLabs Starter planına geçin ($5/ay).",
                     "yuzde": 0
                 }
                 return
