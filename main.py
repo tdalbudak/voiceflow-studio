@@ -536,9 +536,9 @@ async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: 
         "text": metin[:5000],
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": max(0.0, min(1.0, stability)),
-            "similarity_boost": 0.75,
-            "style": max(0.0, min(1.0, style)),
+            "stability": max(0.0, min(1.0, stability if stability != 0.5 else 0.35)),
+            "similarity_boost": 0.85,
+            "style": max(0.0, min(1.0, style if style != 0.0 else 0.25)),
             "use_speaker_boost": True,
         },
     }
@@ -1115,6 +1115,48 @@ TELAFFUZ_DUZELT = {
 }
 
 
+FILLER_PATTERN = re.compile(
+    r'\b(ı+h*|e+h*|e{2,}|ı{2,}|mm+|hmm+|hm+|uhh*|umm*|şey+|hani|yani yani|işte işte|falan filan)\b',
+    re.IGNORECASE | re.UNICODE
+)
+
+async def gemini_jargon_temizle(metin: str, dil: str = "tr") -> str:
+    """
+    Gemini ile transkript segmentini temizler:
+    - Dolgu seslerini (ıı, ee, şey, hmm, um, uh) kaldırır
+    - Sokak jargonu ve internet kısaltmalarını TTS'in anlayacağı hale getirir
+    - Karışık dili (TR içinde EN kelimeler vs.) hedef dilde normalize eder
+    Başarısız olursa regex ile temel temizlik yapıp orijinali döndürür.
+    """
+    if not GEMINI_API_KEY or not metin or not metin.strip():
+        return FILLER_PATTERN.sub('', metin).strip()
+
+    dil_adi = {"tr":"Türkçe","en":"English","de":"Deutsch","fr":"Français","it":"Italiano"}.get(dil,"the target language")
+    prompt = (
+        f"You are a transcript cleaner for a TTS dubbing system. Clean the following transcript segment:\n"
+        f"1. Remove filler sounds (ıı, ee, eee, hmm, um, uh, şey, hani, etc.) completely\n"
+        f"2. Expand internet slang and abbreviations to full spoken words (e.g. 'lol' → 'laughing out loud')\n"
+        f"3. Convert all content to natural spoken {dil_adi} — translate any foreign words inline\n"
+        f"4. Keep the meaning. Do NOT summarize. Do NOT add anything.\n"
+        f"5. Return ONLY the cleaned text, nothing else.\n\n"
+        f"Segment: {metin}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"maxOutputTokens":400,"temperature":0.1}}
+            )
+        if r.status_code == 200:
+            temiz = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if temiz and len(temiz) > 2:
+                return temiz
+    except Exception as e:
+        log.debug(f"[GeminiClean] fallback: {e}")
+    # Fallback: regex ile dolgu temizle
+    return FILLER_PATTERN.sub('', metin).strip() or metin
+
+
 def metin_normalize(metin: str, dil: str = "en") -> str:
     """
     TTS'e göndermeden önce metni normalize et:
@@ -1170,7 +1212,10 @@ async def elevenlabs_segment_uret(
     - Ses hedef süreden uzunsa akıllı sıkıştırma
     """
     # Metin normalize et
-    metin_temiz = metin_normalize(metin, dil)
+    # 1. Gemini ile jargon + dolgu temizle (8s timeout, hata durumunda fallback)
+    metin_gemini = await gemini_jargon_temizle(metin, dil)
+    # 2. Kural tabanlı normalizasyon
+    metin_temiz = metin_normalize(metin_gemini, dil)
     if metin_temiz != metin:
         log.debug(f"[Normalize] '{metin[:50]}' → '{metin_temiz[:50]}'")
 
@@ -1184,9 +1229,9 @@ async def elevenlabs_segment_uret(
         "text": metin_temiz,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": max(0.0, min(1.0, stability)),
-            "similarity_boost": 0.80,
-            "style": max(0.0, min(1.0, style)),
+            "stability": max(0.0, min(1.0, stability if stability != 0.55 else 0.35)),
+            "similarity_boost": 0.85,
+            "style": max(0.0, min(1.0, style if style != 0.0 else 0.25)),
             "use_speaker_boost": True,
         },
     }
@@ -1480,7 +1525,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # Çeviri — hedef dil varsa çevir
             hd = (hedef_dil or "").strip().upper()
             kd = (kaynak_dil or "").strip().upper()
-            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
+            if hd and hd not in ("", "AUTO") and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"DeepL ile {hd}'e çevriliyor...", "yuzde": 85}
                 try:
                     with open(srt_path, encoding="utf-8") as f:
@@ -1527,7 +1572,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # Çeviri kontrolü — kaynak "auto" bile olsa hedef dil varsa çevir
             hd = (hedef_dil or "").strip().upper()
             kd = (kaynak_dil or "").strip().upper()
-            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
+            if hd and hd not in ("", "AUTO") and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"DeepL ile {hd}'e çevriliyor...", "yuzde": 50}
                 try:
                     with open(srt_kaynak, encoding="utf-8") as f:
@@ -1600,7 +1645,7 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # 3. Çeviri — kaynak "auto" bile olsa hedef dil varsa çevir
             hd = (hedef_dil or "").strip().upper()
             kd = (kaynak_dil or "").strip().upper()
-            if hd and hd not in ("", "AUTO") and hd != kd and DEEPL_API_KEY:
+            if hd and hd not in ("", "AUTO") and DEEPL_API_KEY:
                 islem_durumlari[out_file] = {"durum": f"{hedef_dil} diline çevriliyor...", "yuzde": 15}
                 log.info(f"[Dublaj] DeepL çeviri başlıyor: {kd}→{hd}")
                 try:
@@ -2307,6 +2352,82 @@ async def ses_klonla(
         return JSONResponse({"hata": str(e)}, status_code=500)
 
 
+@app.post("/api/video_ses_klonla/")
+async def video_ses_klonla(
+    video_dosyasi: UploadFile = File(...),
+    isim: str = Form("Video Sesi"),
+):
+    """
+    Yüklenen video/ses dosyasından sesi çıkarır (ffmpeg) ve
+    ElevenLabs Instant Voice Cloning ile klonlar.
+    Kullanıcı videodaki kendi sesini veya konuşmacı sesini klonlamak için kullanır.
+    """
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": _hata_mesaji("ffmpeg_yok")}, status_code=500)
+
+    b_id = uuid.uuid4().hex[:8]
+    ext  = os.path.splitext(video_dosyasi.filename or "video.mp4")[1] or ".mp4"
+    tmp_video = os.path.join(TEMP_DIR, f"vsk_{b_id}{ext}")
+    tmp_ses   = os.path.join(TEMP_DIR, f"vsk_{b_id}.mp3")
+
+    try:
+        with open(tmp_video, "wb") as f:
+            shutil.copyfileobj(video_dosyasi.file, f)
+
+        # 1. Sesi çıkar (ilk 5 dakika yeterli)
+        ffmpeg_cmd = [
+            "ffmpeg", "-y", "-i", tmp_video,
+            "-t", "300",          # max 5 dakika
+            "-q:a", "2",          # yüksek kalite
+            "-vn",                # video yok
+            tmp_ses
+        ]
+        result = await asyncio.to_thread(
+            subprocess.run, ffmpeg_cmd, capture_output=True, text=True, timeout=120
+        )
+        if result.returncode != 0 or not os.path.exists(tmp_ses):
+            return JSONResponse({"hata": "Videodan ses çıkarılamadı. Lütfen video dosyasını kontrol edin."}, status_code=500)
+
+        boyut_mb = os.path.getsize(tmp_ses) / (1024*1024)
+        log.info(f"[VideoSesKlonla] Ses çıkarıldı: {boyut_mb:.1f}MB → ElevenLabs'a gönderiliyor")
+
+        # 2. ElevenLabs'a klonla
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(tmp_ses, "rb") as f:
+                r = await client.post(
+                    "https://api.elevenlabs.io/v1/voices/add",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    data={"name": isim, "description": "VoiceFlow Studio — Video sesi klonu"},
+                    files={"files": (os.path.basename(tmp_ses), f, "audio/mpeg")},
+                )
+
+        # Temizlik
+        for f in [tmp_video, tmp_ses]:
+            try: os.remove(f)
+            except Exception: pass
+
+        if r.status_code == 200:
+            voice_id = r.json().get("voice_id")
+            log.info(f"[VideoSesKlonla] Başarılı → {voice_id}")
+            return JSONResponse({"basari": True, "voice_id": voice_id, "isim": isim})
+        elif r.status_code == 422:
+            return JSONResponse({"hata": "Ses çok kısa veya kalitesi düşük. Daha uzun konuşma içeren bir video deneyin."}, status_code=422)
+        else:
+            detay = r.json() if "application/json" in r.headers.get("content-type","") else r.text[:200]
+            if "quota" in str(detay).lower() or "limit" in str(detay).lower():
+                return JSONResponse({"hata": "Ses klonlama için ElevenLabs Creator planı gereklidir ($22/ay).", "plan_gerekli": True}, status_code=402)
+            return JSONResponse({"hata": f"ElevenLabs hatası: {detay}"}, status_code=r.status_code)
+
+    except Exception as e:
+        for f in [tmp_video, tmp_ses]:
+            try: os.remove(f)
+            except Exception: pass
+        log.error(f"[VideoSesKlonla] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
 @app.delete("/api/ses_sil/{voice_id}")
 async def ses_sil(voice_id: str):
     """Klonlanmış sesi ElevenLabs'tan siler."""
@@ -2988,9 +3109,10 @@ async def ses_onizle(
         "text": onizleme_metni,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75,
-            "style": 0.0,
+            "stability": 0.35,
+            "similarity_boost": 0.85,
+            "style": 0.25,
+            "use_speaker_boost": True,
         },
     }
     try:
@@ -3189,6 +3311,120 @@ async def magic_cut(
 
 
 # ============================================================
+# SILENCE CUT — Sessizlik Kaldırma (ffmpeg silencedetect)
+# ============================================================
+@app.post("/api/silence_cut/")
+async def silence_cut(
+    dosya_adi: str    = Form(...),    # outputs/ içindeki mp4 dosyası
+    min_sure: float   = Form(0.5),   # minimum sessizlik süresi (saniye)
+    esik_db: float    = Form(-35),   # sessizlik eşiği (dB), -35 = orta
+):
+    """
+    Video/ses dosyasındaki sessizlik bloklarını ffmpeg silencedetect ile bulup
+    o bölümleri video ve SRT'den keser.
+    """
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": _hata_mesaji("ffmpeg_yok")}, status_code=500)
+
+    giris = os.path.join(OUTPUT_DIR, dosya_adi)
+    if not os.path.exists(giris):
+        return JSONResponse({"hata": "Dosya bulunamadı."}, status_code=404)
+
+    try:
+        # 1. Sessizlikleri tespit et
+        detect_cmd = [
+            "ffmpeg", "-i", giris,
+            "-af", f"silencedetect=noise={esik_db}dB:d={min_sure}",
+            "-f", "null", "-"
+        ]
+        result = await asyncio.to_thread(
+            subprocess.run, detect_cmd, capture_output=True, text=True, timeout=120
+        )
+        output = result.stderr
+
+        # 2. Sessizlik aralıklarını parse et
+        starts  = [float(m.group(1)) for m in re.finditer(r"silence_start: (\S+)", output)]
+        ends    = [float(m.group(1)) for m in re.finditer(r"silence_end: (\S+)", output)]
+
+        if not starts:
+            return JSONResponse({"basari": True, "mesaj": "Sessizlik bulunamadı.", "silinen_sure": 0, "yeni_dosya": dosya_adi})
+
+        # 3. Video süresini al
+        probe = await asyncio.to_thread(
+            subprocess.run,
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", giris],
+            capture_output=True, text=True, timeout=30
+        )
+        try:
+            toplam_sure = float(probe.stdout.strip())
+        except Exception:
+            toplam_sure = 9999.0
+
+        # 4. Tutulacak segmentleri hesapla
+        silence_aralik = list(zip(starts, ends + [starts[-1] if len(ends) < len(starts) else ends[-1]]))
+        tutulacak = []
+        onceki = 0.0
+        for s_start, s_end in zip(starts, ends if ends else starts):
+            if s_start > onceki + 0.05:
+                tutulacak.append((onceki, s_start))
+            onceki = s_end
+        if onceki < toplam_sure - 0.05:
+            tutulacak.append((onceki, toplam_sure))
+
+        if not tutulacak:
+            return JSONResponse({"hata": "Tüm video sessiz görünüyor."}, status_code=400)
+
+        # 5. ffmpeg concat filter ile sessiz kısımları kes
+        b_id = uuid.uuid4().hex[:8]
+        cikti = os.path.join(OUTPUT_DIR, f"silence_cut_{b_id}.mp4")
+
+        # filter_complex ile her segmenti kes ve birleştir
+        filter_parts = []
+        for i, (t_start, t_end) in enumerate(tutulacak):
+            filter_parts.append(f"[0:v]trim={t_start:.3f}:{t_end:.3f},setpts=PTS-STARTPTS[v{i}]")
+            filter_parts.append(f"[0:a]atrim={t_start:.3f}:{t_end:.3f},asetpts=PTS-STARTPTS[a{i}]")
+
+        n = len(tutulacak)
+        v_concat = "".join(f"[v{i}]" for i in range(n))
+        a_concat = "".join(f"[a{i}]" for i in range(n))
+        filter_parts.append(f"{v_concat}concat=n={n}:v=1:a=0[vout]")
+        filter_parts.append(f"{a_concat}concat=n={n}:v=0:a=1[aout]")
+        filter_str = ";".join(filter_parts)
+
+        cut_cmd = [
+            "ffmpeg", "-y", "-i", giris,
+            "-filter_complex", filter_str,
+            "-map", "[vout]", "-map", "[aout]",
+            "-c:v", "libx264", "-c:a", "aac", "-preset", "fast",
+            cikti
+        ]
+        cut_result = await asyncio.to_thread(
+            subprocess.run, cut_cmd, capture_output=True, text=True, timeout=600
+        )
+
+        if cut_result.returncode != 0:
+            log.error(f"[SilenceCut] ffmpeg hata: {cut_result.stderr[-500:]}")
+            return JSONResponse({"hata": "Video kesilemedi. Lütfen tekrar deneyin."}, status_code=500)
+
+        silinen_sure = sum(e - s for s, e in zip(starts, ends if ends else starts))
+        yeni_adi = os.path.basename(cikti)
+        log.info(f"[SilenceCut] {len(tutulacak)} segment korundu, {silinen_sure:.1f}s sessizlik silindi → {yeni_adi}")
+
+        return JSONResponse({
+            "basari": True,
+            "yeni_dosya": yeni_adi,
+            "silinen_sure": round(silinen_sure, 1),
+            "kalan_segment_sayisi": len(tutulacak),
+            "mesaj": f"{silinen_sure:.1f}s sessizlik silindi, {len(tutulacak)} bölüm birleştirildi"
+        })
+
+    except Exception as e:
+        log.error(f"[SilenceCut] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
 # ARKA PLAN GÜRÜLTÜ GİDERME
 # ============================================================
 @app.post("/api/gurultu_gider/")
@@ -3312,15 +3548,31 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
     if not sorgu or len(sorgu.strip()) < 3:
         return JSONResponse({"hata": "Query too short."}, status_code=400)
 
+    dil_adi = {
+        "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
+        "es": "Spanish", "it": "Italian", "pt": "Portuguese", "ru": "Russian",
+        "ja": "Japanese", "ko": "Korean", "zh": "Chinese", "ar": "Arabic",
+    }.get(dil, "English")
     system_prompt = (
-        "You are the VoiceFlow Studio AI assistant. The user asks about our product. "
-        "VoiceFlow Studio features:\n"
-        "- Transcript: Converts video/audio to text with speaker detection\n"
-        "- Subtitles: Adds subtitles in TikTok/Hormozi viral style\n"
-        "- Dubbing: Translates and dubs to 60+ languages, with voice cloning\n"
-        "- Text-to-Speech: Convert text to studio-quality audio with emotion controls\n"
-        "Plans: Lite $0/10min, Creator $9/75min, Studio $19/200min, Business $49/600min\n\n"
-        f"Reply in {'English' if dil == 'en' else dil} language. Be concise, use emoji, give actionable steps."
+        "You are the VoiceFlow Studio AI assistant. Help users with video dubbing, subtitles, "
+        "transcription, text-to-speech and content creation. Give step-by-step instructions for workflows.\n\n"
+        "FEATURES:\n"
+        "- Transcript (Deşifre mode): Upload video → auto-transcribe with speaker detection\n"
+        "- Subtitles (Altyazı mode): Add TikTok/Hormozi viral word-by-word subtitles\n"
+        "- Dubbing (Seslendirme mode): Translate + dub to 60+ languages. Voice cloning available.\n"
+        "- Text-to-Speech (Metinden Sese mode): Type text → studio-quality speech with 50+ voices\n"
+        "- Magic Cut: Removes filler words (um, uh, hmm, şey, eee) from transcript automatically\n"
+        "- Silence Cut: Removes silent gaps from video with one click\n"
+        "- Voice Cloning: Record 30s+ of your voice → clone it → dub in any language as yourself\n"
+        "- Use Video's Own Voice: Extract voice from uploaded video → instant clone for dubbing\n\n"
+        "COMMON WORKFLOWS (give NUMBERED STEPS):\n"
+        "- TikTok video with subtitles: 1.Upload video 2.Select Altyazı mode 3.Set source lang 4.Click Start 5.After done, click Magic subtitle style 6.Download\n"
+        "- Dub video to English: 1.Upload video 2.Select Seslendirme mode 3.Source=Turkish Target=English 4.Pick a voice 5.Click Start\n"
+        "- Podcast transcript: 1.Upload audio 2.Select Deşifre mode 3.Click Start 4.Edit segments 5.Download SRT or TXT\n"
+        "- Clone own voice: 1.Go to Seslendirme mode 2.Click 'Kendi Sesimle Dublaj' 3.Record 30s+ 4.System clones voice 5.Dub to any language\n"
+        "- Remove fillers: 1.Get transcript first 2.Click Magic Cut button in toolbar 3.Done\n\n"
+        "PLANS: Lite $0/10min · Creator $9/75min · Studio $19/200min · Business $49/600min\n\n"
+        f"IMPORTANT: Always reply in {dil_adi}. Use numbered steps for workflow questions. Use emoji. Be concise."
     )
 
     try:

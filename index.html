@@ -499,6 +499,18 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
 .progress-shimmer{background:linear-gradient(90deg,var(--accent) 25%,rgba(99,102,241,.5) 50%,var(--accent) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
 
+/* ── Voice Picker Animasyonlar ── */
+@keyframes vp-sel-pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5);}50%{box-shadow:0 0 0 4px rgba(59,130,246,.15);}}
+@keyframes vp-avatar-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
+@keyframes vp-avatar-shine{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.vp-card{background:#111827;border:2px solid #1a2235;border-radius:12px;padding:10px 8px 8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.vp-card:hover{border-color:#3b82f6;background:#131e30;}
+.vp-card.sel{border-color:#3b82f6;background:#0f1e38;}
+.vp-avatar{width:100%;aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;margin-bottom:8px;}
+.vp-avatar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%);background-size:200% 100%;animation:vp-avatar-shine 3s ease-in-out infinite;pointer-events:none;}
+.vp-pro-badge{position:absolute;top:5px;right:5px;background:#92400e;border:1px solid #f59e0b;color:#fde68a;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;}
+.vp-free-badge{position:absolute;top:5px;right:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#86efac;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;}
+
 /* ── Toast iyileştirmesi ── */
 .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast-item{background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--txt);box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:all;animation:toast-in .2s ease;max-width:320px;}
@@ -671,6 +683,10 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <div class="lp-sec hidden" id="sec_voice_btn">
       <button class="btn-lp" onclick="voicePickerAc('left')">
         <i class="fa-solid fa-headset"></i> Change Voice Actor
+      </button>
+      <!-- Video sesini klonla butonu -->
+      <button class="btn-lp" onclick="videoSesiKlonla()" style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(99,102,241,.15));border-color:rgba(168,85,247,.4);color:#c084fc;margin-top:6px;" title="Videodaki sesi çıkar ve anında klonla — kendi orijinal sesinle dub yap">
+        <i class="fa-solid fa-waveform-lines" style="color:#a855f7;"></i> Videodaki Sesi Kullan
       </button>
     </div>
 
@@ -897,31 +913,53 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 
     <!-- Sihirli Mod Hızlı Aksiyonlar (başlangıçta gizli) -->
     <div class="magic-actions" id="magic_actions">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">⚡ Quick Action</div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">⚡ Ne yapmak istiyorsun?</div>
+
+      <button class="magic-btn" onclick="magicAction('hizli_dublaj')">
+        <span class="magic-btn-icon">🌍</span>
+        <div>
+          <div class="magic-btn-title">Tek Tıkla Dublaj</div>
+          <div class="magic-btn-desc">Dil seç → otomatik çevir + seslendirme yap</div>
+        </div>
+        <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
+      </button>
+
       <button class="magic-btn" onclick="magicAction('hormozi')">
         <span class="magic-btn-icon">🔥</span>
         <div>
-          <div class="magic-btn-title">Hormozi Dynamic Subtitles</div>
-          <div class="magic-btn-desc">TikTok Bold — Words flash one by one, viral format</div>
+          <div class="magic-btn-title">Hormozi / TikTok Altyazı</div>
+          <div class="magic-btn-desc">Kelimeler tek tek parlar — viral format</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
+
       <button class="magic-btn" onclick="magicAction('klonlama')">
         <span class="magic-btn-icon">🎙️</span>
         <div>
-          <div class="magic-btn-title">AI Dub with My Voice</div>
-          <div class="magic-btn-desc">Clone your voice, speak in another language</div>
+          <div class="magic-btn-title">Kendi Sesimle Dublaj</div>
+          <div class="magic-btn-desc">Sesini klonla, başka dilde kendine dub yap</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
-      <button class="magic-btn" onclick="magicAction('magic_cut')">
+
+      <button class="magic-btn" onclick="magicAction('silence_cut')">
         <span class="magic-btn-icon">✂️</span>
         <div>
-          <div class="magic-btn-title">Remove Silent Gaps</div>
-          <div class="magic-btn-desc">Auto-remove filler sounds like um, uh, hmm</div>
+          <div class="magic-btn-title">Sessizlik & Dolgu Temizle</div>
+          <div class="magic-btn-desc">um, uh, uzun sessizlikler otomatik silinir</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
+
+      <button class="magic-btn" onclick="magicAction('podcast_ozet')">
+        <span class="magic-btn-icon">📝</span>
+        <div>
+          <div class="magic-btn-title">Podcast / Video Özeti</div>
+          <div class="magic-btn-desc">Transkript çıkar → AI ile özetle ve blog yaz</div>
+        </div>
+        <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
+      </button>
+
     </div>
 
     <!-- VIDEO ARAÇ ÇUBUĞU -->
@@ -2537,10 +2575,6 @@ function selVoiceById(id) {
     if (name) name.textContent = v.name;
     if (desc) desc.textContent = v.desc;
   }
-  // Ücretli ses seçildiyse uyar
-  if (v && v.paid) {
-    toast('⚠ ' + v.name + ' ElevenLabs Starter plan gerektirir ($5/ay). Free plan\'da çalışmaz.', 'twarn', 5000);
-  }
   // Dropdown'ı kapat
   const dd = document.getElementById('tts_voice_dropdown');
   if (dd) dd.style.display = 'none';
@@ -2651,12 +2685,25 @@ async function aiAsistanGonder() {
   if (btn) { btn.textContent = '⏳ Analyzing...'; btn.disabled = true; }
 
   try {
+    // Mevcut context'i ekle — AI daha iyi yanıt verir
+    const ctx = [];
+    if (mod) ctx.push(`Current mode: ${mod}`);
+    if (segs.length) ctx.push(`Transcript has ${segs.length} segments`);
+    if (pFile) ctx.push(`Video loaded: ${pFile.name || 'yes'}`);
+    const sorguWithCtx = ctx.length
+      ? `[Context: ${ctx.join(', ')}]\n\n${input.value.trim()}`
+      : input.value.trim();
+
     const fd = new FormData();
-    fd.append('sorgu', input.value.trim());
-    fd.append('dil', _uiDil || 'en');
+    fd.append('sorgu', sorguWithCtx);
+    fd.append('dil', _uiDil || 'tr');
     const resp = await fetch(B + '/api/ai/', { method: 'POST', body: fd });
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.hata || `Sunucu hatası ${resp.status}`);
+    }
     const data = await resp.json();
-    const text = data.yanit || data.hata || 'No response';
+    const text = data.yanit || data.hata || 'Yanıt alınamadı';
 
     if (sonuc) {
       sonuc.style.display = 'block';
@@ -2673,7 +2720,7 @@ async function aiAsistanGonder() {
   } catch(e) {
     if (sonuc) {
       sonuc.style.display = 'block';
-      sonuc.innerHTML = '⚠️ Analiz yapılamadı. Lütfen tekrar deneyin.';
+      sonuc.innerHTML = '⚠️ ' + (e.message || 'Analiz yapılamadı. Lütfen tekrar deneyin.');
     }
     if (btn) { btn.textContent = '✨ Analiz Et & Öneri Al'; btn.disabled = false; }
   }
@@ -4219,8 +4266,14 @@ function renderSegs(srt,fn,tr=false){
     + '      <button class="dbtn" onclick="versiyonKaydet()" title="Bu anı kaydet (A/B karşılaştırma)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">'
     + '        <i class="fa-solid fa-bookmark"></i> Kaydet'
     + '      </button>'
+    + '      <button class="dbtn" onclick="aiSegmentDuzelt()" title="AI ile transkripti düzelt/iyileştir" style="background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.3);color:#818cf8;">'
+    + '        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Düzelt'
+    + '      </button>'
     + '      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">'
     + '        <i class="fa-solid fa-scissors"></i> Magic Cut'
+    + '      </button>'
+    + '      <button class="dbtn" onclick="silenceCut()" title="Videodaki sessizlik bloklarını otomatik kes" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;">'
+    + '        <i class="fa-solid fa-volume-xmark"></i> Silence Cut'
     + '      </button>'
     + '      <button class="dbtn" onclick="gurultuGider()" title="Arka plan gürültüsünü gider" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;">'
     + '        <i class="fa-solid fa-waveform-lines"></i> Gürültü Gider'
@@ -4354,6 +4407,104 @@ async function cakismaDuzelt() {
     const srtR = await fetch(`${B}/dinle/${aSrt}`);
     const srtC = await srtR.text();
     renderSegs(srtC, aSrt);
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+/* ═══ AI SEGMENT DÜZELT ═══ */
+async function aiSegmentDuzelt() {
+  if (!segs.length) { toast('Önce transkript alın', 'twarn'); return; }
+
+  // Seçili segment varsa onu kullan, yoksa tüm metni
+  const secili = document.querySelector('.sc.aktif');
+  let metin, segNo;
+  if (secili) {
+    segNo = secili.id.replace('c_', '');
+    const seg = segs.find(s => String(s.no) === segNo);
+    metin = seg ? seg.text : '';
+  } else {
+    metin = segs.map(s => s.text).join('\n');
+    segNo = null;
+  }
+
+  if (!metin.trim()) { toast('Düzeltilecek metin yok', 'twarn'); return; }
+
+  const islem = segNo
+    ? `Şu transkript segmentini dilbilgisi, noktalama ve akıcılık açısından düzelt (yalnızca düzeltilmiş metni döndür, açıklama yapma):\n\n"${metin}"`
+    : `Aşağıdaki transkripti dilbilgisi, noktalama ve akıcılık açısından düzelt. Her satırı koru ama metni temizle:\n\n${metin}`;
+
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> AI düzeltiyor...', 'tok', 15000);
+
+  try {
+    const fd = new FormData();
+    fd.append('prompt', islem);
+    const r = await fetch(B + '/api/ai_text/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('AI hata: ' + d.hata, 'terr'); return; }
+
+    const yeniMetin = (d.yanit || '').trim();
+    if (!yeniMetin) { toast('AI yanıt vermedi', 'twarn'); return; }
+
+    if (segNo) {
+      // Tek segment güncelle
+      const seg = segs.find(s => String(s.no) === segNo);
+      if (seg) {
+        undoPush();
+        seg.text = yeniMetin;
+        // Tüm listeyi yeniden render et
+        const srtIcerik = segs.map(s =>
+          `${s.no}\n${s2t(s.start)} --> ${s2t(s.end)}\n${s.text}`
+        ).join('\n\n');
+        if (aSrt) renderSegs(srtIcerik, aSrt);
+        toast('✓ Segment AI ile düzeltildi');
+      }
+    } else {
+      // Tüm segmentleri güncelle
+      undoPush();
+      const satirlar = yeniMetin.split('\n');
+      segs.forEach((seg, i) => {
+        if (satirlar[i] !== undefined && satirlar[i].trim()) {
+          seg.text = satirlar[i].trim();
+        }
+      });
+      // segs array'den SRT oluştur ve yeniden render et
+      const srtIcerik = segs.map(s =>
+        `${s.no}\n${s2t ? s2t(s.start) + ' --> ' + s2t(s.end) : s.tStr}\n${s.text}`
+      ).join('\n\n');
+      if (aSrt) renderSegs(srtIcerik, aSrt);
+      toast('✓ Tüm transkript AI ile düzeltildi');
+    }
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+/* ═══ SILENCE CUT ═══ */
+async function silenceCut() {
+  if (!aDosya) { toast('Önce video yükleyin ve işlem yapın', 'twarn'); return; }
+  const dosyaAdi = aDosya.split('/').pop() || aDosya;
+
+  const esik = prompt('Sessizlik eşiği (saniye)?\nÖnerilen: 0.5 — 0.3 agresif, 1.0 yumuşak', '0.5');
+  if (esik === null) return;
+  const minSure = parseFloat(esik) || 0.5;
+
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Sessizlikler aranıyor...', 'tok', 120000);
+
+  try {
+    const fd = new FormData();
+    fd.append('dosya_adi', dosyaAdi);
+    fd.append('min_sure', String(minSure));
+    fd.append('esik_db', '-35');
+    const r = await fetch(B + '/api/silence_cut/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('Silence Cut hata: ' + d.hata, 'terr'); return; }
+    if (d.yeni_dosya && d.yeni_dosya !== dosyaAdi) {
+      // Yeni dosyayı video player'a yükle
+      const vid = document.getElementById('vid');
+      if (vid) {
+        vid.src = B + '/dinle/' + d.yeni_dosya;
+        vid.load();
+      }
+      aDosya = B + '/dinle/' + d.yeni_dosya;
+    }
+    toast('✓ ' + d.mesaj, 'tok', 6000);
   } catch(e) { toast('Hata: ' + e.message, 'terr'); }
 }
 
@@ -4776,32 +4927,26 @@ function buildVoiceList() {
   }
 
   el.innerHTML = filtreli.map(function(v) {
-    const isSel   = voice === v.id;
-    const isFree  = isVoiceFree(v.id);
-    const flag    = _langFlag[v.lang] || '🌐';
-    const selBg   = isSel ? 'background:rgba(59,130,246,.12);border-color:#3b82f6;' : 'background:var(--s3);border-color:var(--border2);';
-    const proBadge = isFree
-      ? '<span style="font-size:9px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 5px;border-radius:3px;white-space:nowrap;">Ücretsiz</span>'
-      : '<span style="font-size:9px;background:#1a1200;border:1px solid #713f12;color:#fde68a;padding:1px 5px;border-radius:3px;white-space:nowrap;">★ Pro</span>';
-
-    return '<div id="vli_' + v.id + '" onclick="selVoiceById(\'' + v.id + '\')"'
-      + ' style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:8px;border:1.5px solid;cursor:pointer;transition:all .15s;' + selBg + '"'
-      + ' onmouseover="if(voice!==\'' + v.id + '\')this.style.borderColor=\'#3b82f6\'"'
-      + ' onmouseout="if(voice!==\'' + v.id + '\')this.style.borderColor=\'var(--border2)\'">'
-      /* Avatar */
-      + '<div style="width:42px;height:42px;border-radius:8px;background:' + v.color + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">' + v.name[0] + '</div>'
-      /* İsim + bayrak + badge */
-      + '<div style="flex:1;min-width:0;">'
-      + '  <div style="font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + flag + ' ' + v.name + '</div>'
-      + '  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">'
-      + proBadge
-      + '  </div>'
+    const isSel = voice === v.id;
+    const grad  = (_VP_GRAD || {})[v.tone || 'neutral'] || ['#334155','#1e293b'];
+    const icon  = v.gender === 'female' ? 'fa-person-dress' : 'fa-person';
+    return '<div id="vli_' + v.id + '" onclick="selVoiceById(\'' + v.id + '\')" class="vp-card' + (isSel?' sel':'') + '" style="padding:8px;">'
+      // mini avatar
+      + '<div style="width:100%;aspect-ratio:1.2;border-radius:8px;background:linear-gradient(145deg,' + grad[0] + ',' + grad[1] + ');position:relative;overflow:hidden;margin-bottom:6px;">'
+      + '  <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent 60%);pointer-events:none;"></div>'
+      + '  <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);"><i class="fa-solid ' + icon + '" style="font-size:32px;color:rgba(255,255,255,.38);"></i></div>'
+      + '  <div style="position:absolute;top:3px;left:5px;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
+      + (v.paid ? '<div class="vp-pro-badge" style="font-size:7px;">PRO</div>' : '<div class="vp-free-badge" style="font-size:7px;">FREE</div>')
+      + (isSel ? '<div style="position:absolute;inset:-1px;border-radius:9px;border:2px solid #3b82f6;pointer-events:none;"></div>' : '')
       + '</div>'
-      /* Mavi kulaklık butonu */
-      + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')"'
-      + ' style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;"'
-      + ' onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'">'
-      + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:11px;"></i>'
+      // name + flag
+      + '<div style="display:flex;align-items:center;gap:3px;margin-bottom:4px;">'
+      + '  <span style="font-size:10px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
+      + '  <span style="font-size:11px;">' + (v.flag||'') + '</span>'
+      + '</div>'
+      // headphone
+      + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" style="width:100%;height:22px;border-radius:6px;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'">'
+      + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:9px;"></i>'
       + '</button>'
       + '</div>';
   }).join('');
@@ -4917,25 +5062,53 @@ function _vpFavSet(id, btn) {
   localStorage.setItem('vf_fav_voices', JSON.stringify(_vpFavs));
 }
 
+/* ─── Tone → avatar gradient map ─── */
+const _VP_GRAD = {
+  deep:      ['#1e3a8a','#0f172a'],
+  neutral:   ['#334155','#1e293b'],
+  warm:      ['#92400e','#431407'],
+  energetic: ['#14532d','#052e16'],
+};
+const _VP_LANG_LABEL = {tr:'🇹🇷 Türkçe', de:'🇩🇪 Deutsch', fr:'🇫🇷 Français', it:'🇮🇹 Italiano', en:'🌐 English'};
+
+function _vpAvatarHtml(v) {
+  const grad = _VP_GRAD[v.tone || 'neutral'] || _VP_GRAD.neutral;
+  const icon = v.gender === 'female' ? 'fa-person-dress' : 'fa-person';
+  const isSel = voice === v.id;
+  const pulseBorder = isSel ? 'animation:vp-sel-pulse 1.5s ease-in-out infinite;' : '';
+  return ''
+    + '<div class="vp-avatar" style="background:linear-gradient(145deg,' + grad[0] + ',' + grad[1] + ');">'
+    // light top-left highlight
+    + '  <div style="position:absolute;top:0;left:0;width:55%;height:55%;background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.14),transparent 70%);pointer-events:none;"></div>'
+    // shimmer via CSS class ::after
+    // person silhouette bottom-center
+    + '  <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);text-align:center;">'
+    + '    <i class="fa-solid ' + icon + '" style="font-size:44px;color:rgba(255,255,255,.38);"></i>'
+    + '  </div>'
+    // initial top-left
+    + '  <div style="position:absolute;top:5px;left:7px;font-size:12px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
+    // pro/free badge top-right
+    + (v.paid
+      ? '  <div class="vp-pro-badge">PRO</div>'
+      : '  <div class="vp-free-badge">FREE</div>')
+    // selection ring
+    + (isSel ? '  <div style="position:absolute;inset:-1px;border-radius:11px;border:2px solid #3b82f6;' + pulseBorder + 'pointer-events:none;"></div>' : '')
+    + '</div>';
+}
+
 function _vpRender() {
   const body = document.getElementById('_vp_body');
   if (!body) return;
   const q    = (document.getElementById('_vp_search')?.value || '').toLowerCase();
   const dial = document.getElementById('_vp_dial')?.value || '';
 
-  const groups = [
-    { label:'🇹🇷 Turkish',  lang:'tr' },
-    { label:'🇩🇪 German',   lang:'de' },
-    { label:'🇫🇷 French',   lang:'fr' },
-    { label:'🇮🇹 Italian',  lang:'it' },
-    { label:'🌐 Common',    lang:'en' },
-  ];
+  const groups = ['tr','de','fr','it','en'];
 
   let html = '';
-  groups.forEach(function(g) {
-    if (dial && dial !== g.lang) return;
-    let voices = VOICES.filter(function(v) {
-      if (v.lang !== g.lang) return false;
+  groups.forEach(function(lang) {
+    if (dial && dial !== lang) return;
+    const voices = VOICES.filter(function(v) {
+      if (v.lang !== lang) return false;
       if (_vpFilter.genderF && v.gender !== 'female') return false;
       if (_vpFilter.genderM && v.gender !== 'male')   return false;
       if (_vpFilter.favOnly && !_vpFavs.includes(v.id)) return false;
@@ -4945,48 +5118,37 @@ function _vpRender() {
     });
     if (!voices.length) return;
 
-    // 4-column grid; each cell = horizontal row item
-    html += '<div style="margin-bottom:24px;">'
-      + '<div style="font-size:11px;font-weight:700;color:#5a7090;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1a2235;">' + g.label + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
+    html += '<div style="margin-bottom:22px;">'
+      + '<div style="font-size:11px;font-weight:700;color:#5a7090;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #1a2235;">' + (_VP_LANG_LABEL[lang]||lang) + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">';
 
     voices.forEach(function(v) {
-      const isFav     = _vpFavs.includes(v.id);
-      const isSel     = voice === v.id;
-      const selBg     = isSel ? '#0f1e38' : '#111827';
-      const selBorder = isSel ? '#3b82f6' : '#1a2235';
+      const isFav = _vpFavs.includes(v.id);
+      const isSel = voice === v.id;
 
-      html += '<div onclick="selVoiceById(\'' + v.id + '\')" '
-        + 'style="display:flex;align-items:center;gap:10px;background:' + selBg + ';border:1.5px solid ' + selBorder + ';border-radius:10px;padding:9px 10px;cursor:pointer;transition:border-color .15s;" '
-        + 'onmouseover="this.style.borderColor=\'#3b82f6\'" onmouseout="this.style.borderColor=\'' + selBorder + '\'">'
-
-        /* Rectangular avatar */
-        + '<div style="width:48px;height:48px;border-radius:8px;background:' + v.color + ';display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;flex-shrink:0;">'
-        + v.name[0]
+      html += '<div class="vp-card' + (isSel?' sel':'') + '" onclick="selVoiceById(\'' + v.id + '\')">'
+        + _vpAvatarHtml(v)
+        // name + flag row
+        + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">'
+        + '  <span style="font-size:11px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
+        + '  <span style="font-size:13px;flex-shrink:0;">' + (v.flag||'') + '</span>'
         + '</div>'
-
-        /* Name + meta */
-        + '<div style="flex:1;min-width:0;">'
-        + '  <div style="font-size:12px;font-weight:700;color:#e8edf5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</div>'
-        + '  <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">'
-        + '    <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" style="background:none;border:none;cursor:pointer;font-size:13px;color:' + (isFav?'#f43f5e':'#3b5478') + ';padding:0;line-height:1;" title="Favorite">♥</button>'
-        + (v.paid ? '<span style="font-size:9px;background:#1a1200;border:1px solid #713f12;color:#fde68a;padding:1px 6px;border-radius:4px;font-weight:700;">★ Pro</span>' : '')
-        + '  </div>'
+        // actions: heart + headphones
+        + '<div style="display:flex;align-items:center;justify-content:space-between;">'
+        + '  <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" id="_vpfav_' + v.id + '" '
+        + '    style="background:none;border:none;cursor:pointer;font-size:15px;color:' + (isFav?'#f43f5e':'#2d4060') + ';padding:0;line-height:1;transition:color .15s;" title="Favori">♥</button>'
+        + '  <button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" '
+        + '    style="width:26px;height:26px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" '
+        + '    onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'" title="Dinle">'
+        + '    <i class="fa-solid fa-headphones" style="color:#fff;font-size:10px;"></i>'
+        + '  </button>'
         + '</div>'
-
-        /* Blue headphone circle */
-        + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" '
-        + 'style="width:34px;height:34px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;" '
-        + 'onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'" title="Preview">'
-        + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:13px;"></i>'
-        + '</button>'
-
-        + '</div>';
+        + '</div>'; // card
     });
-    html += '</div></div>';
+    html += '</div></div>'; // grid + group
   });
 
-  if (!html) html = '<div style="text-align:center;padding:60px 20px;color:#5a7090;font-size:14px;">No voices match the current filters</div>';
+  if (!html) html = '<div style="text-align:center;padding:60px 20px;color:#5a7090;font-size:14px;">Filtrelerle eşleşen ses bulunamadı</div>';
   body.innerHTML = html;
 }
 
@@ -5984,19 +6146,129 @@ function modGecis(yeniMod) {
 }
 
 function magicAction(tip) {
-  if (!pFile && tip !== 'klonlama') { toast('Once video yukleyin!','twarn'); return; }
-  if (tip==='hormozi') {
+  const videoGerekli = !['klonlama','podcast_ozet'].includes(tip);
+  if (videoGerekli && !pFile) { toast('Önce video yükle!','twarn'); return; }
+
+  if (tip==='hizli_dublaj') {
+    hizliDublajModalAc();
+
+  } else if (tip==='hormozi') {
     if (typeof subSablonUygula === 'function') subSablonUygula('tiktok_bold');
     sw('altyazi'); modGecis('pro');
+
   } else if (tip==='klonlama') {
     modGecis('pro'); sw('seslendirme');
-    // Kendi sesiyle dublaj UI'ı aç
     kendiSesiyleyDublajModalAc();
+
+  } else if (tip==='silence_cut') {
+    modGecis('pro');
+    if (segs.length===0) {
+      // Önce transkript al, sonra magic cut + silence cut
+      sw('desifre');
+      toast('Transkript alınıyor, bittikten sonra temizlik yapılacak...','twarn',4000);
+    } else {
+      magicCut().then(()=> {
+        if (aDosya) silenceCut();
+      });
+    }
+
   } else if (tip==='magic_cut') {
     modGecis('pro');
-    if (segs.length===0) { sw('desifre'); toast('Once transkript alın, sonra Magic Cut kullanın','twarn',3000); }
+    if (segs.length===0) { sw('desifre'); toast('Önce transkript alın','twarn',3000); }
     else magicCut();
+
+  } else if (tip==='podcast_ozet') {
+    podcastOzetModalAc();
   }
+}
+
+/* ═══ HIZLİ DUBLAJ MODAL ═══ */
+function hizliDublajModalAc() {
+  document.getElementById('_hd_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_hd_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = ''
+    + '<div style="background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:400px;">'
+    + '  <h3 style="margin:0 0 16px;font-size:16px;">🌍 Tek Tıkla Dublaj</h3>'
+    + '  <div style="font-size:12px;color:var(--muted2);margin-bottom:14px;">Videon hangi dile çevrilsin?</div>'
+    + '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'
+    + ['🇺🇸 İngilizce|EN','🇩🇪 Almanca|DE','🇫🇷 Fransızca|FR','🇪🇸 İspanyolca|ES','🇮🇹 İtalyanca|IT','🇸🇦 Arapça|AR','🇯🇵 Japonca|JA','🇷🇺 Rusça|RU'].map(d=>{
+        const [label,kod] = d.split('|');
+        return `<button onclick="hizliDublajBaslat('${kod}')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border2)'">${label}</button>`;
+      }).join('')
+    + '  </div>'
+    + '  <button onclick="document.getElementById(\'_hd_modal\').remove()" style="width:100%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:10px;border-radius:8px;cursor:pointer;font-family:inherit;">İptal</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+async function hizliDublajBaslat(hedefDil) {
+  document.getElementById('_hd_modal')?.remove();
+  // Hedef dili ayarla
+  const tgtInput = document.getElementById('tgt_lang');
+  if (tgtInput) tgtInput.value = hedefDil;
+  // Seslendirme moduna geç
+  sw('seslendirme'); modGecis('pro');
+  // Modal'da hedef dili de ayarla
+  const mTgt = document.getElementById('m_tgt');
+  if (mTgt) { mTgt.value = hedefDil; mTgt.dispatchEvent(new Event('change')); }
+  toast(`🚀 ${hedefDil} dublajı için ayarlar yapıldı — Start'a bas!`,'tok',4000);
+  // Start Process otomatik başlat
+  setTimeout(()=> {
+    if (typeof startProcess==='function') startProcess();
+  }, 800);
+}
+
+/* ═══ PODCAST ÖZET MODAL ═══ */
+async function podcastOzetModalAc() {
+  if (!segs.length && !pFile) { toast('Önce video yükle veya transkript al','twarn'); return; }
+
+  // Transkript yoksa önce al
+  if (!segs.length) {
+    toast('Önce transkript alınıyor...','twarn',3000);
+    sw('desifre'); modGecis('pro');
+    return;
+  }
+
+  const transkript = segs.map(s => s.text).join(' ');
+  const prompt = `Aşağıdaki video/podcast transkriptini analiz et ve şunları yap:\n1. 3-5 madde halinde özet\n2. Ana konular ve anahtar noktalar\n3. Blog yazısı için başlık önerisi\n\nTranskript:\n${transkript.substring(0, 3000)}`;
+
+  // Modal aç
+  document.getElementById('_pod_modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_pod_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = ''
+    + '<div style="background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto;">'
+    + '  <h3 style="margin:0 0 12px;font-size:16px;">📝 Video Özeti</h3>'
+    + '  <div id="_pod_sonuc" style="font-size:13px;color:var(--muted2);line-height:1.8;"><i class="fa-solid fa-spinner fa-spin"></i> AI analiz ediyor...</div>'
+    + '  <div style="margin-top:16px;display:flex;gap:8px;">'
+    + '    <button onclick="_podKopyala()" style="background:var(--accent);border:none;color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">Kopyala</button>'
+    + '    <button onclick="document.getElementById(\'_pod_modal\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">Kapat</button>'
+    + '  </div>'
+    + '</div>';
+  document.body.appendChild(ov);
+
+  try {
+    const fd = new FormData();
+    fd.append('prompt', prompt);
+    const r = await fetch(B + '/api/ai_text/', { method: 'POST', body: fd });
+    const d = await r.json();
+    const sonucEl = document.getElementById('_pod_sonuc');
+    if (sonucEl) {
+      const metin = (d.yanit || d.hata || 'Yanıt alınamadı');
+      sonucEl.innerHTML = metin.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+      window._podMetin = metin;
+    }
+  } catch(e) {
+    const sonucEl = document.getElementById('_pod_sonuc');
+    if (sonucEl) sonucEl.textContent = 'Hata: ' + e.message;
+  }
+}
+
+function _podKopyala() {
+  navigator.clipboard.writeText(window._podMetin || '').then(()=>toast('Kopyalandı'));
 }
 
 /* ═══ ONBOARDING ═══ */
@@ -6045,6 +6317,35 @@ function obKapat() {
   const tip = document.getElementById('_ob_tip');
   if (tip) { tip.style.display='none'; tip.remove(); }
   localStorage.setItem('vf_ob_done','1');
+}
+
+/* ═══ VİDEODAKİ SESİ KULLAN ═══ */
+async function videoSesiKlonla() {
+  if (!pFile) { toast('Önce video yükleyin', 'twarn'); return; }
+
+  // Confirm
+  if (!confirm('Videodaki ses çıkarılacak ve anında klonlanacak.\nBu işlem 30-60 saniye sürer — devam?')) return;
+
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Videodaki ses analiz ediliyor...', 'tok', 90000);
+
+  try {
+    // 1. Backend'e video dosyasını gönder, ses çıkarıp klonlasın
+    const fd = new FormData();
+    fd.append('video_dosyasi', pFile);
+    fd.append('isim', (pFile.name || 'Video').replace(/\.[^.]+$/, '') + ' (klonlandı)');
+
+    const r = await fetch(B + '/api/video_ses_klonla/', { method: 'POST', body: fd });
+    const d = await r.json();
+
+    if (d.hata) { toast('Hata: ' + d.hata, 'terr'); return; }
+
+    // 2. Klonlanan sesi seç
+    const voiceId = d.voice_id;
+    const voiceIsim = d.isim || 'Video Sesi';
+    _onVoiceCloned(voiceId, voiceIsim);
+    toast('✓ Video sesi klonlandı → "' + voiceIsim + '" seçildi. Artık kendi sesinle dublaj yapabilirsin!', 'tok', 6000);
+
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
 }
 
 /* ═══ KENDİ SESİYLE DUBLAJ ═══ */
