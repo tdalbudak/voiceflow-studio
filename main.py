@@ -1590,6 +1590,10 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
 
             base = os.path.splitext(out_file)[0]
             shutil.copy(srt_final, os.path.join(OUTPUT_DIR, base + ".srt"))
+            # words dosyasını OUTPUT_DIR'e kopyala (TikTok kelime timestamp'leri için)
+            words_src = srt_kaynak.replace('.srt', '_words.json')
+            if os.path.exists(words_src):
+                shutil.copy(words_src, os.path.join(OUTPUT_DIR, base + "_words.json"))
 
             # Preview: orijinal videoyu kopyala (burn etme — frontend live overlay gösterecek)
             islem_durumlari[out_file] = {"durum": "Video hazırlanıyor...", "yuzde": 75}
@@ -3209,6 +3213,41 @@ async def platform_boyutlandir(
         "boyut": f"{w}x{h}",
         "etiket": ayar["etiket"]
     })
+
+
+@app.post("/api/viral_analiz/")
+async def viral_analiz(transkript: str = Form(...), dil: str = Form("tr")):
+    """Gemini ile en viral 5 anı tespit et."""
+    if not GEMINI_API_KEY:
+        return JSONResponse({"hata": "Gemini API key eksik"}, status_code=500)
+    sistem = (
+        "Sen viral video içerik uzmanısın. Sana bir video transkripti veriliyor. "
+        "En viral, en ilgi çekici, izleyiciyi en çok tutacak 5 anı bul. "
+        "Her an için: başlangıç saniyesi (start), bitiş saniyesi (end), "
+        "viral skor 0-100 (score), kısa açıklama (reason) ver. "
+        "SADECE geçerli JSON döndür. Format:\n"
+        "[{\"start\":10.5,\"end\":45.2,\"score\":92,\"reason\":\"Güçlü hook, izleyiciyi yakalar\"}, ...]"
+    )
+    prompt = f"Transkript (dil: {dil}):\n\n{transkript[:6000]}"
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                json={"contents": [{"parts": [{"text": sistem + "\n\n" + prompt}]}],
+                      "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1024}},
+            )
+        data = r.json()
+        metin = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # JSON bloğu ayıkla
+        import re as _re
+        m = _re.search(r'\[.*\]', metin, _re.DOTALL)
+        if not m:
+            return JSONResponse({"hata": "Gemini JSON döndürmedi"}, status_code=500)
+        sonuclar = json.loads(m.group())
+        return JSONResponse({"anlar": sonuclar[:5]})
+    except Exception as e:
+        log.error(f"[viral_analiz] HATA: {e}")
+        return JSONResponse({"hata": str(e)[:200]}, status_code=500)
 
 
 @app.post("/api/klip_kes/")

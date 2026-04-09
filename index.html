@@ -2455,32 +2455,105 @@ function speakerMapPanelOlustur(segmentler) {
   if (!panel) return;
 
   panel.style.display = 'block';
-  const voiceOpts = VOICES.map(v => '<option value="' + v.id + '">' + v.name + '</option>').join('');
 
+  // Her konuşmacı için mini voice picker satırı
   const rows = [...speakers].sort().map(function(sp) {
     const renk = SP_COLORS[parseInt(sp) % SP_COLORS.length];
-    return '<div class="speaker-map-row">'
-      + '<span class="sp-dot-big" style="background:' + renk + ';"></span>'
-      + '<span class="sp-label">Konuşmacı ' + sp + '</span>'
-      + '<select class="sp-voice-sel" id="spv_' + sp + '" onchange="speakerSesGuncelle()">'
-      + '<option value="' + voice + '">— Varsayılan Ses —</option>'
-      + voiceOpts
-      + '</select>'
+    const secilenId = _speakerMap[sp] || voice;
+    const secilenV  = VOICES.find(v => v.id === secilenId) || VOICES[0];
+
+    // Seçili ses kartı + tıklayınca mini picker açar
+    const avatarHtml = _vpAvatarHtml(secilenV, 28);
+    return '<div class="speaker-map-row" style="align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border1);">'
+      + '<span class="sp-dot-big" style="background:' + renk + ';flex-shrink:0;"></span>'
+      + '<span class="sp-label" style="min-width:90px;">Konuşmacı ' + sp + '</span>'
+      + '<div id="sp_card_' + sp + '" onclick="spPickerAc(\'' + sp + '\')" '
+      +   'style="display:flex;align-items:center;gap:7px;background:var(--s3);border:1px solid var(--border2);'
+      +   'border-radius:var(--r);padding:5px 10px;cursor:pointer;flex:1;min-width:0;transition:.15s;">'
+      + avatarHtml
+      + '<div style="min-width:0;">'
+      + '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + secilenV.flag + ' ' + secilenV.name + '</div>'
+      + '<div style="font-size:10px;color:var(--muted2);">' + secilenV.desc + '</div>'
+      + '</div>'
+      + '<i class="fa-solid fa-chevron-down" style="margin-left:auto;font-size:10px;color:var(--muted2);flex-shrink:0;"></i>'
+      + '</div>'
       + '</div>';
   }).join('');
 
   panel.innerHTML = '<div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>'
     + rows
-    + '<button onclick="speakerMapKaydet()" style="margin-top:6px;width:100%;padding:7px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<button onclick="speakerMapKaydet()" style="margin-top:10px;width:100%;padding:8px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
     + '<i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet'
     + '</button>';
 }
 
+function spPickerAc(spNo) {
+  // Mevcut picker varsa kapat
+  document.getElementById('_sp_picker_overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_sp_picker_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center;';
+
+  // Gruplara ayır
+  const langGroups = {};
+  VOICES.forEach(v => { (langGroups[v.lang] = langGroups[v.lang] || []).push(v); });
+  const FLAG = { tr:'🇹🇷', en:'🇺🇸', de:'🇩🇪', fr:'🇫🇷', it:'🇮🇹', es:'🇪🇸', pt:'🇧🇷', nl:'🇳🇱', pl:'🇵🇱', sv:'🇸🇪', hi:'🇮🇳', id:'🇮🇩', ro:'🇷🇴', ar:'🇸🇦' };
+  const LANG_TR = { tr:'Türkçe', en:'İngilizce', de:'Almanca', fr:'Fransızca', it:'İtalyanca', es:'İspanyolca', pt:'Portekizce', nl:'Hollandaca', pl:'Lehçe', sv:'İsveççe', hi:'Hintçe', id:'Endonezyaca', ro:'Rumence', ar:'Arapça' };
+  const secilenId = _speakerMap[spNo] || voice;
+
+  const gridHtml = Object.entries(langGroups).map(([lang, voices]) =>
+    '<div style="margin-bottom:14px;">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">'
+    + (FLAG[lang]||'') + ' ' + (LANG_TR[lang]||lang.toUpperCase())
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">'
+    + voices.map(v => {
+        const sel = v.id === secilenId;
+        return '<div onclick="spVoiceSec(\'' + spNo + '\',\'' + v.id + '\')" '
+          + 'style="background:' + (sel?'var(--s4)':'var(--s3)') + ';border:1px solid '
+          + (sel?'var(--accent2)':'var(--border2)') + ';border-radius:var(--r);padding:7px 6px;cursor:pointer;'
+          + 'display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s;">'
+          + _vpAvatarHtml(v, 30)
+          + '<div style="font-size:10px;font-weight:600;text-align:center;">' + v.name + '</div>'
+          + '<div style="font-size:9px;color:var(--muted2);text-align:center;line-height:1.2;">' + v.desc + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div></div>'
+  ).join('');
+
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:440px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+    + '<div style="font-size:13px;font-weight:700;"><i class="fa-solid fa-microphone" style="margin-right:6px;color:var(--accent3);"></i>Konuşmacı ' + spNo + ' için Ses Seç</div>'
+    + '<button onclick="document.getElementById(\'_sp_picker_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + gridHtml
+    + '</div>';
+
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function spVoiceSec(spNo, voiceId) {
+  _speakerMap[spNo] = voiceId;
+  document.getElementById('_sp_picker_overlay')?.remove();
+  // Kartı güncelle
+  const v = VOICES.find(x => x.id === voiceId);
+  if (!v) return;
+  const card = document.getElementById('sp_card_' + spNo);
+  if (card) {
+    card.innerHTML = _vpAvatarHtml(v, 28)
+      + '<div style="min-width:0;">'
+      + '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.flag + ' ' + v.name + '</div>'
+      + '<div style="font-size:10px;color:var(--muted2);">' + v.desc + '</div>'
+      + '</div>'
+      + '<i class="fa-solid fa-chevron-down" style="margin-left:auto;font-size:10px;color:var(--muted2);flex-shrink:0;"></i>';
+  }
+  toast('✓ Konuşmacı ' + spNo + ' → ' + v.name);
+}
+
 function speakerSesGuncelle() {
-  document.querySelectorAll('[id^="spv_"]').forEach(sel => {
-    const spNo = sel.id.replace('spv_','');
-    if (sel.value) _speakerMap[spNo] = sel.value;
-  });
+  // _speakerMap artık spVoiceSec() ile anlık güncelleniyor, bu fonksiyon uyumluluk için kalıyor
 }
 
 async function speakerMapKaydet() {
@@ -5642,32 +5715,66 @@ function autoVersiyonKaydet() {
 
 async function viralKlipCikar() {
   if (!segs.length) { toast('Önce transkript oluşturun','twarn'); return; }
-  toast('En iyi anlar analiz ediliyor...','tok',8000);
-  const skorlar = segs.map(s => {
-    const metin = s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
-    const sure  = s.end - s.start;
-    const cps   = sure > 0 ? metin.split(/\s+/).length / sure : 0;
-    let skor = cps * 10;
-    if (/[!?]/.test(metin)) skor += 15;
-    if (/\b(inanılmaz|harika|incredible|amazing|wow|omg|ngl|fr|no cap)\b/i.test(metin)) skor += 20;
-    if (sure >= 3 && sure <= 30) skor += 10;
-    return { seg:s, skor, metin, sure };
-  });
-  const enIyi = [...skorlar].sort((a,b)=>b.skor-a.skor).slice(0,5);
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Gemini viral anlar analiz ediyor...','tok',12000);
 
+  // Transkripti düz metin olarak hazırla (zaman damgasıyla)
+  const transkript = segs.map(s =>
+    `[${fmt(s.start)}-${fmt(s.end)}] ${s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim()}`
+  ).join('\n');
+
+  let enIyi = [];
+  try {
+    const fd = new FormData();
+    fd.append('transkript', transkript);
+    const _vDil = document.getElementById('tgt_lang')?.value || document.getElementById('src_lang')?.value || 'tr';
+    fd.append('dil', _vDil);
+    const r = await fetch(B + '/api/viral_analiz/', { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok || d.hata) throw new Error(d.hata || 'Analiz başarısız');
+    // API'den gelen anları segs ile eşleştir
+    enIyi = d.anlar.map(function(an) {
+      // En yakın segmenti bul
+      const seg = segs.reduce((best, s) => {
+        const d1 = Math.abs(s.start - an.start);
+        const d2 = Math.abs(best.start - an.start);
+        return d1 < d2 ? s : best;
+      }, segs[0]);
+      return { seg, skor: an.score, metin: seg.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim(),
+               sure: seg.end - seg.start, reason: an.reason,
+               start: an.start, end: an.end };
+    });
+  } catch(e) {
+    // Fallback: heuristik skor
+    toast('AI analiz başarısız, heuristik kullanılıyor','twarn',3000);
+    const skorlar = segs.map(s => {
+      const metin = s.text.replace(/\[Konuşmacı \d+\]:\s*/g,'').trim();
+      const sure  = s.end - s.start;
+      const cps   = sure > 0 ? metin.split(/\s+/).length / sure : 0;
+      let skor = cps * 10;
+      if (/[!?]/.test(metin)) skor += 15;
+      if (/\b(inanılmaz|harika|incredible|amazing|wow|omg|ngl|fr|no cap)\b/i.test(metin)) skor += 20;
+      if (sure >= 3 && sure <= 30) skor += 10;
+      return { seg:s, skor, metin, sure:sure, start:s.start, end:s.end, reason:'' };
+    });
+    enIyi = [...skorlar].sort((a,b)=>b.skor-a.skor).slice(0,5);
+  }
+
+  const dosya = aDosya || '';
   const itemHtml = enIyi.map(function(item, i) {
     const metin100 = item.metin.slice(0,100) + (item.metin.length>100?'...':'');
-    const dosya = aDosya || '';
+    const s = item.start ?? item.seg.start;
+    const e2 = item.end ?? item.seg.end;
     return '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;">'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
       + '<span style="background:rgba(234,179,8,.2);color:#eab308;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;">#' + (i+1) + '</span>'
-      + '<span style="font-size:11px;color:var(--muted2);">' + fmt(item.seg.start) + ' → ' + fmt(item.seg.end) + ' · ' + item.sure.toFixed(1) + 's</span>'
+      + '<span style="font-size:11px;color:var(--muted2);">' + fmt(s) + ' → ' + fmt(e2) + ' · ' + (e2-s).toFixed(1) + 's</span>'
       + '<span style="margin-left:auto;font-size:10px;background:rgba(99,102,241,.15);color:var(--accent3);padding:2px 7px;border-radius:100px;">⭐ ' + Math.round(item.skor) + '</span>'
       + '</div>'
+      + (item.reason ? '<div style="font-size:10px;color:var(--accent3);margin-bottom:5px;"><i class="fa-solid fa-robot" style="margin-right:3px;"></i>' + item.reason + '</div>' : '')
       + '<div style="font-size:12px;margin-bottom:8px;">"' + metin100 + '"</div>'
       + '<div style="display:flex;gap:6px;">'
-      + '<button onclick="vidAtla(' + item.seg.start + ')" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Oynat</button>'
-      + '<button onclick="klipIndir(\'' + dosya + '\',' + item.seg.start + ',' + item.seg.end + ')" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Klip İndir</button>'
+      + '<button onclick="vidAtla(' + s + ')" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Oynat</button>'
+      + '<button onclick="klipIndir(\'' + dosya + '\',' + s + ',' + e2 + ')" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Klip İndir</button>'
       + '</div></div>';
   }).join('');
 
@@ -5676,7 +5783,7 @@ async function viralKlipCikar() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
-    + '<div style="font-size:14px;font-weight:700;">En İyi Anlar</div>'
+    + '<div style="font-size:14px;font-weight:700;"><i class="fa-solid fa-bolt" style="color:#eab308;margin-right:6px;"></i>Viral Anlar — AI Analiz</div>'
     + '<button onclick="document.getElementById(\'_viral_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
     + '</div>'
     + itemHtml
