@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VoiceFlow Studio — AI Dubbing & Subtitle Editor</title>
+<title>Lumnex — AI Dubbing & Subtitle Editor</title>
 <meta name="description" content="Dub your videos into 60+ languages with AI. Timeline editor, TikTok mode, voice cloning.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>V</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%236366f1'/><text y='.9em' font-size='60' x='50%' text-anchor='middle' fill='white'>L</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -544,7 +544,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 <div class="nav">
   <div class="nav-logo">
     <div class="nav-logo-icon">🎙</div>
-    VoiceFlow
+    Lumnex
   </div>
   <div class="nav-tabs">
     <div class="nav-tab" id="tab_desifre" onclick="sw('desifre')">📝 Transcript</div>
@@ -1388,7 +1388,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <div>• Arka plan gürültüsü olmasın, kulaklık kullanmayın</div>
           <div>• Şunu okuyabilirsiniz:</div>
           <div style="background:rgba(0,0,0,.25);border-radius:6px;padding:8px 10px;margin-top:6px;font-style:italic;color:#a7f3d0;font-size:10.5px;line-height:1.8;">
-            "Merhaba, bu benim sesimin klonu için bir kayıt. Bugün size VoiceFlow Studio hakkında konuşmak istiyorum. Bu platform, videolarınızı kolayca birçok dile çevirmenizi sağlıyor. Sesinizi klonlayarak kendi dilinizde olmayan içerikler üretebilirsiniz. Umarım bu ses klonu kaliteli çıkar ve ihtiyacınızı karşılar."
+            "Merhaba, bu benim sesimin klonu için bir kayıt. Bugün size Lumnex hakkında konuşmak istiyorum. Bu platform, videolarınızı kolayca birçok dile çevirmenizi sağlıyor. Sesinizi klonlayarak kendi dilinizde olmayan içerikler üretebilirsiniz. Umarım bu ses klonu kaliteli çıkar ve ihtiyacınızı karşılar."
           </div>
         </div>
 
@@ -1874,7 +1874,7 @@ function xport(fmt_){
 function kaydetModalAc(fmt_) {
   document.getElementById('_kaydet_modal')?.remove();
 
-  const base = (aSrt || aDosya || 'voiceflow_cikti').replace(/\.[^.]+$/, '');
+  const base = (aSrt || aDosya || 'lumnex_cikti').replace(/\.[^.]+$/, '');
   const uzanti = {'original':'.mp4','srt':'.srt','vtt':'.vtt','ass':'.ass','txt':'.txt','txt_clean':'.txt','burn_sub':'.mp4'}[fmt_] || '.srt';
   const isVideo = ['original','burn_sub'].includes(fmt_);
 
@@ -1984,7 +1984,7 @@ function paylasBtnHTML(platform, isim, bg, color, icon, isFirst) {
 
 async function paylasBaslat(platform) {
   const isimEl = document.getElementById('kaydet_isim');
-  const isim = isimEl ? isimEl.value.trim() || 'voiceflow_cikti' : 'voiceflow_cikti';
+  const isim = isimEl ? isimEl.value.trim() || 'lumnex_cikti' : 'lumnex_cikti';
   const plat = window._secilenPlatform || 'original';
 
   // Önce indir
@@ -2037,7 +2037,7 @@ function kaydetModalAc(fmt_) {
   document.getElementById('_kaydet_modal')?.remove();
 
   // Varsayılan dosya adı
-  const base = (aSrt || aDosya || 'voiceflow_cikti').replace(/\.[^.]+$/, '');
+  const base = (aSrt || aDosya || 'lumnex_cikti').replace(/\.[^.]+$/, '');
   const uzanti = {
     'original': '.mp4', 'srt': '.srt', 'vtt': '.vtt', 'ass': '.ass',
     'txt': '.txt', 'txt_clean': '.txt', 'burn_sub': '.mp4'
@@ -2090,7 +2090,7 @@ function kaydetModalAc(fmt_) {
 
 function kaydetBaslat(fmt_) {
   const isimEl = document.getElementById('kaydet_isim');
-  const isim = isimEl ? isimEl.value.trim() || 'voiceflow_cikti' : 'voiceflow_cikti';
+  const isim = isimEl ? isimEl.value.trim() || 'lumnex_cikti' : 'lumnex_cikti';
   document.getElementById('_kaydet_modal')?.remove();
   kaydetKlasorSec(fmt_, isim);
 }
@@ -2112,7 +2112,7 @@ async function kaydetKlasorSec(fmt_, isim) {
       const fileHandle = await window.showSaveFilePicker({
         suggestedName: isim + uzanti,
         types: [{
-          description: 'VoiceFlow Dosyası',
+          description: 'Lumnex Dosyası',
           accept: { [mimeMap[uzanti] || 'application/octet-stream']: [uzanti] }
         }]
       });
@@ -4185,9 +4185,9 @@ function _onVoiceCloned(voiceId, name) {
   buildVoiceList();
   selVoiceById(voiceId);
   try {
-    const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar') || '[]');
+    const klonlar = JSON.parse(localStorage.getItem('lumnex_klonlar') || '[]');
     klonlar.push({ voice_id: voiceId, isim: name, tarih: Date.now() });
-    localStorage.setItem('voiceflow_klonlar', JSON.stringify(klonlar));
+    localStorage.setItem('lumnex_klonlar', JSON.stringify(klonlar));
   } catch(e) {}
 }
 
@@ -4243,7 +4243,7 @@ async function sesKlonla(inp){
 // Kaydedilmiş klonları yükle
 function klonlariYukle(){
   try{
-    const klonlar = JSON.parse(localStorage.getItem('voiceflow_klonlar')||'[]');
+    const klonlar = JSON.parse(localStorage.getItem('lumnex_klonlar')||'[]');
     klonlar.forEach(k=>{
       if(!VOICES.find(v=>v.id===k.voice_id)){
         VOICES.unshift({id:k.voice_id, name:k.isim, desc:'Klonlanmış ses', color:'#22c55e'});
@@ -4467,17 +4467,17 @@ function islemBittiKnowlet(fn) {
   let _origTitle = document.title;
   let _flashCount = 0;
   const _flashIv = setInterval(() => {
-    document.title = _flashCount++ % 2 === 0 ? '✅ Tamamlandı — VoiceFlow' : _origTitle;
+    document.title = _flashCount++ % 2 === 0 ? '✅ Tamamlandı — Lumnex' : _origTitle;
     if (_flashCount > 8) { clearInterval(_flashIv); document.title = _origTitle; }
   }, 600);
 
   // 3. Browser bildirimi (sekme arka planda ise)
   if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
     try {
-      new Notification('VoiceFlow Studio ✅', {
+      new Notification('Lumnex ✅', {
         body: modAdi + ' tamamlandı — dosyanız hazır!',
         icon: '/favicon.ico',
-        tag:  'voiceflow-done',
+        tag:  'lumnex-done',
       });
     } catch(e) {}
   }
@@ -5671,22 +5671,22 @@ async function sesOnizle(sesId, btn, lang) {
 
   // 2. Fallback: TTS ile kısa örnek üret
   const demoMetinler = {
-    tr:'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
-    de:'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
-    fr:'Bonjour, je double votre vidéo avec VoiceFlow Studio.',
-    it:'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
-    en:'Hello, I am dubbing your video with VoiceFlow Studio.',
-    es:'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
-    pt:'Olá, estou dublando o seu vídeo com VoiceFlow Studio.',
+    tr:'Merhaba, Lumnex ile videonuzu seslendiriyorum.',
+    de:'Hallo, ich vertone Ihr Video mit Lumnex.',
+    fr:'Bonjour, je double votre vidéo avec Lumnex.',
+    it:'Ciao, sto doppiando il tuo video con Lumnex.',
+    en:'Hello, I am dubbing your video with Lumnex.',
+    es:'Hola, estoy doblando tu vídeo con Lumnex.',
+    pt:'Olá, estou dublando o seu vídeo com Lumnex.',
     ar:'مرحباً، أنا أُضيف صوتاً لمقطع الفيديو الخاص بك.',
-    hi:'नमस्ते, मैं आपके वीडियो को VoiceFlow Studio से डब कर रहा हूँ।',
-    ja:'こんにちは、VoiceFlow Studioで動画をダビングしています。',
-    ko:'안녕하세요, VoiceFlow Studio로 영상을 더빙하고 있습니다.',
-    zh:'你好，我正在用 VoiceFlow Studio 为您的视频配音。',
-    ru:'Привет, я озвучиваю ваше видео с помощью VoiceFlow Studio.',
-    pl:'Cześć, dubbinguję Twój film za pomocą VoiceFlow Studio.',
-    nl:'Hallo, ik dubb uw video met VoiceFlow Studio.',
-    sv:'Hej, jag dubbar din video med VoiceFlow Studio.',
+    hi:'नमस्ते, मैं आपके वीडियो को Lumnex से डब कर रहा हूँ।',
+    ja:'こんにちは、Lumnexで動画をダビングしています。',
+    ko:'안녕하세요, Lumnex로 영상을 더빙하고 있습니다.',
+    zh:'你好，我正在用 Lumnex 为您的视频配音。',
+    ru:'Привет, я озвучиваю ваше видео с помощью Lumnex.',
+    pl:'Cześć, dubbinguję Twój film za pomocą Lumnex.',
+    nl:'Hallo, ik dubb uw video met Lumnex.',
+    sv:'Hej, jag dubbar din video med Lumnex.',
   };
   const metin = demoMetinler[lang||'en'] || demoMetinler.en;
 

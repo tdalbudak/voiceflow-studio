@@ -27,7 +27,7 @@ GEMINI_API_KEY      = os.getenv("GEMINI_API_KEY", "")
 STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "")
-RESEND_FROM         = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
+RESEND_FROM         = os.getenv("RESEND_FROM", "Lumnex <onboarding@resend.dev>")
 SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://biqsljanevkxrgpdxard.supabase.co")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
@@ -46,7 +46,7 @@ log = logging.getLogger("voiceflow")
 MAX_DOSYA_MB   = int(os.getenv("MAX_DOSYA_MB", "500"))    # 500MB varsayılan
 MAX_SURE_DAKIKA = int(os.getenv("MAX_SURE_DAKIKA", "30")) # 30 dakika
 
-app = FastAPI(title="VoiceFlow Studio API", version="1.0.0")
+app = FastAPI(title="Lumnex API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +84,7 @@ async def root():
     if os.path.exists(landing):
         with open(landing, encoding="utf-8") as f:
             return HTMLResponse(f.read(), headers=_NO_CACHE_HEADERS)
-    return HTMLResponse("<h1>VoiceFlow Studio API</h1><p>index.html bulunamadı.</p>")
+    return HTMLResponse("<h1>Lumnex API</h1><p>index.html bulunamadı.</p>")
 
 # ── Sağlık kontrolü ──
 @app.get("/health")
@@ -151,7 +151,7 @@ async def email_test(
 async def baslangic_kontrolu():
     """Uygulama başlarken key kontrolü yap, eksikleri logla."""
     log.info("=" * 50)
-    log.info("VoiceFlow Studio başlatılıyor...")
+    log.info("Lumnex başlatılıyor...")
     if not DEEPGRAM_API_KEY:   log.warning("⚠ DEEPGRAM_API_KEY eksik — deşifre çalışmaz")
     if not ELEVENLABS_API_KEY: log.warning("⚠ ELEVENLABS_API_KEY eksik — TTS çalışmaz")
     if not DEEPL_API_KEY:      log.warning("⚠ DEEPL_API_KEY eksik — çeviri çalışmaz")
@@ -326,14 +326,14 @@ async def srt_paralel_cevir(srt_icerik: str, hedef_dil: str) -> str:
 
 EMAIL_SABLONLAR = {
 "hosgeldin": {
-    "konu": "VoiceFlow Studio'ya Hoş Geldin! 🎬",
+    "konu": "Lumnex'ya Hoş Geldin! 🎬",
     "html": """<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Arial,sans-serif;">
 <div style="max-width:580px;margin:0 auto;padding:40px 24px;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;">
     <div style="width:10px;height:10px;border-radius:50%;background:#6366f1;"></div>
-    <span style="font-size:18px;font-weight:800;color:#fafafa;">VoiceFlow Studio</span>
+    <span style="font-size:18px;font-weight:800;color:#fafafa;">Lumnex</span>
   </div>
   <div style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.1));border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:32px;margin-bottom:24px;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">🎬</div>
@@ -346,10 +346,10 @@ EMAIL_SABLONLAR = {
     <div style="font-size:13px;color:#71717a;">Kayıt bonusu olarak hesabına 10 dakika eklendi. Hemen kullanmaya başla.</div>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://voiceflow-studio-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Editörü Aç →</a>
+    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Editörü Aç →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 VoiceFlow Studio</p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex</p>
   </div>
 </div>
 </body></html>"""
@@ -362,7 +362,7 @@ EMAIL_SABLONLAR = {
 <div style="max-width:580px;margin:0 auto;padding:40px 24px;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;">
     <div style="width:10px;height:10px;border-radius:50%;background:#6366f1;"></div>
-    <span style="font-size:18px;font-weight:800;color:#fafafa;">VoiceFlow Studio</span>
+    <span style="font-size:18px;font-weight:800;color:#fafafa;">Lumnex</span>
   </div>
   <h1 style="color:#fafafa;font-size:22px;font-weight:800;margin:0 0 14px;">Hey {isim}, henüz ilk videonu yapmadın 👀</h1>
   <p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 24px;">Rakiplerin bugün TikTok'ta viral oluyor. Sen de 5 dakikada Türkçe videonun İngilizce versiyonunu çıkarabilirsin.</p>
@@ -379,10 +379,10 @@ EMAIL_SABLONLAR = {
     </div>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://voiceflow-studio-production-395d.up.railway.app/app" style="display:inline-block;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Şimdi Dene →</a>
+    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Şimdi Dene →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 VoiceFlow Studio · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
   </div>
 </div>
 </body></html>"""
@@ -395,7 +395,7 @@ EMAIL_SABLONLAR = {
 <div style="max-width:580px;margin:0 auto;padding:40px 24px;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;">
     <div style="width:10px;height:10px;border-radius:50%;background:#6366f1;"></div>
-    <span style="font-size:18px;font-weight:800;color:#fafafa;">VoiceFlow Studio</span>
+    <span style="font-size:18px;font-weight:800;color:#fafafa;">Lumnex</span>
   </div>
   <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:24px;margin-bottom:24px;text-align:center;">
     <div style="font-size:36px;margin-bottom:8px;">⚡</div>
@@ -412,13 +412,13 @@ EMAIL_SABLONLAR = {
     </div>
   </div>
   <div style="text-align:center;margin-bottom:16px;">
-    <a href="https://voiceflow-studio-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Son Kez Dene →</a>
+    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Son Kez Dene →</a>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://voiceflow-studio-production-395d.up.railway.app/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Ya da Creator planına geç ($9/ay) →</a>
+    <a href="https://lumnex-production-395d.up.railway.app/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Ya da Creator planına geç ($9/ay) →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 VoiceFlow Studio · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
   </div>
 </div>
 </body></html>"""
@@ -2442,7 +2442,7 @@ async def ses_klonla(
                 r = await client.post(
                     "https://api.elevenlabs.io/v1/voices/add",
                     headers={"xi-api-key": ELEVENLABS_API_KEY},
-                    data={"name": isim, "description": "VoiceFlow Studio klonu"},
+                    data={"name": isim, "description": "Lumnex klonu"},
                     files={"files": (ses_dosyasi.filename, f, "audio/mpeg")},
                 )
 
@@ -2526,7 +2526,7 @@ async def video_ses_klonla(
                 r = await client.post(
                     "https://api.elevenlabs.io/v1/voices/add",
                     headers={"xi-api-key": ELEVENLABS_API_KEY},
-                    data={"name": isim, "description": "VoiceFlow Studio — Video sesi klonu"},
+                    data={"name": isim, "description": "Lumnex — Video sesi klonu"},
                     files={"files": (os.path.basename(tmp_ses), f, "audio/mpeg")},
                 )
 
@@ -2720,7 +2720,7 @@ async def kendi_sesiyle_dublaj(
                 klon_r = await client.post(
                     "https://api.elevenlabs.io/v1/voices/add",
                     headers={"xi-api-key": ELEVENLABS_API_KEY},
-                    data={"name": f"KendiSes_{b_id}", "description": "VoiceFlow otomatik klon"},
+                    data={"name": f"KendiSes_{b_id}", "description": "Lumnex otomatik klon"},
                     files={"files": ("ses.mp3", f, "audio/mpeg")},
                 )
 
@@ -3338,7 +3338,7 @@ async def docs_page():
 @app.post("/api/ses_onizle/")
 async def ses_onizle(
     ses_id: str = Form(...),
-    metin: str  = Form("Merhaba, ben VoiceFlow Studio. Bu benim sesim."),
+    metin: str  = Form("Merhaba, ben Lumnex. Bu benim sesim."),
 ):
     """
     ElevenLabs preview endpoint ile sesin küçük bir örneğini üretir.
@@ -3851,7 +3851,7 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
         "ja": "Japanese", "ko": "Korean", "zh": "Chinese", "ar": "Arabic",
     }.get(dil, "English")
     system_prompt = (
-        "You are the VoiceFlow Studio AI assistant. Help users with video dubbing, subtitles, "
+        "You are the Lumnex AI assistant. Help users with video dubbing, subtitles, "
         "transcription, text-to-speech and content creation. Give step-by-step instructions for workflows.\n\n"
         "FEATURES:\n"
         "- Transcript (Deşifre mode): Upload video → auto-transcribe with speaker detection\n"
@@ -4047,7 +4047,7 @@ async def stripe_checkout(
     _stripe.api_key = STRIPE_SECRET_KEY
 
     # Default URLs
-    base = success_url or "https://voiceflow.studio"
+    base = success_url or "https://lumnex.ai"
     ok_url  = f"{base}/app?checkout=success&plan={plan}"
     ko_url  = f"{base}/app?checkout=cancel"
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceFlow Studio API Docs</title>
+<title>Lumnex API Docs</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
@@ -95,7 +95,7 @@ p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:12px;}
 <!-- SIDEBAR -->
 <div class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo"><div class="logo-dot"></div> VoiceFlow API</div>
+    <div class="logo"><div class="logo-dot"></div> Lumnex API</div>
   </div>
 
   <div class="sidebar-section">Başlangıç</div>
@@ -127,11 +127,11 @@ p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:12px;}
 
   <div id="intro" class="doc-section">
     <div class="page-title">API Dokümantasyonu</div>
-    <div class="page-sub">VoiceFlow Studio REST API — AI dublaj, altyazı ve ses işleme için tam entegrasyon</div>
+    <div class="page-sub">Lumnex REST API — AI dublaj, altyazı ve ses işleme için tam entegrasyon</div>
 
     <div class="base-url">
       <span class="base-url-label">Base URL</span>
-      <span id="base_url">https://voiceflow-studio-production-395d.up.railway.app</span>
+      <span id="base_url">https://lumnex-production-395d.up.railway.app</span>
     </div>
 
     <p>Tüm endpoint'ler JSON veya multipart/form-data kabul eder. Yanıtlar her zaman JSON formatındadır. API, async işlem modeliyle çalışır — işlem başlatıldıktan sonra durum polling ile takip edilir.</p>
@@ -145,8 +145,8 @@ p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:12px;}
 
     <h3>İstek Formatı</h3>
     <div class="code-wrap">
-      <button class="copy-btn" onclick="kopyala(this,'curl -X POST https://voiceflow-studio-production-395d.up.railway.app/api/islem/ \\\n  -F \"modul=altyazi\" \\\n  -F \"kaynak_dil=tr\" \\\n  -F \"dosya=@video.mp4\"')">Kopyala</button>
-      <pre class="code-block"><span class="kw">curl</span> -X POST https://voiceflow-studio-production-395d.up.railway.app/api/islem/ \
+      <button class="copy-btn" onclick="kopyala(this,'curl -X POST https://lumnex-production-395d.up.railway.app/api/islem/ \\\n  -F \"modul=altyazi\" \\\n  -F \"kaynak_dil=tr\" \\\n  -F \"dosya=@video.mp4\"')">Kopyala</button>
+      <pre class="code-block"><span class="kw">curl</span> -X POST https://lumnex-production-395d.up.railway.app/api/islem/ \
   -F <span class="str">"modul=altyazi"</span> \
   -F <span class="str">"kaynak_dil=tr"</span> \
   -F <span class="str">"dosya=@video.mp4"</span></pre>
@@ -198,12 +198,12 @@ p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:12px;}
         </table>
         <div class="response-label">Örnek İstek (Python)</div>
         <div class="code-wrap">
-          <button class="copy-btn" onclick="kopyala(this,`import requests\n\nwith open('video.mp4','rb') as f:\n    r = requests.post(\n        'https://voiceflow-studio-production-395d.up.railway.app/api/islem/',\n        data={\n            'modul': 'altyazi',\n            'kaynak_dil': 'tr',\n            'hedef_dil': 'en',\n        },\n        files={'dosya': f}\n    )\n\nprint(r.json())  # {'beklened_dosya_adi': 'sonuc_abc123.mp4'}`)">Kopyala</button>
+          <button class="copy-btn" onclick="kopyala(this,`import requests\n\nwith open('video.mp4','rb') as f:\n    r = requests.post(\n        'https://lumnex-production-395d.up.railway.app/api/islem/',\n        data={\n            'modul': 'altyazi',\n            'kaynak_dil': 'tr',\n            'hedef_dil': 'en',\n        },\n        files={'dosya': f}\n    )\n\nprint(r.json())  # {'beklened_dosya_adi': 'sonuc_abc123.mp4'}`)">Kopyala</button>
           <pre class="code-block"><span class="kw">import</span> requests
 
 <span class="kw">with</span> open(<span class="str">'video.mp4'</span>, <span class="str">'rb'</span>) <span class="kw">as</span> f:
     r = requests.post(
-        <span class="str">'https://voiceflow-studio-production-395d.up.railway.app/api/islem/'</span>,
+        <span class="str">'https://lumnex-production-395d.up.railway.app/api/islem/'</span>,
         data={
             <span class="str">'modul'</span>: <span class="str">'altyazi'</span>,
             <span class="str">'kaynak_dil'</span>: <span class="str">'tr'</span>,
@@ -238,7 +238,7 @@ print(r.json())  <span class="cm"># {'beklenen_dosya_adi': 'sonuc_abc123.mp4'}</
           <pre class="code-block"><span class="kw">import</span> time, requests
 
 dosya_adi = <span class="str">"sonuc_abc12345.mp4"</span>
-base = <span class="str">"https://voiceflow-studio-production-395d.up.railway.app"</span>
+base = <span class="str">"https://lumnex-production-395d.up.railway.app"</span>
 
 <span class="kw">while True</span>:
     r = requests.get(f<span class="str">"{base}/durum/{dosya_adi}"</span>)
