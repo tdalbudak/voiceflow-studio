@@ -72,12 +72,18 @@ DEEPL_DILLER = {
 }
 
 # ── Index.html serve et (production'da ayrı sunucu yoksa) ──
+_NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     landing = "landing.html" if os.path.exists("landing.html") else "index.html"
     if os.path.exists(landing):
         with open(landing, encoding="utf-8") as f:
-            return HTMLResponse(f.read())
+            return HTMLResponse(f.read(), headers=_NO_CACHE_HEADERS)
     return HTMLResponse("<h1>VoiceFlow Studio API</h1><p>index.html bulunamadı.</p>")
 
 # ── Sağlık kontrolü ──
@@ -3738,7 +3744,7 @@ async def creator_page():
 async def app_page():
     if os.path.exists("index.html"):
         with open("index.html", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
+            return HTMLResponse(f.read(), headers=_NO_CACHE_HEADERS)
     return HTMLResponse("<h1>Uygulama bulunamadi.</h1>")
 
 
