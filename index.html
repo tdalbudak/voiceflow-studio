@@ -2686,20 +2686,20 @@ function _ttsHL(){
 // paid:true = ElevenLabs Free plan'da çalışmıyor (library voice, 402 döner)
 const VOICES = [
   // ── Türkçe — paid plan gerekli ──
-  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep',     paid:true },
-  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm',     paid:true },
+  { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep' },
+  { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm' },
   // ── Almanca — paid plan gerekli ──
-  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Gentle',          color:'#dc2626', lang:'de', gender:'male',   tone:'warm',     paid:true },
-  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Confident, Trustworthy',color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral',  paid:true },
-  { id:'kAzI34nYjizE0zON6rXv', name:'Sami',     flag:'🇩🇪', desc:'Energetic, Expressive', color:'#ef4444', lang:'de', gender:'male',   tone:'energetic',paid:true },
-  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea',      flag:'🇩🇪', desc:'UGC Creator',           color:'#f87171', lang:'de', gender:'female', tone:'energetic',paid:true },
+  { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Gentle',          color:'#dc2626', lang:'de', gender:'male',   tone:'warm' },
+  { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Confident, Trustworthy',color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral' },
+  { id:'kAzI34nYjizE0zON6rXv', name:'Sami',     flag:'🇩🇪', desc:'Energetic, Expressive', color:'#ef4444', lang:'de', gender:'male',   tone:'energetic' },
+  { id:'KSyQzmsYhFbuOhqj1Xxv', name:'Lea',      flag:'🇩🇪', desc:'UGC Creator',           color:'#f87171', lang:'de', gender:'female', tone:'energetic' },
   // ── Fransızca — paid plan gerekli ──
-  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversational',        color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral',  paid:true },
-  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Lovely, Emotional',     color:'#60a5fa', lang:'fr', gender:'female', tone:'warm',     paid:true },
+  { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversational',        color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral' },
+  { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Lovely, Emotional',     color:'#60a5fa', lang:'fr', gender:'female', tone:'warm' },
   // ── İtalyanca — paid plan gerekli ──
-  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana',  flag:'🇮🇹', desc:'Smart, Credible',       color:'#22c55e', lang:'it', gender:'female', tone:'neutral',  paid:true },
-  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea',   flag:'🇮🇹', desc:'Mature, Empathetic',    color:'#4ade80', lang:'it', gender:'male',   tone:'warm',     paid:true },
-  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio',  flag:'🇮🇹', desc:'Storyteller',           color:'#86efac', lang:'it', gender:'male',   tone:'deep',     paid:true },
+  { id:'RXoaSpLaWTEckJgPUBG3', name:'Tiziana',  flag:'🇮🇹', desc:'Smart, Credible',       color:'#22c55e', lang:'it', gender:'female', tone:'neutral' },
+  { id:'7WZPc0ZjFzsx74E5qoQV', name:'Andrea',   flag:'🇮🇹', desc:'Mature, Empathetic',    color:'#4ade80', lang:'it', gender:'male',   tone:'warm' },
+  { id:'f8NAZK1ciwrVujah7clz', name:'Valerio',  flag:'🇮🇹', desc:'Storyteller',           color:'#86efac', lang:'it', gender:'male',   tone:'deep' },
   // ── İngilizce Erkek — free plan ──
   { id:'nPczCjzI2devNBz1zQrb', name:'Brian',    flag:'🇺🇸', desc:'Deep, Comforting',      color:'#6366f1', lang:'en', gender:'male',   tone:'deep'         },
   { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',     flag:'🇺🇸', desc:'Dominant, Firm',        color:'#a78bfa', lang:'en', gender:'male',   tone:'deep'         },
@@ -2708,7 +2708,7 @@ const VOICES = [
   { id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',     flag:'🇺🇸', desc:'Social Media Creator',  color:'#84cc16', lang:'en', gender:'male',   tone:'energetic'    },
   { id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',   flag:'🇬🇧', desc:'Steady Broadcaster',    color:'#0ea5e9', lang:'en', gender:'male',   tone:'neutral'      },
   { id:'SAz9YHcvj6GT2YYXdXww', name:'River',    flag:'🇺🇸', desc:'Relaxed, Informative',  color:'#14b8a6', lang:'en', gender:'male',   tone:'neutral'      },
-  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher',    flag:'🇬🇧', desc:'Charismatic, Playful',  color:'#0f766e', lang:'en', gender:'male',   tone:'energetic',paid:true },
+  { id:'UaYTS0wayjmO9KD1LR4R', name:'Asher',    flag:'🇬🇧', desc:'Charismatic, Playful',  color:'#0f766e', lang:'en', gender:'male',   tone:'energetic' },
   { id:'CwhRBWXzGAHq8TQ4Fs17', name:'Roger',    flag:'🇺🇸', desc:'Laid-Back, Resonant',   color:'#64748b', lang:'en', gender:'male',   tone:'deep'         },
   { id:'bIHbv24MWmeRgasZH58o', name:'Will',     flag:'🇺🇸', desc:'Relaxed Optimist',      color:'#475569', lang:'en', gender:'male',   tone:'warm'         },
   { id:'cjVigY5qzO86Huf0OWal', name:'Eric',     flag:'🇺🇸', desc:'Smooth, Trustworthy',   color:'#1d4ed8', lang:'en', gender:'male',   tone:'neutral'      },
@@ -2716,11 +2716,11 @@ const VOICES = [
   { id:'IKne3meq5aSn9XLyUdCD', name:'Charlie',  flag:'🇦🇺', desc:'Deep, Energetic',       color:'#b45309', lang:'en', gender:'male',   tone:'energetic'    },
   { id:'N2lVS1w4EtoT3dr4eOWO', name:'Callum',   flag:'🇬🇧', desc:'Husky Trickster',       color:'#92400e', lang:'en', gender:'male',   tone:'deep'         },
   { id:'pqHfZKP75CvOlQylNhV4', name:'Bill',     flag:'🇺🇸', desc:'Wise, Mature',          color:'#374151', lang:'en', gender:'male',   tone:'deep'         },
-  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',     flag:'🇺🇸', desc:'Confident, Striking',   color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral', paid:true },
-  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',flag:'🇺🇸',desc:'Corporate Narrator',    color:'#1e40af', lang:'en', gender:'male',   tone:'neutral', paid:true },
-  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',flag:'🇺🇸',desc:'Real & Casual',         color:'#78350f', lang:'en', gender:'male',   tone:'neutral', paid:true },
-  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro', flag:'🇺🇸', desc:'Sharp, Professional',   color:'#166534', lang:'en', gender:'male',   tone:'energetic',paid:true },
-  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro', flag:'🇺🇸', desc:'Instructor',            color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral',  paid:true },
+  { id:'cCwaxHZZF7rVaQK2aOys', name:'Mark',     flag:'🇺🇸', desc:'Confident, Striking',   color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral' },
+  { id:'jdKpAe6rxAe99tFGbsAc', name:'Daniel Pro',flag:'🇺🇸',desc:'Corporate Narrator',    color:'#1e40af', lang:'en', gender:'male',   tone:'neutral' },
+  { id:'vmVmHDKBkkCgbLVIOJRb', name:'Charlie C.',flag:'🇺🇸',desc:'Real & Casual',         color:'#78350f', lang:'en', gender:'male',   tone:'neutral' },
+  { id:'EmZGlxI7QPvCEMOkFhB9', name:'Liam Pro', flag:'🇺🇸', desc:'Sharp, Professional',   color:'#166534', lang:'en', gender:'male',   tone:'energetic' },
+  { id:'TGAegA0zNRi8I6nUdq3i', name:'Adam Pro', flag:'🇺🇸', desc:'Instructor',            color:'#1e3a5f', lang:'en', gender:'male',   tone:'neutral' },
   // ── İngilizce Kadın — free plan ──
   { id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',    flag:'🇺🇸', desc:'Mature, Confident',     color:'#8b5cf6', lang:'en', gender:'female', tone:'neutral'      },
   { id:'cgSgspJ2msm6clMCkdW9', name:'Jessica',  flag:'🇺🇸', desc:'Playful, Bright',       color:'#ec4899', lang:'en', gender:'female', tone:'energetic'    },
@@ -5401,7 +5401,7 @@ function buildVoiceList() {
       + '  <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent 60%);pointer-events:none;"></div>'
       + '  <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);"><i class="fa-solid ' + icon + '" style="font-size:32px;color:rgba(255,255,255,.38);"></i></div>'
       + '  <div style="position:absolute;top:3px;left:5px;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
-      + (v.paid ? '<div class="vp-pro-badge" style="font-size:7px;">PRO</div>' : '<div class="vp-free-badge" style="font-size:7px;">FREE</div>')
+      + '<div class="vp-free-badge" style="font-size:7px;">FREE</div>'
       + (isSel ? '<div style="position:absolute;inset:-1px;border-radius:9px;border:2px solid #3b82f6;pointer-events:none;"></div>' : '')
       + '</div>'
       // name + flag
@@ -5545,7 +5545,7 @@ const _VP_GRAD = {
   warm:      ['#92400e','#431407'],
   energetic: ['#14532d','#052e16'],
 };
-const _VP_LANG_LABEL = {tr:'🇹🇷 Türkçe', de:'🇩🇪 Deutsch', fr:'🇫🇷 Français', it:'🇮🇹 Italiano', en:'🌐 English'};
+const _VP_LANG_LABEL = {tr:'🇹🇷 Türkçe', en:'🌐 English', de:'🇩🇪 Deutsch', fr:'🇫🇷 Français', it:'🇮🇹 Italiano', es:'🇪🇸 Español', pt:'🇧🇷 Português', ru:'🇷🇺 Русский', ar:'🇸🇦 العربية', hi:'🇮🇳 हिन्दी', ja:'🇯🇵 日本語', ko:'🇰🇷 한국어', zh:'🇨🇳 中文', nl:'🇳🇱 Nederlands', pl:'🇵🇱 Polski', sv:'🇸🇪 Svenska'};
 
 function _vpAvatarHtml(v) {
   const grad = _VP_GRAD[v.tone || 'neutral'] || _VP_GRAD.neutral;
@@ -5564,9 +5564,7 @@ function _vpAvatarHtml(v) {
     // initial top-left
     + '  <div style="position:absolute;top:5px;left:7px;font-size:12px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
     // pro/free badge top-right
-    + (v.paid
-      ? '  <div class="vp-pro-badge">PRO</div>'
-      : '  <div class="vp-free-badge">FREE</div>')
+    + '  <div class="vp-free-badge">FREE</div>'
     // selection ring
     + (isSel ? '  <div style="position:absolute;inset:-1px;border-radius:11px;border:2px solid #3b82f6;' + pulseBorder + 'pointer-events:none;"></div>' : '')
     + '</div>';
@@ -5578,7 +5576,7 @@ function _vpRender() {
   const q    = (document.getElementById('_vp_search')?.value || '').toLowerCase();
   const dial = document.getElementById('_vp_dial')?.value || '';
 
-  const groups = ['tr','de','fr','it','en'];
+  const groups = ['tr','en','de','fr','it','es','pt','ru','ar','hi','ja','ko','zh','nl','pl','sv'];
 
   let html = '';
   groups.forEach(function(lang) {
