@@ -700,9 +700,9 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="btn-lp" onclick="voicePickerAc('left')">
         <i class="fa-solid fa-headset"></i> Change Voice Actor
       </button>
-      <!-- Video sesini klonla butonu -->
-      <button class="btn-lp" onclick="videoSesiKlonla()" style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(99,102,241,.15));border-color:rgba(168,85,247,.4);color:#c084fc;margin-top:6px;" title="Videodaki sesi çıkar ve anında klonla — kendi orijinal sesinle dub yap">
-        <i class="fa-solid fa-waveform-lines" style="color:#a855f7;"></i> Videodaki Sesi Kullan
+      <!-- Video sesini kullan butonu -->
+      <button class="btn-lp" onclick="videoSesiKlonlaDublaj()" style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(99,102,241,.15));border-color:rgba(168,85,247,.4);color:#c084fc;margin-top:6px;" title="Videodaki sesi klonla ve seçili dile dublaj yap">
+        <i class="fa-solid fa-waveform-lines" style="color:#a855f7;"></i> Videodaki Sesiyle Dublaj
       </button>
     </div>
 
@@ -908,12 +908,12 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
   <div class="rp" id="rp">
     <div class="vbox" id="vbox">
       <!-- Center Stage: video yüklenmemişse şık boş player -->
-      <div class="vbox-empty-state" id="vbox_empty" onclick="document.getElementById('finput').click()">
+      <div class="vbox-empty-state" id="vbox_empty">
         <div class="vbox-empty-icon">🎬</div>
-        <div class="vbox-upload-btn">
+        <label for="finput" class="vbox-upload-btn" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
           <i class="fa-solid fa-plus"></i> Upload Media / Drag & Drop
-        </div>
-        <div class="cloud-toolbar" onclick="event.stopPropagation()">
+        </label>
+        <div class="cloud-toolbar">
           <button class="cloud-mini" onclick="cloudUpload('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive</button>
           <button class="cloud-mini" onclick="cloudUpload('dropbox')"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
           <button class="cloud-mini" onclick="cloudUpload('url')"><i class="fa-brands fa-youtube"></i> YouTube</button>
@@ -1358,12 +1358,24 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <span style="font-size:10px;font-weight:600;background:rgba(52,211,153,.15);color:#34d399;padding:2px 7px;border-radius:20px;margin-left:auto;">Creator+ plan</span>
         </div>
 
+        <!-- Talimat kutusu -->
+        <div style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.2);border-radius:var(--r);padding:10px 12px;margin-bottom:10px;font-size:11px;line-height:1.7;color:var(--muted2);">
+          <div style="font-weight:700;color:#34d399;margin-bottom:5px;">📋 En iyi sonuç için:</div>
+          <div>• <b>En az 30 saniye</b> konuşun (60s+ daha iyi)</div>
+          <div>• Sakin, net ve <b>doğal bir tonla</b> okuyun</div>
+          <div>• Arka plan gürültüsü olmasın, kulaklık kullanmayın</div>
+          <div>• Şunu okuyabilirsiniz:</div>
+          <div style="background:rgba(0,0,0,.25);border-radius:6px;padding:8px 10px;margin-top:6px;font-style:italic;color:#a7f3d0;font-size:10.5px;line-height:1.8;">
+            "Merhaba, bu benim sesimin klonu için bir kayıt. Bugün size VoiceFlow Studio hakkında konuşmak istiyorum. Bu platform, videolarınızı kolayca birçok dile çevirmenizi sağlıyor. Sesinizi klonlayarak kendi dilinizde olmayan içerikler üretebilirsiniz. Umarım bu ses klonu kaliteli çıkar ve ihtiyacınızı karşılar."
+          </div>
+        </div>
+
         <!-- Record button -->
         <button id="clone_rec_btn" onclick="voiceRecordToggle()" style="width:100%;background:linear-gradient(135deg,#065f46,#047857);border:1.5px solid #34d399;color:#fff;padding:11px 14px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;margin-bottom:8px;transition:all .18s;">
           <i class="fa-solid fa-microphone" id="clone_rec_icon" style="font-size:16px;"></i>
           <div style="flex:1;text-align:left;">
-            <div id="clone_rec_label">🎙️ Record Your Voice</div>
-            <div style="font-size:10px;color:#a7f3d0;margin-top:2px;" id="clone_rec_sub">Click to start — min 30 seconds recommended</div>
+            <div id="clone_rec_label">🎙️ Sesi Kaydet</div>
+            <div style="font-size:10px;color:#a7f3d0;margin-top:2px;" id="clone_rec_sub">Başlatmak için tıklayın — minimum 30 saniye</div>
           </div>
           <span id="clone_rec_timer" style="font-size:12px;font-family:monospace;display:none;color:#4ade80;"></span>
         </button>
@@ -1372,12 +1384,16 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <!-- bars injected by JS -->
         </div>
 
-        <!-- Upload button -->
-        <div onclick="document.getElementById('clone_inp').click()" style="width:100%;background:var(--s4);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;" onmouseover="this.style.borderColor='#34d399';this.style.color='#fff'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">
-          <i class="fa-solid fa-upload"></i>
-          <span id="clone_card_sub">Upload audio file — MP3 / WAV / M4A</span>
-          <div id="kota_badge" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:100px;display:none;"></div>
-        </div>
+        <!-- Ses dosyası yükle — label kullan (mobil uyumlu) -->
+        <label for="clone_inp" style="width:100%;background:var(--s4);border:1.5px solid var(--border2);color:var(--muted2);padding:10px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;box-sizing:border-box;" onmouseover="this.style.borderColor='#34d399';this.style.color='#fff'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">
+          <i class="fa-solid fa-file-audio" style="font-size:14px;color:#34d399;"></i>
+          <div style="flex:1;">
+            <div id="clone_card_sub">Ses Dosyası Yükle</div>
+            <div style="font-size:10px;margin-top:1px;opacity:.7;">MP3 · WAV · M4A · max 25MB</div>
+          </div>
+          <div id="kota_badge" style="font-size:10px;font-weight:700;background:rgba(0,0,0,.3);padding:3px 8px;border-radius:100px;display:none;"></div>
+          <i class="fa-solid fa-arrow-up-from-bracket" style="font-size:11px;opacity:.6;"></i>
+        </label>
         <input type="file" id="clone_inp" hidden accept="audio/*,video/mp4" onchange="sesKlonla(this)">
       </div>
 
@@ -6721,28 +6737,80 @@ function obKapat() {
 /* ═══ VİDEODAKİ SESİ KULLAN ═══ */
 async function videoSesiKlonla() {
   if (!pFile) { toast('Önce video yükleyin', 'twarn'); return; }
-
-  // Confirm
   if (!confirm('Videodaki ses çıkarılacak ve anında klonlanacak.\nBu işlem 30-60 saniye sürer — devam?')) return;
-
   toast('<i class="fa-solid fa-spinner fa-spin"></i> Videodaki ses analiz ediliyor...', 'tok', 90000);
-
   try {
-    // 1. Backend'e video dosyasını gönder, ses çıkarıp klonlasın
     const fd = new FormData();
     fd.append('video_dosyasi', pFile);
     fd.append('isim', (pFile.name || 'Video').replace(/\.[^.]+$/, '') + ' (klonlandı)');
-
     const r = await fetch(B + '/api/video_ses_klonla/', { method: 'POST', body: fd });
     const d = await r.json();
-
     if (d.hata) { toast('Hata: ' + d.hata, 'terr'); return; }
+    _onVoiceCloned(d.voice_id, d.isim || 'Video Sesi');
+    toast('✓ Video sesi klonlandı — seçildi!', 'tok', 4000);
+  } catch(e) { toast('Hata: ' + e.message, 'terr'); }
+}
+
+async function videoSesiKlonlaDublaj() {
+  if (!pFile) { toast('Önce video yükleyin', 'twarn'); return; }
+
+  // Hedef dil seç
+  const DIL_LISTESI = [
+    ['EN','🇺🇸 İngilizce'],['TR','🇹🇷 Türkçe'],['DE','🇩🇪 Almanca'],
+    ['FR','🇫🇷 Fransızca'],['ES','🇪🇸 İspanyolca'],['IT','🇮🇹 İtalyanca'],
+    ['PT','🇧🇷 Portekizce'],['RU','🇷🇺 Rusça'],['JA','🇯🇵 Japonca'],
+    ['KO','🇰🇷 Korece'],['AR','🇸🇦 Arapça'],['ZH','🇨🇳 Çince'],
+  ];
+
+  document.getElementById('_vsk_dil_overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = '_vsk_dil_overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:380px;max-width:95vw;">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:6px;"><i class="fa-solid fa-waveform-lines" style="color:#a855f7;margin-right:7px;"></i>Videodaki Sesiyle Dublaj</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:16px;line-height:1.6;">'
+    + 'Videodaki ses otomatik klonlanacak ve seçtiğin dile dublaj yapılacak.<br>'
+    + '<span style="color:#a855f7;">Ayrıca ses aktörü seçmene gerek yok.</span>'
+    + '</div>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:8px;">Hedef Dil Seçin:</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;">'
+    + DIL_LISTESI.map(([kod, ad]) =>
+        '<button onclick="videoSesiKlonlaBaslat(\'' + kod + '\')" '
+        + 'style="padding:9px 8px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:.15s;" '
+        + 'onmouseover="this.style.background=\'rgba(168,85,247,.15)\';this.style.borderColor=\'rgba(168,85,247,.5)\'" '
+        + 'onmouseout="this.style.background=\'var(--s3)\';this.style.borderColor=\'var(--border2)\'">'
+        + ad + '</button>'
+      ).join('')
+    + '</div>'
+    + '<button onclick="document.getElementById(\'_vsk_dil_overlay\').remove()" style="width:100%;padding:8px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--muted2);font-size:12px;cursor:pointer;font-family:inherit;">İptal</button>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+}
+
+async function videoSesiKlonlaBaslat(hedefDilKod) {
+  document.getElementById('_vsk_dil_overlay')?.remove();
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Video sesi analiz ediliyor (30-60s)...', 'tok', 90000);
+
+  try {
+    // 1. Videodan sesi klonla
+    const fd = new FormData();
+    fd.append('video_dosyasi', pFile);
+    fd.append('isim', (pFile.name || 'Video').replace(/\.[^.]+$/, '') + ' Voice');
+    const r = await fetch(B + '/api/video_ses_klonla/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.hata) { toast('Ses klonlama hatası: ' + d.hata, 'terr', 6000); return; }
 
     // 2. Klonlanan sesi seç
-    const voiceId = d.voice_id;
-    const voiceIsim = d.isim || 'Video Sesi';
-    _onVoiceCloned(voiceId, voiceIsim);
-    toast('✓ Video sesi klonlandı → "' + voiceIsim + '" seçildi. Artık kendi sesinle dublaj yapabilirsin!', 'tok', 6000);
+    _onVoiceCloned(d.voice_id, d.isim || 'Video Voice');
+    toast('✓ Ses klonlandı → ' + hedefDilKod + ' dublaj başlıyor...', 'tok', 4000);
+
+    // 3. Modu seslendirme'ye geç, hedef dili ayarla ve başlat
+    if (mod !== 'seslendirme') sw('seslendirme');
+    const tgtEl = document.getElementById('tgt_lang') || document.getElementById('m_tgt');
+    if (tgtEl) { tgtEl.value = hedefDilKod; tgtEl.dispatchEvent(new Event('change')); }
+    setTimeout(() => startProcess(), 800);
 
   } catch(e) { toast('Hata: ' + e.message, 'terr'); }
 }
