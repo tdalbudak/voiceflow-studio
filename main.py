@@ -3056,6 +3056,74 @@ async def altyazi_gom(
         return JSONResponse({"hata": str(e)}, status_code=500)
 
 
+@app.post("/api/kelime_cevir/")
+async def kelime_cevir(
+    kelime: str = Form(...),
+    baglam: str = Form(""),
+    kaynak_dil: str = Form("TR"),
+    hedef_dil: str  = Form("EN"),
+):
+    """Bir kelimeyi DeepL ile çevirir + Gemini ile eş anlamlılar üretir."""
+    results = {}
+    # 1. DeepL çevirisi
+    if DEEPL_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                r = await c.post(
+                    _deepl_base_url() + "/v2/translate",
+                    headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}", "Content-Type": "application/json"},
+                    json={"text": [kelime], "source_lang": kaynak_dil.upper()[:2], "target_lang": hedef_dil.upper()[:2]},
+                )
+            if r.status_code == 200:
+                results["deepl"] = r.json()["translations"][0]["text"]
+        except Exception as e:
+            log.warning(f"[kelime_cevir deepl] {e}")
+    # 2. Gemini ile eş anlamlı + alternatifler
+    if GEMINI_API_KEY:
+        try:
+            prompt = (
+                f"Give 4 alternative words/synonyms for the word '{kelime}' in the context: '{baglam[:100]}'. "
+                f"Target language: {hedef_dil}. "
+                "Return ONLY a JSON array like [\"word1\",\"word2\",\"word3\",\"word4\"]. No explanation."
+            )
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                r = await c.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    json={"contents":[{"parts":[{"text":prompt}]}],
+                          "generationConfig":{"maxOutputTokens":100,"temperature":0.5}}
+                )
+            if r.status_code == 200:
+                raw = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                import re as _re
+                m = _re.search(r'\[.*?\]', raw, _re.S)
+                if m:
+                    results["alternatifler"] = json.loads(m.group())
+        except Exception as e:
+            log.warning(f"[kelime_cevir gemini] {e}")
+    return JSONResponse(results)
+
+
+@app.get("/api/voice_preview_url/")
+async def voice_preview_url(ses_id: str):
+    """ElevenLabs'tan sesin preview URL'ini getirir (TTS kredisi harcamaz)."""
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": "ElevenLabs key eksik"}, status_code=500)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            r = await c.get(
+                f"https://api.elevenlabs.io/v1/voices/{ses_id}",
+                headers={"xi-api-key": ELEVENLABS_API_KEY}
+            )
+        if r.status_code == 200:
+            data = r.json()
+            preview = data.get("preview_url") or data.get("samples", [{}])[0].get("url") if data.get("samples") else None
+            if preview:
+                return JSONResponse({"url": preview})
+        return JSONResponse({"hata": "preview_url yok"}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
 @app.post("/api/kelime_oneri/")
 async def kelime_oneri(
     kelime: str = Form(...),

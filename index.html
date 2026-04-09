@@ -563,6 +563,15 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <option value="ru">🇷🇺 RU</option>
       <option value="ja">🇯🇵 JA</option>
       <option value="ar">🇸🇦 AR</option>
+      <option value="ko">🇰🇷 KO</option>
+      <option value="zh">🇨🇳 ZH</option>
+      <option value="hi">🇮🇳 HI</option>
+      <option value="nl">🇳🇱 NL</option>
+      <option value="pl">🇵🇱 PL</option>
+      <option value="sv">🇸🇪 SV</option>
+      <option value="id">🇮🇩 ID</option>
+      <option value="uk">🇺🇦 UK</option>
+      <option value="vi">🇻🇳 VI</option>
     </select>
     <!-- AI Asistan -->
     <button onclick="aiAsistanAc()" class="cloud-btn" title="What do you want to do?" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.3);color:var(--accent3);">
@@ -762,6 +771,17 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
               <option value="de">🇩🇪 DE</option>
               <option value="fr">🇫🇷 FR</option>
               <option value="it">🇮🇹 IT</option>
+              <option value="es">🇪🇸 ES</option>
+              <option value="pt">🇧🇷 PT</option>
+              <option value="ru">🇷🇺 RU</option>
+              <option value="ar">🇸🇦 AR</option>
+              <option value="hi">🇮🇳 HI</option>
+              <option value="ja">🇯🇵 JA</option>
+              <option value="ko">🇰🇷 KO</option>
+              <option value="zh">🇨🇳 ZH</option>
+              <option value="nl">🇳🇱 NL</option>
+              <option value="pl">🇵🇱 PL</option>
+              <option value="sv">🇸🇪 SV</option>
             </select>
           </div>
         </div>
@@ -2707,6 +2727,38 @@ const VOICES = [
   { id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily',     flag:'🇬🇧', desc:'Velvety Actress',       color:'#7c3aed', lang:'en', gender:'female', tone:'warm'         },
   { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda',  flag:'🇺🇸', desc:'Professional',          color:'#9333ea', lang:'en', gender:'female', tone:'neutral'      },
   { id:'hpp4J3VqNfWAUOO0d1Us', name:'Bella',    flag:'🇺🇸', desc:'Professional, Warm',    color:'#be185d', lang:'en', gender:'female', tone:'warm'         },
+  // ── İspanyolca ──
+  { id:'XrExE9yKIg1WjnnlVkGX', name:'Matilda',  flag:'🇪🇸', desc:'Cálida, Natural',       color:'#f97316', lang:'es', gender:'female', tone:'warm'         },
+  { id:'VR6AewLTigWG4xSOukaG', name:'Arnold',   flag:'🇪🇸', desc:'Profundo, Narrador',    color:'#b45309', lang:'es', gender:'male',   tone:'deep'         },
+  { id:'GBv7mTt0atIp3Br8iCZE', name:'Thomas',   flag:'🇪🇸', desc:'Tranquilo, Profesional',color:'#6d28d9', lang:'es', gender:'male',   tone:'neutral'      },
+  // ── Portekizce ──
+  { id:'MF3mGyEYCl7XYWbV9V6O', name:'Elli',     flag:'🇧🇷', desc:'Emocional, Expressiva', color:'#059669', lang:'pt', gender:'female', tone:'warm'         },
+  { id:'AZnzlk1XvdvUeBnXmlld', name:'Domi',     flag:'🇧🇷', desc:'Forte, Confiante',      color:'#047857', lang:'pt', gender:'female', tone:'energetic'    },
+  // ── Arapça ──
+  { id:'onwK4e9ZLuTAKqWW03F9', name:'Hassan',   flag:'🇸🇦', desc:'عميق، رسمي',            color:'#b45309', lang:'ar', gender:'male',   tone:'deep'         },
+  { id:'pNInz6obpgDQGcFmaJgB', name:'Layla',    flag:'🇦🇪', desc:'ناعم، واضح',            color:'#d97706', lang:'ar', gender:'female', tone:'neutral'      },
+  // ── Hintçe ──
+  { id:'ThT5KcBeYPX3keUQqHPh', name:'Dorothy',  flag:'🇮🇳', desc:'स्पष्ट, व्यावसायिक',  color:'#db2777', lang:'hi', gender:'female', tone:'neutral'      },
+  { id:'jsCqWAovK2LkecY7zXl4', name:'Freya',    flag:'🇮🇳', desc:'मिलनसार, युवा',        color:'#be185d', lang:'hi', gender:'female', tone:'energetic'    },
+  // ── Japonca ──
+  { id:'XB0fDUnXU5powFXDhCwa', name:'Charlotte',flag:'🇯🇵', desc:'明確、プロフェッショナル',color:'#0284c7', lang:'ja', gender:'female', tone:'neutral'      },
+  { id:'ErXwobaYiN019PkySvjV', name:'Antoni',   flag:'🇯🇵', desc:'穏やか、信頼できる',    color:'#0369a1', lang:'ja', gender:'male',   tone:'warm'         },
+  // ── Korece ──
+  { id:'N2lVS1w4EtoT3dr4eOWO', name:'Kai',      flag:'🇰🇷', desc:'자연스럽고 친근한',      color:'#7c3aed', lang:'ko', gender:'male',   tone:'neutral'      },
+  { id:'yoZ06aMxZJJ28mfd3POQ', name:'Sam',      flag:'🇰🇷', desc:'활기차고 에너지 넘치는', color:'#6d28d9', lang:'ko', gender:'male',   tone:'energetic'    },
+  // ── Çince ──
+  { id:'wViXBPUzp2ZZixB1xQuM', name:'Serena',   flag:'🇨🇳', desc:'清晰，专业',             color:'#0e7490', lang:'zh', gender:'female', tone:'neutral'      },
+  { id:'t0jbNlBVZ17f02VDIiJdT', name:'Adam',    flag:'🇨🇳', desc:'稳定，权威',             color:'#155e75', lang:'zh', gender:'male',   tone:'deep'         },
+  // ── Felemenkçe ──
+  { id:'piTKgcLEGmPE4e6mEKli', name:'Nicole',   flag:'🇳🇱', desc:'Zacht, Beschaafd',     color:'#4f46e5', lang:'nl', gender:'female', tone:'warm'         },
+  // ── İsveççe ──
+  { id:'jBpfuIE2acCO8z3wKNLl', name:'Gigi',     flag:'🇸🇪', desc:'Munter, Naturlig',     color:'#7c3aed', lang:'sv', gender:'female', tone:'energetic'    },
+  // ── Rusça ──
+  { id:'nPczCjzI2devNBz1zQrb', name:'Ivan',     flag:'🇷🇺', desc:'Глубокий, уверенный',  color:'#1e40af', lang:'ru', gender:'male',   tone:'deep'         },
+  { id:'z9fAnlkpzviPz146aGWa', name:'Glinda',   flag:'🇷🇺', desc:'Мягкий, тёплый',       color:'#5b21b6', lang:'ru', gender:'female', tone:'warm'         },
+  // ── Lehçe ──
+  { id:'TxGEqnHWrfWFTfGW9XjX', name:'Josh',     flag:'🇵🇱', desc:'Młody, Energiczny',    color:'#047857', lang:'pl', gender:'male',   tone:'energetic'    },
+  { id:'pFZP5JQG7iQjIQuC4Bku', name:'Marta',    flag:'🇵🇱', desc:'Ciepły, Przyjazny',    color:'#7c3aed', lang:'pl', gender:'female', tone:'warm'         },
 ];
 
 
@@ -2856,7 +2908,7 @@ async function aiAsistanGonder() {
     const fd = new FormData();
     fd.append('sorgu', sorguWithCtx);
     fd.append('dil', _uiDil || 'tr');
-    const resp = await fetch(B + '/api/ai/', { method: 'POST', body: fd });
+    const resp = await fetch(B + '/api/ai_asistan/', { method: 'POST', body: fd });
     if (!resp.ok) {
       const errData = await resp.json().catch(() => ({}));
       throw new Error(errData.hata || `Sunucu hatası ${resp.status}`);
@@ -2936,6 +2988,51 @@ const UI_DILLER = {
     'Transkript':'النص','Altyazı':'ترجمة','Dublaj':'دبلجة','Metin→Ses':'نص→كلام',
     'Başlat':'ابدأ','Medya Yükle':'رفع ملف','Ses Aktörü':'الصوت',
     'Ne yapmak istiyorsun?':'ماذا تريد أن تفعل؟'
+  },
+  ko: { ad:'한국어', flag:'🇰🇷',
+    'Transkript':'트랜스크립트','Altyazı':'자막','Dublaj':'더빙','Metin→Ses':'텍스트→음성',
+    'Başlat':'시작','Medya Yükle':'파일 업로드','Ses Aktörü':'보이스',
+    'Ne yapmak istiyorsun?':'무엇을 하고 싶으신가요?'
+  },
+  zh: { ad:'中文', flag:'🇨🇳',
+    'Transkript':'转录','Altyazı':'字幕','Dublaj':'配音','Metin→Ses':'文字→语音',
+    'Başlat':'开始','Medya Yükle':'上传文件','Ses Aktörü':'配音员',
+    'Ne yapmak istiyorsun?':'你想做什么？'
+  },
+  hi: { ad:'हिन्दी', flag:'🇮🇳',
+    'Transkript':'ट्रांसक्रिप्ट','Altyazı':'उपशीर्षक','Dublaj':'डबिंग','Metin→Ses':'पाठ→वाणी',
+    'Başlat':'शुरू करें','Medya Yükle':'फ़ाइल अपलोड करें','Ses Aktörü':'आवाज़',
+    'Ne yapmak istiyorsun?':'आप क्या करना चाहते हैं?'
+  },
+  nl: { ad:'Nederlands', flag:'🇳🇱',
+    'Transkript':'Transcript','Altyazı':'Ondertitels','Dublaj':'Nagesynchroniseerd','Metin→Ses':'Tekst→Spraak',
+    'Başlat':'Starten','Medya Yükle':'Bestand uploaden','Ses Aktörü':'Stem',
+    'Ne yapmak istiyorsun?':'Wat wil je doen?'
+  },
+  pl: { ad:'Polski', flag:'🇵🇱',
+    'Transkript':'Transkrypt','Altyazı':'Napisy','Dublaj':'Dubbing','Metin→Ses':'Tekst→Mowa',
+    'Başlat':'Rozpocznij','Medya Yükle':'Prześlij plik','Ses Aktörü':'Głos',
+    'Ne yapmak istiyorsun?':'Co chcesz zrobić?'
+  },
+  sv: { ad:'Svenska', flag:'🇸🇪',
+    'Transkript':'Transkript','Altyazı':'Undertexter','Dublaj':'Dubbning','Metin→Ses':'Text→Tal',
+    'Başlat':'Starta','Medya Yükle':'Ladda upp','Ses Aktörü':'Röst',
+    'Ne yapmak istiyorsun?':'Vad vill du göra?'
+  },
+  id: { ad:'Indonesia', flag:'🇮🇩',
+    'Transkript':'Transkrip','Altyazı':'Subtitle','Dublaj':'Dubbing','Metin→Ses':'Teks→Suara',
+    'Başlat':'Mulai','Medya Yükle':'Unggah file','Ses Aktörü':'Suara',
+    'Ne yapmak istiyorsun?':'Apa yang ingin Anda lakukan?'
+  },
+  uk: { ad:'Українська', flag:'🇺🇦',
+    'Transkript':'Транскрипт','Altyazı':'Субтитри','Dublaj':'Дублювання','Metin→Ses':'Текст→Мовлення',
+    'Başlat':'Почати','Medya Yükle':'Завантажити','Ses Aktörü':'Голос',
+    'Ne yapmak istiyorsun?':'Що ви хочете зробити?'
+  },
+  vi: { ad:'Tiếng Việt', flag:'🇻🇳',
+    'Transkript':'Phiên âm','Altyazı':'Phụ đề','Dublaj':'Lồng tiếng','Metin→Ses':'Văn bản→Giọng nói',
+    'Başlat':'Bắt đầu','Medya Yükle':'Tải tệp lên','Ses Aktörü':'Giọng nói',
+    'Ne yapmak istiyorsun?':'Bạn muốn làm gì?'
   },
 };
 
@@ -5291,12 +5388,23 @@ function voicePickerAc(ctx) {
   + '    <option value="conversational">Conversational</option>'
   + '  </select>'
   + '  <select id="_vp_dial" onchange="_vpRender()" style="background:#111827;border:1px solid #1e2d42;border-radius:6px;color:#8ba3be;padding:5px 24px 5px 10px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url(\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 6%22><path fill=%22%235a7090%22 d=%22M0 0l5 6 5-6z%22/></svg>\');background-repeat:no-repeat;background-position:right 8px center;background-size:8px;">'
-  + '    <option value="">Dialects</option>'
-  + '    <option value="tr">Turkish</option>'
-  + '    <option value="en">English</option>'
-  + '    <option value="de">German</option>'
-  + '    <option value="fr">French</option>'
-  + '    <option value="it">Italian</option>'
+  + '    <option value="">All Languages</option>'
+  + '    <option value="tr">🇹🇷 Turkish</option>'
+  + '    <option value="en">🇺🇸 English</option>'
+  + '    <option value="de">🇩🇪 German</option>'
+  + '    <option value="fr">🇫🇷 French</option>'
+  + '    <option value="it">🇮🇹 Italian</option>'
+  + '    <option value="es">🇪🇸 Spanish</option>'
+  + '    <option value="pt">🇧🇷 Portuguese</option>'
+  + '    <option value="ru">🇷🇺 Russian</option>'
+  + '    <option value="ar">🇸🇦 Arabic</option>'
+  + '    <option value="hi">🇮🇳 Hindi</option>'
+  + '    <option value="ja">🇯🇵 Japanese</option>'
+  + '    <option value="ko">🇰🇷 Korean</option>'
+  + '    <option value="zh">🇨🇳 Chinese</option>'
+  + '    <option value="nl">🇳🇱 Dutch</option>'
+  + '    <option value="pl">🇵🇱 Polish</option>'
+  + '    <option value="sv">🇸🇪 Swedish</option>'
   + '  </select>'
   + '  <div style="width:1px;height:18px;background:#1a2235;margin:0 2px;"></div>'
   /* fav + pro pills */
@@ -5461,7 +5569,7 @@ async function sesOnizle(sesId, btn, lang) {
   if (_onizlemeAudio && !_onizlemeAudio.paused) {
     _onizlemeAudio.pause();
     document.querySelectorAll('[data-playing="1"]').forEach(function(b) {
-      b.innerHTML='<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      b.innerHTML='<i class="fa-solid fa-headphones" style="font-size:8px;"></i>';
       b.removeAttribute('data-playing');
     });
     if (btn.dataset.playing) return;
@@ -5470,6 +5578,31 @@ async function sesOnizle(sesId, btn, lang) {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:8px;"></i>';
   btn.dataset.playing = '1';
 
+  function _playUrl(url, owned) {
+    _onizlemeAudio = new Audio(url);
+    _onizlemeAudio.play().catch(function(){});
+    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i>';
+    _onizlemeAudio.onended = function() {
+      btn.innerHTML = '<i class="fa-solid fa-headphones" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+      if (owned) URL.revokeObjectURL(url);
+    };
+    _onizlemeAudio.onerror = function() {
+      btn.innerHTML = '<i class="fa-solid fa-headphones" style="font-size:8px;"></i>';
+      btn.removeAttribute('data-playing');
+    };
+  }
+
+  try {
+    // 1. ElevenLabs preview URL'ini dene (API kredisi harcamaz)
+    const pvResp = await fetch(B + '/api/voice_preview_url/?ses_id=' + sesId);
+    if (pvResp.ok) {
+      const pvData = await pvResp.json();
+      if (pvData.url) { _playUrl(pvData.url, false); return; }
+    }
+  } catch(e) {}
+
+  // 2. Fallback: TTS ile kısa örnek üret
   const demoMetinler = {
     tr:'Merhaba, VoiceFlow Studio ile videonuzu seslendiriyorum.',
     de:'Hallo, ich vertone Ihr Video mit VoiceFlow Studio.',
@@ -5477,6 +5610,16 @@ async function sesOnizle(sesId, btn, lang) {
     it:'Ciao, sto doppiando il tuo video con VoiceFlow Studio.',
     en:'Hello, I am dubbing your video with VoiceFlow Studio.',
     es:'Hola, estoy doblando tu vídeo con VoiceFlow Studio.',
+    pt:'Olá, estou dublando o seu vídeo com VoiceFlow Studio.',
+    ar:'مرحباً، أنا أُضيف صوتاً لمقطع الفيديو الخاص بك.',
+    hi:'नमस्ते, मैं आपके वीडियो को VoiceFlow Studio से डब कर रहा हूँ।',
+    ja:'こんにちは、VoiceFlow Studioで動画をダビングしています。',
+    ko:'안녕하세요, VoiceFlow Studio로 영상을 더빙하고 있습니다.',
+    zh:'你好，我正在用 VoiceFlow Studio 为您的视频配音。',
+    ru:'Привет, я озвучиваю ваше видео с помощью VoiceFlow Studio.',
+    pl:'Cześć, dubbinguję Twój film za pomocą VoiceFlow Studio.',
+    nl:'Hallo, ik dubb uw video met VoiceFlow Studio.',
+    sv:'Hej, jag dubbar din video med VoiceFlow Studio.',
   };
   const metin = demoMetinler[lang||'en'] || demoMetinler.en;
 
@@ -5484,36 +5627,20 @@ async function sesOnizle(sesId, btn, lang) {
     const fd = new FormData();
     fd.append('ses_id', sesId);
     fd.append('metin', metin);
-
     const r = await fetch(B + '/api/ses_onizle/', { method:'POST', body:fd });
     const contentType = r.headers.get('content-type') || '';
-
     if (!r.ok || contentType.includes('application/json')) {
       const errData = await r.json().catch(function(){ return {}; });
-      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+      btn.innerHTML = '<i class="fa-solid fa-headphones" style="font-size:8px;"></i>';
       btn.removeAttribute('data-playing');
       toast('Demo: ' + (errData.hata || 'ElevenLabs ' + r.status), 'twarn', 4000);
       return;
     }
-
     const blob = await r.blob();
     if (!blob.size) throw new Error('Ses boş');
-    const url = URL.createObjectURL(blob);
-    _onizlemeAudio = new Audio(url);
-    _onizlemeAudio.play();
-    btn.innerHTML = '<i class="fa-solid fa-stop" style="font-size:8px;color:#60a5fa;"></i>';
-
-    _onizlemeAudio.onended = function() {
-      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
-      btn.removeAttribute('data-playing');
-      URL.revokeObjectURL(url);
-    };
-    _onizlemeAudio.onerror = function() {
-      btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
-      btn.removeAttribute('data-playing');
-    };
+    _playUrl(URL.createObjectURL(blob), true);
   } catch(e) {
-    btn.innerHTML = '<i class="fa-solid fa-play" style="font-size:8px;"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-headphones" style="font-size:8px;"></i>';
     btn.removeAttribute('data-playing');
     toast('Demo hatası: ' + e.message, 'twarn', 3000);
   }
@@ -5548,13 +5675,19 @@ function scTxtKelimeTikla(e, segNo) {
     + '        <i class="fa-solid fa-book-open" style="color:var(--accent2);width:14px;"></i>'
     + '        <span>Anlam / Tanım</span>'
     + '      </div>'
-    + '      <!-- 2. AI ile yeniden yaz -->'
+    + '      <!-- 2. DeepL ile çevir -->'
+    + '      <div onclick="kelimeDeepLCevir(\'' + kelime.replace(/'/g,"\\'") + '\',' + segNo + ')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"'
+    + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
+    + '        <i class="fa-solid fa-language" style="color:#22d3ee;width:14px;"></i>'
+    + '        <span>DeepL / Gemini ile Değiştir</span>'
+    + '      </div>'
+    + '      <!-- 3. AI ile yeniden yaz -->'
     + '      <div onclick="kelimeAIOneri(\'' + kelime + '\',' + segNo + ')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"'
     + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
     + '        <i class="fa-solid fa-wand-magic-sparkles" style="color:#a855f7;width:14px;"></i>'
-    + '        <span>AI Öneri / Yeniden Yaz</span>'
+    + '        <span>AI Eş Anlamlı Öneri</span>'
     + '      </div>'
-    + '      <!-- 3. Sil -->'
+    + '      <!-- 4. Sil -->'
     + '      <div onclick="kelimeSilSegmentten(\'' + kelime + '\',' + segNo + ')" style="padding:9px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:background .12s;border-top:0.5px solid var(--border);"'
     + '        onmouseover="this.style.background=\'var(--s4)\'" onmouseout="this.style.background=\'transparent\'">'
     + '        <i class="fa-solid fa-trash" style="color:var(--red2);width:14px;"></i>'
@@ -5657,6 +5790,58 @@ async function kelimeAIOneri(kelime, segNo) {
     + (butonlar || '<div style="color:var(--muted2);font-size:12px;">Öneri bulunamadı</div>')
     + '</div></div>';
   document.body.appendChild(overlay);
+}
+
+async function kelimeDeepLCevir(kelime, segNo) {
+  document.getElementById('word_popup')?.remove();
+  const seg = segs.find(s => s.no == segNo);
+  const baglam = seg ? seg.text.slice(0, 120) : '';
+  const kaynak = (document.getElementById('src_lang')?.value || 'TR').toUpperCase();
+  const hedef  = (document.getElementById('tgt_lang')?.value || document.getElementById('src_lang')?.value || 'EN').toUpperCase();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:340px;max-width:90vw;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--txt);">🔤 "' + kelime + '" için alternatifler</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + '<div id="_kdc_loading" style="color:var(--muted2);font-size:12px;padding:10px 0;">Yükleniyor...</div>'
+    + '<div id="_kdc_butonlar" style="display:flex;flex-direction:column;gap:5px;"></div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+
+  try {
+    const fd = new FormData();
+    fd.append('kelime', kelime); fd.append('baglam', baglam);
+    fd.append('kaynak_dil', kaynak); fd.append('hedef_dil', hedef);
+    const r = await fetch(B + '/api/kelime_cevir/', { method:'POST', body:fd });
+    const d = await r.json();
+
+    const loadEl = document.getElementById('_kdc_loading');
+    const btnEl  = document.getElementById('_kdc_butonlar');
+    if (loadEl) loadEl.style.display = 'none';
+    if (!btnEl) return;
+
+    const secenekler = [];
+    if (d.deepl) secenekler.push({ label:'🔵 DeepL: ' + d.deepl, val: d.deepl });
+    (d.alternatifler || []).forEach(function(a) { secenekler.push({ label:'✨ ' + a, val: a }); });
+
+    if (!secenekler.length) {
+      btnEl.innerHTML = '<div style="color:var(--muted2);font-size:12px;">Alternatif bulunamadı</div>';
+      return;
+    }
+    btnEl.innerHTML = secenekler.map(function(s) {
+      const sv = s.val.replace(/'/g,"\\'");
+      return '<button onclick="kelimeSayfadaDegistir(\'' + kelime.replace(/'/g,"\\'") + '\',' + segNo + ',\'' + sv + '\');this.closest(\'div[style*=fixed]\').remove()"'
+        + ' style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 12px;border-radius:var(--r);cursor:pointer;text-align:left;font-size:12px;font-family:inherit;transition:border .12s;"'
+        + ' onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">'
+        + s.label + '</button>';
+    }).join('');
+  } catch(e) {
+    const loadEl = document.getElementById('_kdc_loading');
+    if (loadEl) loadEl.textContent = 'Hata: ' + e.message;
+  }
 }
 
 function kelimeSilSegmentten(kelime, segNo) {
