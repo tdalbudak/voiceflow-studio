@@ -937,7 +937,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <div class="vbox-empty-state" id="vbox_empty">
         <div class="vbox-empty-icon">🎬</div>
         <label for="finput" class="vbox-upload-btn" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
-          <i class="fa-solid fa-plus"></i> Upload Media / Drag & Drop
+          <i class="fa-solid fa-plus"></i> <span id="lbl_upload">Upload Media / Drag & Drop</span>
         </label>
         <div class="cloud-toolbar">
           <button class="cloud-mini" onclick="cloudUpload('gdrive')"><i class="fa-brands fa-google-drive"></i> Drive</button>
@@ -955,13 +955,13 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 
     <!-- Sihirli Mod Hızlı Aksiyonlar (başlangıçta gizli) -->
     <div class="magic-actions" id="magic_actions">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">⚡ Ne yapmak istiyorsun?</div>
+      <div id="magic_panel_title" style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">⚡ Ne yapmak istiyorsun?</div>
 
       <button class="magic-btn" onclick="magicAction('hizli_dublaj')">
         <span class="magic-btn-icon">🌍</span>
         <div>
-          <div class="magic-btn-title">Tek Tıkla Dublaj</div>
-          <div class="magic-btn-desc">Dil seç → otomatik çevir + seslendirme yap</div>
+          <div class="magic-btn-title" id="magic_t1">Tek Tıkla Dublaj</div>
+          <div class="magic-btn-desc" id="magic_d1">Dil seç → otomatik çevir + seslendirme yap</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -969,8 +969,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="magic-btn" onclick="magicAction('hormozi')">
         <span class="magic-btn-icon">🔥</span>
         <div>
-          <div class="magic-btn-title">Hormozi / TikTok Altyazı</div>
-          <div class="magic-btn-desc">Kelimeler tek tek parlar — viral format</div>
+          <div class="magic-btn-title" id="magic_t2">Hormozi / TikTok Altyazı</div>
+          <div class="magic-btn-desc" id="magic_d2">Kelimeler tek tek parlar — viral format</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -978,8 +978,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="magic-btn" onclick="magicAction('klonlama')">
         <span class="magic-btn-icon">🎙️</span>
         <div>
-          <div class="magic-btn-title">Kendi Sesimle Dublaj</div>
-          <div class="magic-btn-desc">Sesini klonla, başka dilde kendine dub yap</div>
+          <div class="magic-btn-title" id="magic_t3">Kendi Sesimle Dublaj</div>
+          <div class="magic-btn-desc" id="magic_d3">Sesini klonla, başka dilde kendine dub yap</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -987,8 +987,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="magic-btn" onclick="magicAction('silence_cut')">
         <span class="magic-btn-icon">✂️</span>
         <div>
-          <div class="magic-btn-title">Sessizlik & Dolgu Temizle</div>
-          <div class="magic-btn-desc">um, uh, uzun sessizlikler otomatik silinir</div>
+          <div class="magic-btn-title" id="magic_t4">Sessizlik &amp; Dolgu Temizle</div>
+          <div class="magic-btn-desc" id="magic_d4">um, uh, uzun sessizlikler otomatik silinir</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -996,8 +996,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="magic-btn" onclick="magicAction('podcast_ozet')">
         <span class="magic-btn-icon">📝</span>
         <div>
-          <div class="magic-btn-title">Podcast / Video Özeti</div>
-          <div class="magic-btn-desc">Transkript çıkar → AI ile özetle ve blog yaz</div>
+          <div class="magic-btn-title" id="magic_t5">Podcast / Video Özeti</div>
+          <div class="magic-btn-desc" id="magic_d5">Transkript çıkar → AI ile özetle ve blog yaz</div>
         </div>
         <i class="fa-solid fa-chevron-right magic-btn-arrow"></i>
       </button>
@@ -3014,98 +3014,212 @@ async function aiAsistanGonder() {
 const UI_DILLER = {
   tr: { ad:'Türkçe', flag:'🇹🇷',
     'Transkript':'Transkript','Altyazı':'Altyazı','Dublaj':'Dublaj','Metin→Ses':'Metin→Ses',
-    'Başlat':'Başlat','Medya Yükle':'Medya Yükle','Ses Aktörü':'Ses Aktörü',
-    'Ne yapmak istiyorsun?':'Ne yapmak istiyorsun?'
+    'Başlat':'Başlat','Medya Yükle':'Medya Yükle / Sürükle Bırak','Ses Aktörü':'Ses Aktörü',
+    'Ne yapmak istiyorsun?':'Ne yapmak istiyorsun?',
+    't1':'Tek Tıkla Dublaj','d1':'Dil seç → otomatik çevir + seslendirme yap',
+    't2':'Hormozi / TikTok Altyazı','d2':'Kelimeler tek tek parlar — viral format',
+    't3':'Kendi Sesimle Dublaj','d3':'Sesini klonla, başka dilde kendine dub yap',
+    't4':'Sessizlik & Dolgu Temizle','d4':'um, uh, uzun sessizlikler otomatik silinir',
+    't5':'Podcast / Video Özeti','d5':'Transkript çıkar → AI ile özetle ve blog yaz',
+    'Magic':'✨ Sihirli','Pro':'🎛️ Pro'
   },
   en: { ad:'English', flag:'🇺🇸',
-    'Transkript':'Transcript','Altyazı':'Subtitle','Dublaj':'Dubbing','Metin→Ses':'Text→Speech',
-    'Başlat':'Start','Medya Yükle':'Upload Media','Ses Aktörü':'Voice Actor',
-    'Ne yapmak istiyorsun?':'What do you want to do?'
+    'Transkript':'Transcript','Altyazı':'Subtitles','Dublaj':'Dubbing','Metin→Ses':'Text→Speech',
+    'Başlat':'Start','Medya Yükle':'Upload Media / Drag & Drop','Ses Aktörü':'Voice Actor',
+    'Ne yapmak istiyorsun?':'What do you want to do?',
+    't1':'One-Click Dub','d1':'Select language → auto translate + dub',
+    't2':'Hormozi / TikTok Captions','d2':'Words flash one by one — viral format',
+    't3':'Dub with My Voice','d3':'Clone your voice, dub in any language as yourself',
+    't4':'Silence & Filler Removal','d4':'um, uh, long silences auto-removed',
+    't5':'Podcast / Video Summary','d5':'Transcribe → AI summarize & write blog',
+    'Magic':'✨ Magic','Pro':'🎛️ Pro'
   },
   de: { ad:'Deutsch', flag:'🇩🇪',
     'Transkript':'Transkript','Altyazı':'Untertitel','Dublaj':'Synchronisation','Metin→Ses':'Text→Sprache',
-    'Başlat':'Starten','Medya Yükle':'Medien hochladen','Ses Aktörü':'Sprecher',
-    'Ne yapmak istiyorsun?':'Was möchtest du tun?'
+    'Başlat':'Starten','Medya Yükle':'Datei hochladen / Ablegen','Ses Aktörü':'Sprecher',
+    'Ne yapmak istiyorsun?':'Was möchtest du tun?',
+    't1':'Ein-Klick-Synchronisation','d1':'Sprache wählen → übersetzen + synchronisieren',
+    't2':'Hormozi / TikTok Untertitel','d2':'Wörter blinken einzeln — virales Format',
+    't3':'Synchron mit meiner Stimme','d3':'Stimme klonen, in jeder Sprache als du selbst',
+    't4':'Stille & Füllwörter entfernen','d4':'äh, öh, lange Pausen automatisch entfernt',
+    't5':'Podcast / Video-Zusammenfassung','d5':'Transkribieren → KI zusammenfassen & Blog',
+    'Magic':'✨ Magisch','Pro':'🎛️ Pro'
   },
   fr: { ad:'Français', flag:'🇫🇷',
     'Transkript':'Transcription','Altyazı':'Sous-titres','Dublaj':'Doublage','Metin→Ses':'Texte→Parole',
-    'Başlat':'Démarrer','Medya Yükle':'Télécharger','Ses Aktörü':'Voix',
-    'Ne yapmak istiyorsun?':'Que voulez-vous faire?'
+    'Başlat':'Démarrer','Medya Yükle':'Télécharger / Glisser-déposer','Ses Aktörü':'Voix',
+    'Ne yapmak istiyorsun?':'Que voulez-vous faire ?',
+    't1':'Doublage en 1 clic','d1':'Choisir langue → traduction + doublage auto',
+    't2':'Sous-titres Hormozi / TikTok','d2':'Les mots clignotent un à un — format viral',
+    't3':'Doubler avec ma voix','d3':'Clonez votre voix, doublez dans n\'importe quelle langue',
+    't4':'Supprimer silences & remplissages','d4':'euh, les longues pauses sont supprimées',
+    't5':'Résumé podcast / vidéo','d5':'Transcrire → résumé IA & rédiger un blog',
+    'Magic':'✨ Magie','Pro':'🎛️ Pro'
   },
   es: { ad:'Español', flag:'🇪🇸',
     'Transkript':'Transcripción','Altyazı':'Subtítulos','Dublaj':'Doblaje','Metin→Ses':'Texto→Voz',
-    'Başlat':'Iniciar','Medya Yükle':'Subir archivo','Ses Aktörü':'Voz',
-    'Ne yapmak istiyorsun?':'¿Qué quieres hacer?'
+    'Başlat':'Iniciar','Medya Yükle':'Subir archivo / Arrastrar','Ses Aktörü':'Voz',
+    'Ne yapmak istiyorsun?':'¿Qué quieres hacer?',
+    't1':'Doblaje con 1 clic','d1':'Elige idioma → traducción + doblaje auto',
+    't2':'Subtítulos Hormozi / TikTok','d2':'Palabras que parpadean — formato viral',
+    't3':'Doblar con mi voz','d3':'Clona tu voz, dobla en cualquier idioma como tú mismo',
+    't4':'Eliminar silencios y muletillas','d4':'eh, palabras de relleno y silencios eliminados',
+    't5':'Resumen de podcast / vídeo','d5':'Transcribir → resumir con IA & escribir blog',
+    'Magic':'✨ Magia','Pro':'🎛️ Pro'
   },
   it: { ad:'Italiano', flag:'🇮🇹',
     'Transkript':'Trascrizione','Altyazı':'Sottotitoli','Dublaj':'Doppiaggio','Metin→Ses':'Testo→Voce',
-    'Başlat':'Avvia','Medya Yükle':'Carica file','Ses Aktörü':'Voce',
-    'Ne yapmak istiyorsun?':'Cosa vuoi fare?'
+    'Başlat':'Avvia','Medya Yükle':'Carica file / Trascina','Ses Aktörü':'Voce',
+    'Ne yapmak istiyorsun?':'Cosa vuoi fare?',
+    't1':'Doppiaggio in 1 clic','d1':'Scegli lingua → traduzione + doppiaggio auto',
+    't2':'Sottotitoli Hormozi / TikTok','d2':'Le parole lampeggiano una per una — formato virale',
+    't3':'Doppiare con la mia voce','d3':'Clona la tua voce, doppia in qualsiasi lingua',
+    't4':'Rimuovi silenzi e riempitivi','d4':'ehm, le lunghe pause vengono rimosse',
+    't5':'Riepilogo podcast / video','d5':'Trascrivi → riassumi con IA & scrivi blog',
+    'Magic':'✨ Magia','Pro':'🎛️ Pro'
   },
   pt: { ad:'Português', flag:'🇧🇷',
     'Transkript':'Transcrição','Altyazı':'Legendas','Dublaj':'Dublagem','Metin→Ses':'Texto→Fala',
-    'Başlat':'Iniciar','Medya Yükle':'Carregar','Ses Aktörü':'Voz',
-    'Ne yapmak istiyorsun?':'O que você quer fazer?'
+    'Başlat':'Iniciar','Medya Yükle':'Carregar / Arrastar','Ses Aktörü':'Voz',
+    'Ne yapmak istiyorsun?':'O que você quer fazer?',
+    't1':'Dublagem em 1 clique','d1':'Selecione idioma → tradução + dublagem auto',
+    't2':'Legendas Hormozi / TikTok','d2':'Palavras piscam uma por uma — formato viral',
+    't3':'Dublar com minha voz','d3':'Clone sua voz, dublando em qualquer idioma',
+    't4':'Remover silêncios e preenchimentos','d4':'ã, éh, pausas longas removidas automaticamente',
+    't5':'Resumo de podcast / vídeo','d5':'Transcrever → resumir com IA & escrever blog',
+    'Magic':'✨ Mágico','Pro':'🎛️ Pro'
   },
   ru: { ad:'Русский', flag:'🇷🇺',
     'Transkript':'Транскрипт','Altyazı':'Субтитры','Dublaj':'Дублирование','Metin→Ses':'Текст→Речь',
-    'Başlat':'Начать','Medya Yükle':'Загрузить','Ses Aktörü':'Голос',
-    'Ne yapmak istiyorsun?':'Что вы хотите сделать?'
+    'Başlat':'Начать','Medya Yükle':'Загрузить / Перетащить','Ses Aktörü':'Голос',
+    'Ne yapmak istiyorsun?':'Что вы хотите сделать?',
+    't1':'Дублирование в 1 клик','d1':'Выберите язык → авто перевод + дублирование',
+    't2':'Субтитры Hormozi / TikTok','d2':'Слова мигают по одному — вирусный формат',
+    't3':'Дублировать своим голосом','d3':'Клонируй голос, дублируй на любом языке собой',
+    't4':'Удаление тишины и слов-паразитов','d4':'эм, длинные паузы удаляются автоматически',
+    't5':'Резюме подкаста / видео','d5':'Транскрибировать → AI резюме & написать блог',
+    'Magic':'✨ Магия','Pro':'🎛️ Pro'
   },
   ja: { ad:'日本語', flag:'🇯🇵',
     'Transkript':'文字起こし','Altyazı':'字幕','Dublaj':'吹き替え','Metin→Ses':'テキスト→音声',
-    'Başlat':'開始','Medya Yükle':'ファイル選択','Ses Aktörü':'音声',
-    'Ne yapmak istiyorsun?':'何をしたいですか？'
+    'Başlat':'開始','Medya Yükle':'ファイル選択 / ドロップ','Ses Aktörü':'音声',
+    'Ne yapmak istiyorsun?':'何をしたいですか？',
+    't1':'ワンクリック吹き替え','d1':'言語選択 → 自動翻訳 + 吹き替え',
+    't2':'ホルモジ / TikTok 字幕','d2':'単語が一つずつ光る — バイラル形式',
+    't3':'自分の声で吹き替え','d3':'声をクローンして、どの言語でも自分の声で吹き替え',
+    't4':'無音・フィラー除去','d4':'えー、あー、長い無音を自動削除',
+    't5':'ポッドキャスト/動画要約','d5':'文字起こし → AI要約 & ブログ執筆',
+    'Magic':'✨ マジック','Pro':'🎛️ プロ'
   },
   ar: { ad:'العربية', flag:'🇸🇦',
     'Transkript':'النص','Altyazı':'ترجمة','Dublaj':'دبلجة','Metin→Ses':'نص→كلام',
-    'Başlat':'ابدأ','Medya Yükle':'رفع ملف','Ses Aktörü':'الصوت',
-    'Ne yapmak istiyorsun?':'ماذا تريد أن تفعل؟'
+    'Başlat':'ابدأ','Medya Yükle':'رفع ملف / سحب وإفلات','Ses Aktörü':'الصوت',
+    'Ne yapmak istiyorsun?':'ماذا تريد أن تفعل؟',
+    't1':'دبلجة بنقرة واحدة','d1':'اختر اللغة → ترجمة وتدويل تلقائي',
+    't2':'تسميات هورموزي / تيك توك','d2':'الكلمات تومض واحدة تلو الأخرى',
+    't3':'الدبلجة بصوتي','d3':'استنسخ صوتك، ادبلج بأي لغة كأنك أنت',
+    't4':'إزالة الصمت والكلمات الحشو','d4':'إيه، آه، الصمت الطويل يُحذف تلقائياً',
+    't5':'ملخص بودكاست / فيديو','d5':'نسخ ← تلخيص بالذكاء الاصطناعي وكتابة مدونة',
+    'Magic':'✨ سحري','Pro':'🎛️ احترافي'
   },
   ko: { ad:'한국어', flag:'🇰🇷',
     'Transkript':'트랜스크립트','Altyazı':'자막','Dublaj':'더빙','Metin→Ses':'텍스트→음성',
-    'Başlat':'시작','Medya Yükle':'파일 업로드','Ses Aktörü':'보이스',
-    'Ne yapmak istiyorsun?':'무엇을 하고 싶으신가요?'
+    'Başlat':'시작','Medya Yükle':'파일 업로드 / 드래그','Ses Aktörü':'보이스',
+    'Ne yapmak istiyorsun?':'무엇을 하고 싶으신가요?',
+    't1':'원클릭 더빙','d1':'언어 선택 → 자동 번역 + 더빙',
+    't2':'호르모지 / TikTok 자막','d2':'단어가 하나씩 깜빡임 — 바이럴 포맷',
+    't3':'내 목소리로 더빙','d3':'목소리를 클론하여 어떤 언어로든 더빙',
+    't4':'침묵 & 필러 제거','d4':'어, 음, 긴 침묵이 자동 제거됨',
+    't5':'팟캐스트 / 영상 요약','d5':'전사 → AI 요약 & 블로그 작성',
+    'Magic':'✨ 매직','Pro':'🎛️ 프로'
   },
   zh: { ad:'中文', flag:'🇨🇳',
     'Transkript':'转录','Altyazı':'字幕','Dublaj':'配音','Metin→Ses':'文字→语音',
-    'Başlat':'开始','Medya Yükle':'上传文件','Ses Aktörü':'配音员',
-    'Ne yapmak istiyorsun?':'你想做什么？'
+    'Başlat':'开始','Medya Yükle':'上传文件 / 拖放','Ses Aktörü':'配音员',
+    'Ne yapmak istiyorsun?':'你想做什么？',
+    't1':'一键配音','d1':'选择语言 → 自动翻译 + 配音',
+    't2':'Hormozi / TikTok 字幕','d2':'逐词闪烁 — 病毒式格式',
+    't3':'用我的声音配音','d3':'克隆你的声音，用任何语言以自己的声音配音',
+    't4':'删除静音和填充词','d4':'嗯、啊、长时间停顿自动移除',
+    't5':'播客 / 视频摘要','d5':'转录 → AI总结 & 写博客',
+    'Magic':'✨ 魔法','Pro':'🎛️ 专业'
   },
   hi: { ad:'हिन्दी', flag:'🇮🇳',
     'Transkript':'ट्रांसक्रिप्ट','Altyazı':'उपशीर्षक','Dublaj':'डबिंग','Metin→Ses':'पाठ→वाणी',
-    'Başlat':'शुरू करें','Medya Yükle':'फ़ाइल अपलोड करें','Ses Aktörü':'आवाज़',
-    'Ne yapmak istiyorsun?':'आप क्या करना चाहते हैं?'
+    'Başlat':'शुरू करें','Medya Yükle':'फ़ाइल अपलोड / खींचें','Ses Aktörü':'आवाज़',
+    'Ne yapmak istiyorsun?':'आप क्या करना चाहते हैं?',
+    't1':'एक-क्लिक डबिंग','d1':'भाषा चुनें → स्वचालित अनुवाद + डबिंग',
+    't2':'Hormozi / TikTok सबटाइटल','d2':'शब्द एक-एक करके चमकते हैं — वायरल फ़ॉर्मेट',
+    't3':'मेरी आवाज़ से डबिंग','d3':'अपनी आवाज़ क्लोन करें, किसी भी भाषा में डब करें',
+    't4':'चुप्पी और फिलर हटाएं','d4':'उम, आह, लंबी चुप्पी अपने आप हटाई जाती है',
+    't5':'पॉडकास्ट / वीडियो सारांश','d5':'ट्रांसक्राइब → AI सारांश & ब्लॉग लिखें',
+    'Magic':'✨ जादू','Pro':'🎛️ प्रो'
   },
   nl: { ad:'Nederlands', flag:'🇳🇱',
     'Transkript':'Transcript','Altyazı':'Ondertitels','Dublaj':'Nagesynchroniseerd','Metin→Ses':'Tekst→Spraak',
-    'Başlat':'Starten','Medya Yükle':'Bestand uploaden','Ses Aktörü':'Stem',
-    'Ne yapmak istiyorsun?':'Wat wil je doen?'
+    'Başlat':'Starten','Medya Yükle':'Bestand uploaden / Slepen','Ses Aktörü':'Stem',
+    'Ne yapmak istiyorsun?':'Wat wil je doen?',
+    't1':'Eén-klik nasynchronisatie','d1':'Taal kiezen → vertalen + nasynchroniseren',
+    't2':'Hormozi / TikTok ondertitels','d2':'Woorden knipperen één voor één — viraal formaat',
+    't3':'Nasynchroniseren met mijn stem','d3':'Kloon je stem, dubbel in elke taal als jezelf',
+    't4':'Stilte & opvulwoorden verwijderen','d4':'eh, lange pauzes worden automatisch verwijderd',
+    't5':'Podcast / Video samenvatting','d5':'Transcriberen → AI samenvatten & blog schrijven',
+    'Magic':'✨ Magie','Pro':'🎛️ Pro'
   },
   pl: { ad:'Polski', flag:'🇵🇱',
     'Transkript':'Transkrypt','Altyazı':'Napisy','Dublaj':'Dubbing','Metin→Ses':'Tekst→Mowa',
-    'Başlat':'Rozpocznij','Medya Yükle':'Prześlij plik','Ses Aktörü':'Głos',
-    'Ne yapmak istiyorsun?':'Co chcesz zrobić?'
+    'Başlat':'Rozpocznij','Medya Yükle':'Prześlij / Przeciągnij','Ses Aktörü':'Głos',
+    'Ne yapmak istiyorsun?':'Co chcesz zrobić?',
+    't1':'Dubbing jednym kliknięciem','d1':'Wybierz język → auto tłumaczenie + dubbing',
+    't2':'Napisy Hormozi / TikTok','d2':'Słowa migają jedno po drugim — format viral',
+    't3':'Dubbing moim głosem','d3':'Sklonuj swój głos, dubbinguj w dowolnym języku',
+    't4':'Usuwanie ciszy i słów wypełniaczy','d4':'ee, uhm, długie pauzy są automatycznie usuwane',
+    't5':'Streszczenie podcastu / wideo','d5':'Transkrybuj → AI podsumuj & napisz blog',
+    'Magic':'✨ Magia','Pro':'🎛️ Pro'
   },
   sv: { ad:'Svenska', flag:'🇸🇪',
     'Transkript':'Transkript','Altyazı':'Undertexter','Dublaj':'Dubbning','Metin→Ses':'Text→Tal',
-    'Başlat':'Starta','Medya Yükle':'Ladda upp','Ses Aktörü':'Röst',
-    'Ne yapmak istiyorsun?':'Vad vill du göra?'
+    'Başlat':'Starta','Medya Yükle':'Ladda upp / Dra & Släpp','Ses Aktörü':'Röst',
+    'Ne yapmak istiyorsun?':'Vad vill du göra?',
+    't1':'En-knapps dubbning','d1':'Välj språk → auto översätt + dubba',
+    't2':'Hormozi / TikTok undertexter','d2':'Ord blinkar ett i taget — viralt format',
+    't3':'Dubba med min röst','d3':'Klona din röst, dubba på valfritt språk som du själv',
+    't4':'Ta bort tystnad och fyllnadsord','d4':'eh, öh, långa pauser tas bort automatiskt',
+    't5':'Podcast / Video sammanfattning','d5':'Transkribera → AI sammanfatta & skriv blogg',
+    'Magic':'✨ Magi','Pro':'🎛️ Pro'
   },
   id: { ad:'Indonesia', flag:'🇮🇩',
     'Transkript':'Transkrip','Altyazı':'Subtitle','Dublaj':'Dubbing','Metin→Ses':'Teks→Suara',
-    'Başlat':'Mulai','Medya Yükle':'Unggah file','Ses Aktörü':'Suara',
-    'Ne yapmak istiyorsun?':'Apa yang ingin Anda lakukan?'
+    'Başlat':'Mulai','Medya Yükle':'Unggah / Seret file','Ses Aktörü':'Suara',
+    'Ne yapmak istiyorsun?':'Apa yang ingin Anda lakukan?',
+    't1':'Dubbing Satu Klik','d1':'Pilih bahasa → terjemahan + dubbing otomatis',
+    't2':'Subtitle Hormozi / TikTok','d2':'Kata-kata berkedip satu per satu — format viral',
+    't3':'Dubbing dengan Suara Saya','d3':'Kloning suara, dubbing bahasa apa pun sebagai diri sendiri',
+    't4':'Hapus Jeda & Kata Filler','d4':'um, eh, jeda panjang dihapus otomatis',
+    't5':'Ringkasan Podcast / Video','d5':'Transkripsi → AI ringkas & tulis blog',
+    'Magic':'✨ Ajaib','Pro':'🎛️ Pro'
   },
   uk: { ad:'Українська', flag:'🇺🇦',
     'Transkript':'Транскрипт','Altyazı':'Субтитри','Dublaj':'Дублювання','Metin→Ses':'Текст→Мовлення',
-    'Başlat':'Почати','Medya Yükle':'Завантажити','Ses Aktörü':'Голос',
-    'Ne yapmak istiyorsun?':'Що ви хочете зробити?'
+    'Başlat':'Почати','Medya Yükle':'Завантажити / Перетягнути','Ses Aktörü':'Голос',
+    'Ne yapmak istiyorsun?':'Що ви хочете зробити?',
+    't1':'Дублювання в 1 клік','d1':'Вибери мову → авто переклад + дублювання',
+    't2':'Субтитри Hormozi / TikTok','d2':'Слова блимають по одному — вірусний формат',
+    't3':'Дублювати своїм голосом','d3':'Клонуй голос, дублюй будь-якою мовою як ти',
+    't4':'Видалення тиші та слів-паразитів','d4':'ем, тривала тиша видаляється автоматично',
+    't5':'Резюме подкасту / відео','d5':'Транскрибувати → AI резюме & написати блог',
+    'Magic':'✨ Магія','Pro':'🎛️ Про'
   },
   vi: { ad:'Tiếng Việt', flag:'🇻🇳',
     'Transkript':'Phiên âm','Altyazı':'Phụ đề','Dublaj':'Lồng tiếng','Metin→Ses':'Văn bản→Giọng nói',
-    'Başlat':'Bắt đầu','Medya Yükle':'Tải tệp lên','Ses Aktörü':'Giọng nói',
-    'Ne yapmak istiyorsun?':'Bạn muốn làm gì?'
+    'Başlat':'Bắt đầu','Medya Yükle':'Tải lên / Kéo thả','Ses Aktörü':'Giọng nói',
+    'Ne yapmak istiyorsun?':'Bạn muốn làm gì?',
+    't1':'Lồng tiếng 1 cú nhấp','d1':'Chọn ngôn ngữ → dịch + lồng tiếng tự động',
+    't2':'Phụ đề Hormozi / TikTok','d2':'Từng từ nhấp nháy — định dạng viral',
+    't3':'Lồng tiếng bằng giọng của tôi','d3':'Nhân bản giọng nói, lồng tiếng bằng tiếng bất kỳ',
+    't4':'Xóa khoảng lặng và từ đệm','d4':'ừm, ư, khoảng lặng dài tự động bị xóa',
+    't5':'Tóm tắt Podcast / Video','d5':'Phiên âm → AI tóm tắt & viết blog',
+    'Magic':'✨ Phép thuật','Pro':'🎛️ Pro'
   },
 };
 
@@ -3125,6 +3239,24 @@ function uiDilDegistir(dil) {
     const dot = btnRun.querySelector('.run-dot');
     if (dot) btnRun.innerHTML = '<span class="run-dot"></span> ' + sozluk['Başlat'];
   }
+  // Upload butonu
+  const lblUpload = document.getElementById('lbl_upload');
+  if (lblUpload) lblUpload.textContent = sozluk['Medya Yükle'];
+  // Magic panel başlığı
+  const magicTitle = document.getElementById('magic_panel_title');
+  if (magicTitle) magicTitle.textContent = '⚡ ' + sozluk['Ne yapmak istiyorsun?'];
+  // Magic butonları
+  for (var i = 1; i <= 5; i++) {
+    var mt = document.getElementById('magic_t' + i);
+    var md = document.getElementById('magic_d' + i);
+    if (mt) mt.textContent = sozluk['t' + i];
+    if (md) md.textContent = sozluk['d' + i];
+  }
+  // Mod toggle butonları
+  const btnSihirli = document.getElementById('btn_sihirli');
+  const btnPro = document.getElementById('btn_pro');
+  if (btnSihirli) btnSihirli.innerHTML = sozluk['Magic'];
+  if (btnPro) btnPro.innerHTML = sozluk['Pro'];
   toast(sozluk.flag + ' ' + sozluk.ad);
 }
 
