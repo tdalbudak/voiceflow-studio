@@ -1120,6 +1120,100 @@ FILLER_PATTERN = re.compile(
     re.IGNORECASE | re.UNICODE
 )
 
+GLOSSARY_PATH = os.path.join(os.getenv("DATA_DIR", "/app/data"), "glossary.json")
+
+def _glossary_yukle() -> list:
+    try:
+        if os.path.exists(GLOSSARY_PATH):
+            with open(GLOSSARY_PATH, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def _glossary_uygula(metin: str) -> str:
+    """Kullanıcı glossary'sindeki terimleri metne uygular."""
+    for madde in _glossary_yukle():
+        kaynak = madde.get("kaynak", "").strip()
+        hedef  = madde.get("hedef", "").strip()
+        if kaynak and hedef:
+            metin = re.sub(r'\b' + re.escape(kaynak) + r'\b', hedef, metin, flags=re.IGNORECASE)
+    return metin
+
+
+def _tts_sessizlik_kirp(audio_path: str) -> bool:
+    """TTS çıktısından baş/son sessizliği kırpar — gerçek konuşma süresini ölçmek için."""
+    adj = audio_path + "_trim.mp3"
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", audio_path,
+             "-af", "silenceremove=start_periods=1:start_silence=0.08:start_threshold=-42dB:"
+                    "stop_periods=1:stop_silence=0.08:stop_threshold=-42dB",
+             "-c:a", "libmp3lame", "-q:a", "2", adj],
+            capture_output=True, text=True, timeout=20
+        )
+        if r.returncode == 0 and os.path.exists(adj) and os.path.getsize(adj) > 500:
+            os.replace(adj, audio_path)
+            return True
+    except Exception:
+        pass
+    if os.path.exists(adj):
+        try: os.remove(adj)
+        except: pass
+    return False
+
+
+async def gemini_srt_slang_normalize(srt_icerik: str, kaynak_dil: str = "tr") -> str:
+    """DeepL çevirisinden önce SRT içindeki argo/konuşma dilini standartlaştırır."""
+    if not GEMINI_API_KEY:
+        return srt_icerik
+    bloklar = []
+    for blok in srt_icerik.strip().split("\n\n"):
+        s = blok.strip().split("\n")
+        if len(s) >= 3:
+            bloklar.append({"num": s[0], "zaman": s[1], "metin": "\n".join(s[2:])})
+    if not bloklar:
+        return srt_icerik
+
+    BATCH = 25
+    tum_metinler = [b["metin"] for b in bloklar]
+    normalize_edilmis = []
+
+    for i in range(0, len(tum_metinler), BATCH):
+        batch = tum_metinler[i:i+BATCH]
+        numarali = "\n".join(f"{j+1}. {m}" for j, m in enumerate(batch))
+        prompt = (
+            f"Normalize these {len(batch)} transcript lines from colloquial/slang to standard spoken language ({kaynak_dil}).\n"
+            f"Fix: internet slang, abbreviations, filler words, mixed languages, regional dialect.\n"
+            f"Keep meaning. Return ONLY numbered list 1. ... 2. ... same language, no explanations.\n\n{numarali}"
+        )
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as c:
+                r = await c.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    json={"contents":[{"parts":[{"text":prompt}]}],
+                          "generationConfig":{"maxOutputTokens":2000,"temperature":0.1}}
+                )
+            if r.status_code == 200:
+                cevap = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                parsed = []
+                for satir in cevap.split("\n"):
+                    m = re.match(r'^\d+\.\s*(.*)', satir.strip())
+                    if m: parsed.append(m.group(1).strip())
+                if len(parsed) == len(batch):
+                    normalize_edilmis.extend(parsed)
+                    continue
+        except Exception as e:
+            log.debug(f"[SlangNorm] batch {i} hata: {e}")
+        normalize_edilmis.extend(batch)
+
+    satirlar = []
+    for i, blok in enumerate(bloklar):
+        metin = normalize_edilmis[i] if i < len(normalize_edilmis) else blok["metin"]
+        satirlar.extend([blok["num"], blok["zaman"], metin, ""])
+    return "\n".join(satirlar)
+
+
 async def gemini_jargon_temizle(metin: str, dil: str = "tr") -> str:
     """
     Gemini ile transkript segmentini temizler:
@@ -1129,16 +1223,27 @@ async def gemini_jargon_temizle(metin: str, dil: str = "tr") -> str:
     Başarısız olursa regex ile temel temizlik yapıp orijinali döndürür.
     """
     if not GEMINI_API_KEY or not metin or not metin.strip():
-        return FILLER_PATTERN.sub('', metin).strip()
+        return _glossary_uygula(FILLER_PATTERN.sub('', metin).strip())
+
+    # Glossary'yi önce uygula
+    metin = _glossary_uygula(metin)
+
+    # Glossary maddelerini Gemini prompt'una ekle
+    glossary = _glossary_yukle()
+    glossary_satir = ""
+    if glossary:
+        maddeler = "; ".join(f'"{g["kaynak"]}"→"{g["hedef"]}"' for g in glossary[:20])
+        glossary_satir = f"6. Apply these custom glossary terms: {maddeler}\n"
 
     dil_adi = {"tr":"Türkçe","en":"English","de":"Deutsch","fr":"Français","it":"Italiano"}.get(dil,"the target language")
     prompt = (
         f"You are a transcript cleaner for a TTS dubbing system. Clean the following transcript segment:\n"
         f"1. Remove filler sounds (ıı, ee, eee, hmm, um, uh, şey, hani, etc.) completely\n"
-        f"2. Expand internet slang and abbreviations to full spoken words (e.g. 'lol' → 'laughing out loud')\n"
+        f"2. Expand internet slang, street/colloquial language, abbreviations to full spoken words\n"
         f"3. Convert all content to natural spoken {dil_adi} — translate any foreign words inline\n"
         f"4. Keep the meaning. Do NOT summarize. Do NOT add anything.\n"
-        f"5. Return ONLY the cleaned text, nothing else.\n\n"
+        f"5. Return ONLY the cleaned text, nothing else.\n"
+        f"{glossary_satir}\n"
         f"Segment: {metin}"
     )
     try:
@@ -1280,25 +1385,21 @@ async def elevenlabs_segment_uret(
             with open(output_path, "wb") as f:
                 f.write(r.content)
 
-            # Süre kontrolü — akıllı hız ayarı
+            # 1. Baş/son sessizliği kırp → gerçek konuşma süresi ölç
+            _tts_sessizlik_kirp(output_path)
+
             gercek = ses_sure_olc(output_path)
             if gercek > 0 and hedef_sure > 0:
                 oran = gercek / hedef_sure
-                print(f"[TTS] üretilen={gercek:.2f}s hedef={hedef_sure:.2f}s oran={oran:.2f}x")
+                log.debug(f"[TTS] üretilen={gercek:.2f}s hedef={hedef_sure:.2f}s oran={oran:.2f}x")
 
-                if oran > 1.25:
-                    # atempo max 2.0x — üstünü chain'le (1.5x * 1.5x = 2.25x)
-                    oran_sinir = min(oran, 2.0)
-                    if oran_sinir > 2.0:
-                        # İki aşamalı: oran1 * oran2 = hedef
-                        oran1 = min(oran_sinir ** 0.5, 2.0)
-                        oran2 = min(oran_sinir / oran1, 2.0)
-                        filtre = f"atempo={oran1:.4f},atempo={oran2:.4f}"
-                    else:
-                        filtre = f"atempo={oran_sinir:.4f}"
-
+                # 2. Doğal hız sınırı: max 1.25x — daha fazlası yapay hızlı duyulur
+                MAX_ATEMPO = 1.25
+                if oran > 1.12:  # %12'den fazla uzunsa hafifçe sıkıştır
+                    oran_sinir = min(oran, MAX_ATEMPO)
+                    filtre = f"atempo={oran_sinir:.4f}"
                     adj = output_path + "_adj.mp3"
-                    r2  = subprocess.run(
+                    r2 = subprocess.run(
                         ["ffmpeg", "-y", "-i", output_path,
                          "-filter:a", filtre,
                          "-c:a", "libmp3lame", "-q:a", "2", adj],
@@ -1306,8 +1407,12 @@ async def elevenlabs_segment_uret(
                     )
                     if r2.returncode == 0:
                         os.replace(adj, output_path)
-                        print(f"[TTS] Sıkıştırıldı: {oran_sinir:.2f}x")
-                # oran < 1 → kısa üretildi, boşluk olsun — doğal
+                        log.debug(f"[TTS] Sıkıştırıldı: {oran_sinir:.2f}x (hedef={hedef_sure:.1f}s)")
+                    elif os.path.exists(adj):
+                        try: os.remove(adj)
+                        except: pass
+                # oran > MAX_ATEMPO: zorlama, doğal hızda bırak (hafif taşma kabul edilebilir)
+                # oran < 1: kısa → boşluk olsun, doğal
 
             return True
 
@@ -1578,6 +1683,9 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                     with open(srt_kaynak, encoding="utf-8") as f:
                         icerik = f.read()
                     log.info(f"[Altyazı] DeepL çeviri başlıyor: {kd}→{hd} ({len(icerik)} karakter)")
+                    # Slang/argo normalize et (DeepL öncesi)
+                    islem_durumlari[out_file] = {"durum": "Argo/slang normalize ediliyor...", "yuzde": 48}
+                    icerik = await gemini_srt_slang_normalize(icerik, kaynak_dil or "tr")
                     cevrilmis = await srt_paralel_cevir(icerik, hedef_dil)
                     srt_final = os.path.join(gecici, f"ceviri_{hedef_dil}.srt")
                     with open(srt_final, "w", encoding="utf-8") as f:
@@ -1653,7 +1761,8 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                 islem_durumlari[out_file] = {"durum": f"{hedef_dil} diline çevriliyor...", "yuzde": 15}
                 log.info(f"[Dublaj] DeepL çeviri başlıyor: {kd}→{hd}")
                 try:
-                    cevrilmis_srt = await srt_paralel_cevir(srt_icerik, hedef_dil)
+                    srt_normalize = await gemini_srt_slang_normalize(srt_icerik, kaynak_dil or "tr")
+                    cevrilmis_srt = await srt_paralel_cevir(srt_normalize, hedef_dil)
                     with open(srt_path, "w", encoding="utf-8") as f:
                         f.write(cevrilmis_srt)
                     segmentler = _srt_parse(cevrilmis_srt)
@@ -1705,12 +1814,20 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         atlanan[0] += 1
                         return None
 
-                    # Konuşmacıya özel ses ID'si varsa onu kullan
+                    # Konuşmacıya özel ses ID'si ve ayarları
                     speaker_no = re.search(r"\[Konuşmacı (\d+)\]", seg["metin"])
                     kullanilacak_ses = ses_id
+                    sp_stability = stability
+                    sp_style     = style
                     if speaker_no:
                         sp_key = speaker_no.group(1)
-                        kullanilacak_ses = speaker_ses_map.get(sp_key, ses_id)
+                        sp_val = speaker_ses_map.get(sp_key)
+                        if isinstance(sp_val, dict):
+                            kullanilacak_ses = sp_val.get("voice_id", ses_id)
+                            sp_stability     = float(sp_val.get("stability", stability))
+                            sp_style         = float(sp_val.get("style", style))
+                        elif isinstance(sp_val, str):
+                            kullanilacak_ses = sp_val
 
                     # Hedef süre: bir sonraki segmentin başına kadar olan süre
                     # Bu sayede doğal boşluklar korunur
@@ -1725,8 +1842,8 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                         sure = max(1.0, seg["bitis"] - seg["baslangic"])
 
                     ses_yol = os.path.join(ses_klasor, f"seg_{idx:04d}.mp3")
-                    log.info(f"[Dublaj seg {idx}] '{metin[:40]}' → {ses_id[:8]} sure={sure:.2f}s")
-                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en", style=style, stability=stability)
+                    log.info(f"[Dublaj seg {idx}] '{metin[:40]}' → {kullanilacak_ses[:8]} sure={sure:.2f}s stab={sp_stability}")
+                    ok = await elevenlabs_segment_uret(metin, kullanilacak_ses, ses_yol, sure, dil=hedef_dil or kaynak_dil or "en", style=sp_style, stability=sp_stability)
                     tamamlanan[0] += 1
                     pct = 20 + int((tamamlanan[0] / toplam) * 55)
                     islem_durumlari[out_file] = {
@@ -2869,6 +2986,70 @@ async def speaker_map_al(dosya_adi: str):
         return JSONResponse(json.load(f))
 
 
+# ============================================================
+# GLOSSARY — Özel Terim Sözlüğü
+# ============================================================
+
+@app.get("/api/glossary/")
+async def glossary_al():
+    return JSONResponse(_glossary_yukle())
+
+@app.post("/api/glossary/")
+async def glossary_kaydet(maddeler: str = Form(...)):
+    """maddeler: JSON list — [{"kaynak":"naber","hedef":"nasılsın"}, ...]"""
+    try:
+        liste = json.loads(maddeler)
+        if not isinstance(liste, list):
+            return JSONResponse({"hata": "Liste bekleniyor"}, status_code=400)
+        os.makedirs(os.path.dirname(GLOSSARY_PATH), exist_ok=True)
+        with open(GLOSSARY_PATH, "w", encoding="utf-8") as f:
+            json.dump(liste, f, ensure_ascii=False, indent=2)
+        return JSONResponse({"basari": True, "adet": len(liste)})
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+# ============================================================
+# SRT BURN-IN — Altyazı Yakma
+# ============================================================
+
+@app.post("/api/altyazi_gom/")
+async def altyazi_gom(
+    video_adi: str = Form(...),
+    srt_adi:   str = Form(...),
+):
+    """SRT'yi videoya ffmpeg ile gömer (hard subtitle)."""
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": "FFmpeg yüklü değil"}, status_code=500)
+    video_yol = os.path.join(OUTPUT_DIR, video_adi)
+    srt_yol   = os.path.join(OUTPUT_DIR, srt_adi)
+    if not os.path.exists(video_yol):
+        return JSONResponse({"hata": "Video bulunamadı"}, status_code=404)
+    if not os.path.exists(srt_yol):
+        return JSONResponse({"hata": "SRT bulunamadı"}, status_code=404)
+
+    b_id  = uuid.uuid4().hex[:8]
+    cikti = f"burned_{b_id}.mp4"
+    cikti_yol = os.path.join(OUTPUT_DIR, cikti)
+    # SRT path'i ffmpeg için escape et
+    srt_escaped = srt_yol.replace("\\", "/").replace(":", "\\:")
+    cmd = [
+        "ffmpeg", "-y", "-i", video_yol,
+        "-vf", f"subtitles='{srt_escaped}':force_style='Fontsize=18,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Bold=1'",
+        "-c:a", "copy", "-preset", "fast", cikti_yol
+    ]
+    try:
+        result = await asyncio.to_thread(
+            subprocess.run, cmd, capture_output=True, text=True, timeout=300
+        )
+        if result.returncode == 0:
+            return JSONResponse({"cikti": cikti})
+        log.error(f"[AltyaziGom] {result.stderr[-400:]}")
+        return JSONResponse({"hata": "Altyazı gömilemedi"}, status_code=500)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
 @app.post("/api/kelime_oneri/")
 async def kelime_oneri(
     kelime: str = Form(...),
@@ -3252,11 +3433,12 @@ async def viral_analiz(transkript: str = Form(...), dil: str = Form("tr")):
 
 @app.post("/api/klip_kes/")
 async def klip_kes(
-    dosya_adi: str    = Form(...),
-    baslangic: float  = Form(...),
-    bitis: float      = Form(...),
+    dosya_adi:  str   = Form(...),
+    baslangic:  float = Form(...),
+    bitis:      float = Form(...),
+    shorts_916: bool  = Form(False),  # True → 9:16 crop (Shorts/Reels/TikTok)
 ):
-    """FFmpeg ile videodan belirli bir bölümü keser."""
+    """FFmpeg ile videodan belirli bir bölümü keser. shorts_916=True → 9:16 crop."""
     if not ffmpeg_var_mi():
         return JSONResponse({"hata": "FFmpeg yüklü değil"}, status_code=500)
 
@@ -3265,22 +3447,31 @@ async def klip_kes(
         return JSONResponse({"hata": "Dosya bulunamadı"}, status_code=404)
 
     b_id  = uuid.uuid4().hex[:8]
-    ext   = os.path.splitext(dosya_adi)[1] or ".mp4"
-    cikti = f"klip_{b_id}{ext}"
+    sufiks = "_shorts" if shorts_916 else ""
+    cikti  = f"klip{sufiks}_{b_id}.mp4"
     cikti_yol = os.path.join(OUTPUT_DIR, cikti)
 
     sure = max(0.5, bitis - baslangic)
-    cmd = [
-        "ffmpeg", "-y",
-        "-ss", str(baslangic),
-        "-i", giris,
-        "-t", str(sure),
-        "-c:v", "copy", "-c:a", "aac",
-        cikti_yol
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+    if shorts_916:
+        # 9:16 crop: merkezi kes, en küçük boyutu baz al
+        vf = "crop=ih*9/16:ih:(iw-ih*9/16)/2:0,scale=1080:1920"
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", str(baslangic), "-i", giris, "-t", str(sure),
+            "-vf", vf, "-c:a", "aac", "-preset", "fast", cikti_yol
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", str(baslangic), "-i", giris, "-t", str(sure),
+            "-c:v", "copy", "-c:a", "aac", cikti_yol
+        ]
+    result = await asyncio.to_thread(
+        subprocess.run, cmd, capture_output=True, text=True, timeout=180
+    )
     if result.returncode == 0:
-        log.info(f"[Klip Kes] {dosya_adi} {baslangic:.1f}s-{bitis:.1f}s → {cikti}")
+        log.info(f"[Klip Kes] {dosya_adi} {baslangic:.1f}s-{bitis:.1f}s shorts={shorts_916} → {cikti}")
         return JSONResponse({"cikti": cikti, "sure": sure})
     log.error(f"[Klip Kes Hata] {result.stderr[-300:]}")
     return JSONResponse({"hata": "Klip kesilemedi"}, status_code=500)

@@ -560,6 +560,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     </div>
     <button class="cloud-btn" onclick="dashboardAc()" title="My Files & Profile" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> My Files</button>
     <button class="cloud-btn" onclick="profilAc()" title="Profile & Usage" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
+    <button class="cloud-btn" onclick="glossaryAc()" title="Özel terim sözlüğü"><i class="fa-solid fa-book"></i> Glossary</button>
     <button class="cloud-btn" onclick="topluIslemAc()" title="Process multiple videos"><i class="fa-solid fa-layer-group"></i> Batch</button>
     <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Version history A/B compare" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
     <!-- Language indicator — updated from modal -->
@@ -2510,7 +2511,7 @@ function spPickerAc(spNo) {
     + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">'
     + voices.map(v => {
         const sel = v.id === secilenId;
-        return '<div onclick="spVoiceSec(\'' + spNo + '\',\'' + v.id + '\')" '
+        return '<div onclick="spVoiceSec(\'' + spNo + '\',\'' + v.id + '\')" data-sp-voice="' + v.id + '" '
           + 'style="background:' + (sel?'var(--s4)':'var(--s3)') + ';border:1px solid '
           + (sel?'var(--accent2)':'var(--border2)') + ';border-radius:var(--r);padding:7px 6px;cursor:pointer;'
           + 'display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s;">'
@@ -2522,12 +2523,35 @@ function spPickerAc(spNo) {
     + '</div></div>'
   ).join('');
 
-  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:440px;max-height:80vh;overflow-y:auto;">'
+  const spCfg = typeof _speakerMap[spNo] === 'object' ? _speakerMap[spNo] : {};
+  const curStab  = spCfg.stability  !== undefined ? spCfg.stability  : 0.35;
+  const curStyle = spCfg.style      !== undefined ? spCfg.style      : 0.25;
+
+  const settingsHtml = '<div style="border-top:1px solid var(--border1);margin-top:14px;padding-top:14px;">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Ses Ayarları</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+    + '<div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Stability <span id="sp_stab_val_'+spNo+'">' + Math.round(curStab*100) + '%</span></div>'
+    + '<input type="range" min="0" max="100" value="' + Math.round(curStab*100) + '" id="sp_stab_'+spNo+'" '
+    + 'oninput="document.getElementById(\'sp_stab_val_'+spNo+'\').textContent=this.value+\'%\'" '
+    + 'style="width:100%;accent-color:var(--accent2);"></div>'
+    + '<div><div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Style/Emotion <span id="sp_style_val_'+spNo+'">' + Math.round(curStyle*100) + '%</span></div>'
+    + '<input type="range" min="0" max="100" value="' + Math.round(curStyle*100) + '" id="sp_style_'+spNo+'" '
+    + 'oninput="document.getElementById(\'sp_style_val_'+spNo+'\').textContent=this.value+\'%\'" '
+    + 'style="width:100%;accent-color:var(--accent3);"></div>'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:6px;">Stability düşük → duygusal/doğal · yüksek → tutarlı/profesyonel</div>'
+    + '</div>';
+
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:460px;max-height:85vh;overflow-y:auto;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-    + '<div style="font-size:13px;font-weight:700;"><i class="fa-solid fa-microphone" style="margin-right:6px;color:var(--accent3);"></i>Konuşmacı ' + spNo + ' için Ses Seç</div>'
+    + '<div style="font-size:13px;font-weight:700;"><i class="fa-solid fa-microphone" style="margin-right:6px;color:var(--accent3);"></i>Konuşmacı ' + spNo + ' — Ses & Ayarlar</div>'
     + '<button onclick="document.getElementById(\'_sp_picker_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
     + '</div>'
     + gridHtml
+    + settingsHtml
+    + '<button onclick="spAyarKaydet(\'' + spNo + '\')" style="width:100%;margin-top:14px;padding:8px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<i class="fa-solid fa-check" style="margin-right:5px;"></i>Uygula'
+    + '</button>'
     + '</div>';
 
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
@@ -2535,21 +2559,46 @@ function spPickerAc(spNo) {
 }
 
 function spVoiceSec(spNo, voiceId) {
-  _speakerMap[spNo] = voiceId;
-  document.getElementById('_sp_picker_overlay')?.remove();
-  // Kartı güncelle
-  const v = VOICES.find(x => x.id === voiceId);
-  if (!v) return;
-  const card = document.getElementById('sp_card_' + spNo);
-  if (card) {
-    card.innerHTML = _vpAvatarHtml(v, 28)
-      + '<div style="min-width:0;">'
-      + '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.flag + ' ' + v.name + '</div>'
-      + '<div style="font-size:10px;color:var(--muted2);">' + v.desc + '</div>'
-      + '</div>'
-      + '<i class="fa-solid fa-chevron-down" style="margin-left:auto;font-size:10px;color:var(--muted2);flex-shrink:0;"></i>';
+  // _speakerMap'i object formatına yükselt
+  if (typeof _speakerMap[spNo] !== 'object') {
+    const prev = _speakerMap[spNo];
+    _speakerMap[spNo] = { voice_id: prev || voiceId, stability: 0.35, style: 0.25 };
   }
-  toast('✓ Konuşmacı ' + spNo + ' → ' + v.name);
+  _speakerMap[spNo].voice_id = voiceId;
+
+  // Picker'daki grid highlight güncelle
+  document.querySelectorAll('[data-sp-voice]').forEach(el => {
+    const sel = el.dataset.spVoice === voiceId;
+    el.style.background = sel ? 'var(--s4)' : 'var(--s3)';
+    el.style.borderColor = sel ? 'var(--accent2)' : 'var(--border2)';
+  });
+}
+
+function spAyarKaydet(spNo) {
+  const stabEl  = document.getElementById('sp_stab_' + spNo);
+  const styleEl = document.getElementById('sp_style_' + spNo);
+  if (typeof _speakerMap[spNo] !== 'object') {
+    _speakerMap[spNo] = { voice_id: _speakerMap[spNo] || voice, stability: 0.35, style: 0.25 };
+  }
+  if (stabEl)  _speakerMap[spNo].stability = parseFloat(stabEl.value) / 100;
+  if (styleEl) _speakerMap[spNo].style     = parseFloat(styleEl.value) / 100;
+
+  document.getElementById('_sp_picker_overlay')?.remove();
+
+  const v = VOICES.find(x => x.id === _speakerMap[spNo].voice_id);
+  // Kartı güncelle
+  if (v) {
+    const card = document.getElementById('sp_card_' + spNo);
+    if (card) {
+      card.innerHTML = _vpAvatarHtml(v, 28)
+        + '<div style="min-width:0;">'
+        + '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.flag + ' ' + v.name + '</div>'
+        + '<div style="font-size:10px;color:var(--muted2);">' + v.desc + ' · S:' + Math.round(_speakerMap[spNo].stability*100) + '%</div>'
+        + '</div>'
+        + '<i class="fa-solid fa-chevron-down" style="margin-left:auto;font-size:10px;color:var(--muted2);flex-shrink:0;"></i>';
+    }
+    toast('✓ Konuşmacı ' + spNo + ' → ' + v.name + ' (Stability ' + Math.round(_speakerMap[spNo].stability*100) + '%)');
+  }
 }
 
 function speakerSesGuncelle() {
@@ -5774,7 +5823,8 @@ async function viralKlipCikar() {
       + '<div style="font-size:12px;margin-bottom:8px;">"' + metin100 + '"</div>'
       + '<div style="display:flex;gap:6px;">'
       + '<button onclick="vidAtla(' + s + ')" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Oynat</button>'
-      + '<button onclick="klipIndir(\'' + dosya + '\',' + s + ',' + e2 + ')" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Klip İndir</button>'
+      + '<button onclick="klipIndir(\'' + dosya + '\',' + s + ',' + e2 + ',false)" style="background:var(--accent);border:none;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">Klip İndir</button>'
+      + '<button onclick="klipIndir(\'' + dosya + '\',' + s + ',' + e2 + ',true)" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;" title="9:16 Shorts/Reels/TikTok">&#9654; Shorts</button>'
       + '</div></div>';
   }).join('');
 
@@ -5791,18 +5841,22 @@ async function viralKlipCikar() {
   document.body.appendChild(overlay);
 }
 
-async function klipIndir(dosyaAdi, baslangic, bitis) {
+async function klipIndir(dosyaAdi, baslangic, bitis, shorts916) {
   if (!dosyaAdi) { toast('Video dosyası yok','twarn'); return; }
-  toast('<i class="fa-solid fa-spinner fa-spin"></i> Klip kesiliyor...','tok',10000);
+  const etiket = shorts916 ? 'Shorts 9:16 hazırlanıyor...' : 'Klip kesiliyor...';
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> ' + etiket,'tok',20000);
   try {
     const fd = new FormData();
     fd.append('dosya_adi', dosyaAdi);
     fd.append('baslangic', baslangic.toFixed(2));
     fd.append('bitis', bitis.toFixed(2));
+    if (shorts916) fd.append('shorts_916', 'true');
     const r = await fetch(B + '/api/klip_kes/', {method:'POST', body:fd});
     const d = await r.json();
-    if (d.cikti) { window.open(`${B}/indir/${d.cikti}`,'_blank'); toast('✓ Klip hazır!'); }
-    else toast(d.hata||'Klip kesilemedi','terr');
+    if (d.cikti) {
+      window.open(`${B}/indir/${d.cikti}`,'_blank');
+      toast('✓ ' + (shorts916 ? 'Shorts 9:16 hazır!' : 'Klip hazır!'));
+    } else toast(d.hata||'Klip kesilemedi','terr');
   } catch(e) { toast('Bağlantı hatası','terr'); }
 }
 
@@ -5817,6 +5871,80 @@ function vidAtla(sure) {
 let aktifSeg = null;
 
 /* ═══ PROFİL MODALİ ═══ */
+/* ═══ GLOSSARY — Özel Terim Sözlüğü ═══ */
+let _glossary = [];
+
+async function glossaryAc() {
+  document.getElementById('_glossary_overlay')?.remove();
+  // Backend'den yükle
+  try {
+    const r = await fetch(B + '/api/glossary/');
+    if (r.ok) _glossary = await r.json();
+  } catch(e) { _glossary = []; }
+
+  const overlay = document.createElement('div');
+  overlay.id = '_glossary_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  overlay.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:24px;width:500px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    + '<div style="font-size:14px;font-weight:700;"><i class="fa-solid fa-book" style="color:var(--accent3);margin-right:6px;"></i>Özel Terim Sözlüğü</div>'
+    + '<button onclick="document.getElementById(\'_glossary_overlay\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5;">'
+    + 'Transkriptte geçen özel terimler, kısaltmalar veya argo kelimelerin nasıl çevrileceğini/söyleneceğini tanımlayın. '
+    + 'Hem dublajda hem altyazı çevirisinde otomatik uygulanır.'
+    + '</div>'
+    + '<div id="glossary_satirlar" style="margin-bottom:12px;"></div>'
+    + '<button onclick="glossarySatirEkle()" style="width:100%;padding:8px;background:var(--s3);border:1px dashed var(--border2);border-radius:var(--r);color:var(--muted2);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:12px;">'
+    + '<i class="fa-solid fa-plus" style="margin-right:4px;"></i>Yeni Terim Ekle'
+    + '</button>'
+    + '<button onclick="glossaryKaydet()" style="width:100%;padding:9px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<i class="fa-solid fa-floppy-disk" style="margin-right:5px;"></i>Kaydet'
+    + '</button>'
+    + '</div>';
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  _glossaryRender();
+}
+
+function _glossaryRender() {
+  const cont = document.getElementById('glossary_satirlar');
+  if (!cont) return;
+  if (!_glossary.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted2);font-size:12px;">Henüz terim eklenmedi</div>';
+    return;
+  }
+  cont.innerHTML = _glossary.map((m,i) =>
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">'
+    + '<input value="' + (m.kaynak||'') + '" placeholder="Orijinal (naber, lol...)" oninput="_glossaryGuncelle(' + i + ',\'kaynak\',this.value)" '
+    + 'style="flex:1;padding:7px 9px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;">'
+    + '<span style="color:var(--muted2);font-size:14px;">→</span>'
+    + '<input value="' + (m.hedef||'') + '" placeholder="Çeviri/okunuş (nasılsın...)" oninput="_glossaryGuncelle(' + i + ',\'hedef\',this.value)" '
+    + 'style="flex:1;padding:7px 9px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;">'
+    + '<button onclick="_glossarySil(' + i + ')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:4px;">✕</button>'
+    + '</div>'
+  ).join('');
+}
+function _glossaryGuncelle(i, alan, deger) { if (_glossary[i]) _glossary[i][alan] = deger; }
+function _glossarySil(i) { _glossary.splice(i,1); _glossaryRender(); }
+function glossarySatirEkle() { _glossary.push({kaynak:'',hedef:''}); _glossaryRender(); }
+async function glossaryKaydet() {
+  const temiz = _glossary.filter(m => m.kaynak?.trim() && m.hedef?.trim());
+  try {
+    const fd = new FormData();
+    fd.append('maddeler', JSON.stringify(temiz));
+    const r = await fetch(B + '/api/glossary/', { method:'POST', body:fd });
+    const d = await r.json();
+    if (d.basari) {
+      toast('✓ ' + d.adet + ' terim kaydedildi');
+      document.getElementById('_glossary_overlay')?.remove();
+    } else toast(d.hata||'Kayıt hatası','terr');
+  } catch(e) { toast('Bağlantı hatası','terr'); }
+}
+
+
 function profilAc() {
   document.getElementById('_profil_overlay')?.remove();
   const overlay = document.createElement('div');
