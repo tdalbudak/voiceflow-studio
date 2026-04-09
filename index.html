@@ -178,6 +178,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);heig
 .sc-txt{font-size:13px;color:var(--txt);line-height:1.55;padding:0 2px;}
 .sc-kelime{cursor:pointer;border-radius:3px;padding:1px 1px;transition:background .1s;}
 .sc-kelime:hover{background:rgba(99,102,241,.2);color:var(--accent3);}
+._ai_aksiyon_btn{background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.4);color:var(--accent3);padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;}
+._ai_aksiyon_btn:hover{background:rgba(99,102,241,.32);border-color:var(--accent2);}
 
 /* Altyazı şablon galerisi */
 .sub-template-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
@@ -2887,43 +2889,107 @@ function hizliOneri(metin) {
   return '<button onclick="document.getElementById(\'ai_asistan_input\').value=\'' + metin + '\'" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:100px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--accent2)\'" onmouseout="this.style.borderColor=\'var(--border2)\'">' + metin + '</button>';
 }
 
+// Adım metninden otomatik aksiyon butonu çıkar
+function _aiAksiyonButon(adimMetin) {
+  const t = adimMetin.toLowerCase();
+  // Mod geçişleri
+  if (t.includes('altyaz') && (t.includes('mod') || t.includes('seç') || t.includes('tıkla') || t.includes('geç')))
+    return '<button onclick="_aiAksiyon(\'mod_altyazi\')" class="_ai_aksiyon_btn">▶ Altyazı Moduna Geç</button>';
+  if ((t.includes('dublaj') || t.includes('seslendirme')) && (t.includes('mod') || t.includes('seç') || t.includes('tıkla') || t.includes('geç')))
+    return '<button onclick="_aiAksiyon(\'mod_dublaj\')" class="_ai_aksiyon_btn">▶ Dublaj Moduna Geç</button>';
+  if ((t.includes('transkript') || t.includes('deşifre') || t.includes('transcript')) && (t.includes('mod') || t.includes('seç') || t.includes('tıkla') || t.includes('geç')))
+    return '<button onclick="_aiAksiyon(\'mod_deşifre\')" class="_ai_aksiyon_btn">▶ Transkript Moduna Geç</button>';
+  if ((t.includes('metin') || t.includes('tts') || t.includes('text-to')) && (t.includes('mod') || t.includes('seç') || t.includes('tıkla') || t.includes('geç')))
+    return '<button onclick="_aiAksiyon(\'mod_tts\')" class="_ai_aksiyon_btn">▶ TTS Moduna Geç</button>';
+  // Video yükleme
+  if (t.includes('video') && (t.includes('yükle') || t.includes('upload') || t.includes('seç')))
+    return '<button onclick="_aiAksiyon(\'video_yukle\')" class="_ai_aksiyon_btn">▶ Video Yükle</button>';
+  // Başlat
+  if (t.includes('başlat') || t.includes('start') || t.includes('click start') || t.includes('işlemi başlat'))
+    return '<button onclick="_aiAksiyon(\'baslat\')" class="_ai_aksiyon_btn">▶ Şimdi Başlat</button>';
+  // Ses seç
+  if (t.includes('ses') && (t.includes('seç') || t.includes('pick') || t.includes('voice')))
+    return '<button onclick="_aiAksiyon(\'ses_sec\')" class="_ai_aksiyon_btn">▶ Ses Seç</button>';
+  // Klonlama
+  if (t.includes('klon') || t.includes('clone'))
+    return '<button onclick="_aiAksiyon(\'ses_klonla\')" class="_ai_aksiyon_btn">▶ Ses Klonla</button>';
+  return '';
+}
+
+function _aiAksiyon(kod) {
+  document.getElementById('_ai_asistan_modal')?.remove();
+  switch(kod) {
+    case 'mod_altyazi':   modDegistir('altyazi'); break;
+    case 'mod_dublaj':    modDegistir('seslendirme'); break;
+    case 'mod_deşifre':   modDegistir('desifre'); break;
+    case 'mod_tts':       modDegistir('metinden_sese'); break;
+    case 'video_yukle':   document.getElementById('finput')?.click(); break;
+    case 'baslat':        startProcess(); break;
+    case 'ses_sec':       voicePickerAc('seslendirme'); break;
+    case 'ses_klonla':
+      modDegistir('seslendirme');
+      setTimeout(function(){ document.getElementById('clone_inp')?.click(); }, 400);
+      break;
+  }
+}
+
 async function aiAsistanGonder() {
   const input = document.getElementById('ai_asistan_input');
   const btn   = document.getElementById('ai_asistan_btn');
   const sonuc = document.getElementById('ai_asistan_sonuc');
-  if (!input || !input.value.trim()) { toast('Please write your request','twarn'); return; }
+  if (!input || !input.value.trim()) { toast('Bir şeyler yaz','twarn'); return; }
 
-  if (btn) { btn.textContent = '⏳ Analyzing...'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳ Analiz ediliyor...'; btn.disabled = true; }
+  if (sonuc) { sonuc.style.display = 'none'; sonuc.innerHTML = ''; }
 
   try {
-    // Mevcut context'i ekle — AI daha iyi yanıt verir
     const ctx = [];
-    if (mod) ctx.push(`Current mode: ${mod}`);
-    if (segs.length) ctx.push(`Transcript has ${segs.length} segments`);
-    if (pFile) ctx.push(`Video loaded: ${pFile.name || 'yes'}`);
+    if (mod) ctx.push('Aktif mod: ' + mod);
+    if (segs.length) ctx.push(segs.length + ' segment var');
+    if (pFile) ctx.push('Video yüklü: ' + (pFile.name || 'evet'));
     const sorguWithCtx = ctx.length
-      ? `[Context: ${ctx.join(', ')}]\n\n${input.value.trim()}`
+      ? '[Bağlam: ' + ctx.join(', ') + ']\n\n' + input.value.trim()
       : input.value.trim();
 
     const fd = new FormData();
     fd.append('sorgu', sorguWithCtx);
     fd.append('dil', _uiDil || 'tr');
+
     const resp = await fetch(B + '/api/ai_asistan/', { method: 'POST', body: fd });
+    const data = await resp.json().catch(function(){ return {}; });
+
     if (!resp.ok) {
-      const errData = await resp.json().catch(() => ({}));
-      throw new Error(errData.hata || `Sunucu hatası ${resp.status}`);
+      throw new Error(data.hata || 'Sunucu hatası ' + resp.status);
     }
-    const data = await resp.json();
+
     const text = data.yanit || data.hata || 'Yanıt alınamadı';
+
+    // Satırlara böl → adım adım render
+    const satirlar = text.split('\n').filter(function(s){ return s.trim(); });
+    let html = '';
+    satirlar.forEach(function(satir) {
+      const temiz = satir.trim()
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      const adimMi = /^(\d+[\.\):]|•|-|➡|→|▶)/.test(satir.trim());
+      const btn_html = adimMi ? _aiAksiyonButon(satir) : '';
+      if (adimMi) {
+        html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);">'
+          + '<div style="flex:1;font-size:12px;line-height:1.6;">' + temiz + '</div>'
+          + (btn_html ? '<div style="flex-shrink:0;">' + btn_html + '</div>' : '')
+          + '</div>';
+      } else {
+        html += '<div style="font-size:12px;line-height:1.7;padding:3px 0;color:' + (/^(#|🎯|✅|💡|⚡|🚀)/.test(satir.trim()) ? 'var(--accent3)' : 'var(--muted2)') + ';">' + temiz + '</div>';
+      }
+    });
 
     if (sonuc) {
       sonuc.style.display = 'block';
-      sonuc.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      sonuc.innerHTML = html;
     }
 
-    // Uygula butonu ekle
     if (btn) {
-      btn.textContent = '✅ Öneri alındı — Kapat';
+      btn.textContent = '✅ Tamamlandı — Kapat';
       btn.disabled = false;
       btn.onclick = function() { document.getElementById('_ai_asistan_modal')?.remove(); };
     }
@@ -2931,7 +2997,7 @@ async function aiAsistanGonder() {
   } catch(e) {
     if (sonuc) {
       sonuc.style.display = 'block';
-      sonuc.innerHTML = '⚠️ ' + (e.message || 'Analiz yapılamadı. Lütfen tekrar deneyin.');
+      sonuc.innerHTML = '<div style="color:var(--red2);font-size:12px;">⚠️ ' + (e.message || 'Bağlantı hatası') + '</div>';
     }
     if (btn) { btn.textContent = '✨ Analiz Et & Öneri Al'; btn.disabled = false; }
   }

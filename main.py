@@ -3838,6 +3838,7 @@ async def terms_page():
 # AI ASSISTANT — Gemini 2.0 Flash
 # ============================================================
 @app.post("/api/ai/")
+@app.post("/api/ai_asistan/")
 async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
     if not GEMINI_API_KEY:
         return JSONResponse({"hata": "Gemini API key not configured."}, status_code=500)
