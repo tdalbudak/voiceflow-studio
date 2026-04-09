@@ -3192,37 +3192,29 @@ async def kelime_oneri(
         if heceli not in oneriler:
             oneriler.append(heceli)
 
-    # 5. Baglam varsa Claude API ile akıllı öneri
-    if baglam and len(baglam) > 5 and ELEVENLABS_API_KEY:
+    # 5. Bağlam varsa Gemini ile akıllı öneri
+    if baglam and len(baglam) > 5 and GEMINI_API_KEY:
         try:
-            ai_prompt = f"""Sen bir transkript düzeltme asistanısın.
-Vidyoda geçen "{kelime}" kelimesi yanlış tanınmış olabilir.
-Bağlam: "{baglam}"
-Bu bağlamda "{kelime}" yerine gelebilecek 3 Türkçe kelime öner.
-Sadece JSON liste döndür, açıklama yapma: ["öneri1", "öneri2", "öneri3"]"""
-
-            async with httpx.AsyncClient() as client:
+            ai_prompt = (
+                f'Transkript düzeltme asistanısın. "{kelime}" kelimesi yanlış tanınmış olabilir.\n'
+                f'Bağlam: "{baglam}"\n'
+                f'Bu bağlamda "{kelime}" yerine gelebilecek 3 kelime öner.\n'
+                f'Sadece JSON liste döndür: ["öneri1", "öneri2", "öneri3"]'
+            )
+            async with httpx.AsyncClient(timeout=8.0) as client:
                 r = await client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers={
-                        "x-api-key": os.getenv("ANTHROPIC_API_KEY",""),
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": "claude-haiku-4-5-20251001",
-                        "max_tokens": 100,
-                        "messages": [{"role":"user","content": ai_prompt}]
-                    },
-                    timeout=8.0,
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    json={"contents":[{"parts":[{"text":ai_prompt}]}],
+                          "generationConfig":{"maxOutputTokens":80,"temperature":0.2}}
                 )
-                if r.status_code == 200:
-                    text = r.json()["content"][0]["text"].strip()
-                    import json as _json
-                    ai_oneriler = _json.loads(text)
+            if r.status_code == 200:
+                text = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                m = re.search(r'\[.*?\]', text, re.DOTALL)
+                if m:
+                    ai_oneriler = json.loads(m.group())
                     for ao in ai_oneriler:
                         if ao not in oneriler:
-                            oneriler.insert(0, ao)  # AI önerilerini başa koy
+                            oneriler.insert(0, ao)
         except Exception as ex:
             log.debug(f"[AI Öneri] {ex}")
 
