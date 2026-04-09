@@ -26,7 +26,7 @@ DEEPL_API_KEY       = os.getenv("DEEPL_API_KEY")
 GEMINI_API_KEY      = os.getenv("GEMINI_API_KEY", "")
 STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "re_2gmxFeh5_41LqREVjBxppazRu5RXk5Ui2")
+RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM         = os.getenv("RESEND_FROM", "VoiceFlow Studio <onboarding@resend.dev>")
 SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://biqsljanevkxrgpdxard.supabase.co")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
@@ -4047,7 +4047,7 @@ async def stripe_checkout(
     _stripe.api_key = STRIPE_SECRET_KEY
 
     # Default URLs
-    base = success_url or "https://voiceflow-studio.com"
+    base = success_url or "https://voiceflow.studio"
     ok_url  = f"{base}/app?checkout=success&plan={plan}"
     ko_url  = f"{base}/app?checkout=cancel"
 
