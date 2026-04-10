@@ -1189,9 +1189,15 @@ async def gemini_srt_slang_normalize(srt_icerik: str, kaynak_dil: str = "tr") ->
         batch = tum_metinler[i:i+BATCH]
         numarali = "\n".join(f"{j+1}. {m}" for j, m in enumerate(batch))
         prompt = (
-            f"Normalize these {len(batch)} transcript lines from colloquial/slang to standard spoken language ({kaynak_dil}).\n"
-            f"Fix: internet slang, abbreviations, filler words, mixed languages, regional dialect.\n"
-            f"Keep meaning. Return ONLY numbered list 1. ... 2. ... same language, no explanations.\n\n{numarali}"
+            f"Normalize these {len(batch)} transcript lines. Language: {kaynak_dil}.\n"
+            f"Fix ALL of these:\n"
+            f"1. Internet slang, abbreviations, filler words (um, uh, şey, hani, eee, ıı)\n"
+            f"2. Mixed languages — translate any foreign words inline to {kaynak_dil}\n"
+            f"3. Regional dialect → standard spoken language\n"
+            f"4. Mis-transcribed technical terms: fix brand names (GitHub→GitHub, OAuth→OAuth), "
+            f"programming terms (API, SQL, URL, JSON, CSS, HTML), product names that ASR may mangle\n"
+            f"5. Keep the original meaning. Do NOT add or remove sentences.\n"
+            f"Return ONLY numbered list: 1. ... 2. ... (same language, no explanations)\n\n{numarali}"
         )
         try:
             async with httpx.AsyncClient(timeout=12.0) as c:
@@ -1218,6 +1224,49 @@ async def gemini_srt_slang_normalize(srt_icerik: str, kaynak_dil: str = "tr") ->
         metin = normalize_edilmis[i] if i < len(normalize_edilmis) else blok["metin"]
         satirlar.extend([blok["num"], blok["zaman"], metin, ""])
     return "\n".join(satirlar)
+
+
+async def gemini_metin_kisalt(metin: str, hedef_sure: float, dil: str = "en") -> str:
+    """
+    Hedef süreye sığacak şekilde metni kısaltır (timing overflow önleme).
+    Anlamı korur, gereksiz kelimeleri ve ifadeleri çıkarır.
+    Sadece metin açıkça çok uzunsa çağrılır.
+    """
+    if not GEMINI_API_KEY or not metin or hedef_sure <= 0:
+        return metin
+    # Yaklaşık hedef kelime sayısı: ortalama 2.4 kelime/sn konuşma hızı
+    hedef_kelime = max(3, int(hedef_sure * 2.4))
+    mevcut_kelime = len(metin.split())
+    if mevcut_kelime <= hedef_kelime + 3:
+        return metin  # Zaten yeterince kısa
+    dil_adi = {"tr": "Turkish", "en": "English", "de": "German", "fr": "French",
+               "es": "Spanish", "it": "Italian", "pt": "Portuguese", "ru": "Russian"}.get(dil, "the original language")
+    prompt = (
+        f"Shorten this dubbed speech segment to fit within {hedef_sure:.1f} seconds "
+        f"(target: ~{hedef_kelime} words). Current: {mevcut_kelime} words.\n"
+        f"Language: {dil_adi}.\n"
+        f"Rules:\n"
+        f"- Remove redundant phrases, filler, and the least important details\n"
+        f"- KEEP the core meaning and key information\n"
+        f"- Do NOT change the language or translate\n"
+        f"- Return ONLY the shortened text, no explanations\n\n"
+        f"Text: {metin}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                json={"contents": [{"parts": [{"text": prompt}]}],
+                      "generationConfig": {"maxOutputTokens": 300, "temperature": 0.1}}
+            )
+        if r.status_code == 200:
+            kisaltilmis = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if kisaltilmis and len(kisaltilmis) > 3:
+                log.debug(f"[GeminiKisalt] '{metin[:40]}' → '{kisaltilmis[:40]}' (hedef={hedef_sure:.1f}s)")
+                return kisaltilmis
+    except Exception as e:
+        log.debug(f"[GeminiKisalt] fallback: {e}")
+    return metin
 
 
 async def gemini_jargon_temizle(metin: str, dil: str = "tr") -> str:
@@ -1330,6 +1379,15 @@ async def elevenlabs_segment_uret(
     if metin_temiz != metin:
         log.debug(f"[Normalize] '{metin[:50]}' → '{metin_temiz[:50]}'")
 
+    # 3. Timing overflow önleme: çeviri orijinalden çok uzunsa Gemini ile kısalt
+    # Karakter/saniye tahmini: ortalama ~13 char/s konuşma (dile göre değişir)
+    if hedef_sure > 0:
+        CPS = {"tr": 14, "en": 13, "de": 12, "fr": 13, "es": 13, "it": 13, "pt": 13, "ru": 12}.get(dil, 13)
+        tahmin_sure = len(metin_temiz) / CPS
+        if tahmin_sure > hedef_sure * 1.3:  # %30'dan fazla taşma riski var
+            log.info(f"[GeminiKisalt] Taşma riski: tahmin={tahmin_sure:.1f}s hedef={hedef_sure:.1f}s — kısaltılıyor")
+            metin_temiz = await gemini_metin_kisalt(metin_temiz, hedef_sure, dil)
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}"
     headers = {
         "Accept": "audio/mpeg",
@@ -1399,9 +1457,9 @@ async def elevenlabs_segment_uret(
                 oran = gercek / hedef_sure
                 log.debug(f"[TTS] üretilen={gercek:.2f}s hedef={hedef_sure:.2f}s oran={oran:.2f}x")
 
-                # 2. Doğal hız sınırı: max 1.25x — daha fazlası yapay hızlı duyulur
-                MAX_ATEMPO = 1.25
-                if oran > 1.12:  # %12'den fazla uzunsa hafifçe sıkıştır
+                # 2. Doğal hız sınırı: max 1.35x — Gemini kısaltma sonrası hafif taşma için tolerans
+                MAX_ATEMPO = 1.35
+                if oran > 1.10:  # %10'dan fazla uzunsa hafifçe sıkıştır
                     oran_sinir = min(oran, MAX_ATEMPO)
                     filtre = f"atempo={oran_sinir:.4f}"
                     adj = output_path + "_adj.mp3"
@@ -1632,6 +1690,19 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                 islem_durumlari[out_file] = {"durum": f"Hata: {_hata_mesaji('segment_yok')}", "yuzde": 0}
                 return
             log.info(f"[Desifre] SRT oluşturuldu ({os.path.getsize(srt_path)} byte)")
+
+            # Teknik terim / slang normalize (Gemini) — transkript kalitesini iyileştirir
+            if GEMINI_API_KEY:
+                islem_durumlari[out_file] = {"durum": "Transkript iyileştiriliyor (teknik terimler)...", "yuzde": 75}
+                try:
+                    with open(srt_path, encoding="utf-8") as f:
+                        ham_srt = f.read()
+                    temizlenmis = await gemini_srt_slang_normalize(ham_srt, kaynak_dil or "tr")
+                    with open(srt_path, "w", encoding="utf-8") as f:
+                        f.write(temizlenmis)
+                    log.info("[Desifre] Gemini normalize tamamlandı")
+                except Exception as e:
+                    log.warning(f"[Desifre] Gemini normalize hata (orijinal kullanılıyor): {e}")
 
             # Çeviri — hedef dil varsa çevir
             hd = (hedef_dil or "").strip().upper()
