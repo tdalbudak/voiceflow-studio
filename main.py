@@ -3943,25 +3943,32 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
         f"IMPORTANT: Always reply in {dil_adi}. Use numbered steps for workflow questions. Use emoji. Be concise."
     )
 
+    # System context'i kullanıcı mesajının başına ekle — daha uyumlu yaklaşım
+    tam_sorgu = f"{system_prompt}\n\n---\nUser: {sorgu}"
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
                 json={
-                    "system_instruction": {"parts": [{"text": system_prompt}]},
-                    "contents": [{"parts": [{"text": sorgu}]}],
-                    "generationConfig": {"maxOutputTokens": 600, "temperature": 0.7}
+                    "contents": [{"parts": [{"text": tam_sorgu}]}],
+                    "generationConfig": {"maxOutputTokens": 700, "temperature": 0.7}
                 }
             )
         if r.status_code == 200:
             data = r.json()
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            candidates = data.get("candidates", [])
+            if not candidates:
+                pf = data.get("promptFeedback", {})
+                reason = pf.get("blockReason", "NO_CANDIDATES")
+                log.error(f"[Gemini AI Asistan] Yanıt engellendi: {reason}")
+                return JSONResponse({"hata": f"Response blocked: {reason}"}, status_code=500)
+            text = candidates[0]["content"]["parts"][0]["text"]
             return JSONResponse({"yanit": text})
         else:
-            log.error(f"[Gemini] HTTP {r.status_code}: {r.text[:200]}")
-            return JSONResponse({"hata": f"Gemini error {r.status_code}"}, status_code=500)
+            log.error(f"[Gemini AI Asistan] HTTP {r.status_code}: {r.text[:300]}")
+            return JSONResponse({"hata": f"Gemini error {r.status_code}: {r.text[:120]}"}, status_code=500)
     except Exception as e:
-        log.error(f"[Gemini] {e}")
+        log.error(f"[Gemini AI Asistan] {e}")
         return JSONResponse({"hata": str(e)}, status_code=500)
 
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260410b -->
+<!-- v20260410c -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2864,8 +2864,71 @@ async function speakerMapKaydet() {
     fd.append('dosya_adi', aSrt);
     fd.append('speaker_map', JSON.stringify(_speakerMap));
     const r = await fetch(B + '/api/speaker_map/', { method:'POST', body:fd });
-    if (r.ok) toast('✓ Konuşmacı ses haritası kaydedildi — Dublaj başlatınca uygulanacak');
+    if (r.ok) {
+      toast('✓ Konuşmacı ses haritası kaydedildi');
+      // "Dublaja Hazır" CTA göster
+      _dublajaHazirGoster();
+    }
   } catch(e) { toast('Kayıt hatası','terr'); }
+}
+
+function _dublajaHazirGoster() {
+  document.getElementById('_dub_hazir_modal')?.remove();
+  const speakers = Object.keys(_speakerMap).sort();
+  const hedefDil = document.getElementById('tgt_lang')?.value || '';
+  const dilAdi = hedefDil ? (document.getElementById('tgt_lang')?.options[document.getElementById('tgt_lang')?.selectedIndex]?.text || hedefDil) : '—';
+  const glossarySay = _glossary.filter(function(g){ return g.kaynak && g.hedef; }).length;
+
+  const spRows = speakers.map(function(sp) {
+    const cfg = _speakerMap[sp];
+    const vid = typeof cfg === 'object' ? cfg.voice_id : cfg;
+    const v = VOICES.find(function(x){ return x.id === vid; }) || {name: vid ? vid.slice(0,8)+'…' : 'Atanmadı', flag:'🎙'};
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">'
+      + '<div style="font-size:12px;color:var(--muted2);min-width:90px;">Konuşmacı ' + sp + '</div>'
+      + '<div style="font-size:13px;font-weight:600;">' + v.flag + ' ' + v.name + '</div>'
+      + '</div>';
+  }).join('');
+
+  const ov = document.createElement('div');
+  ov.id = '_dub_hazir_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:14px;padding:28px;width:440px;max-width:95vw;">'
+    + '<div style="text-align:center;margin-bottom:20px;">'
+    + '<div style="font-size:32px;margin-bottom:8px;">🎬</div>'
+    + '<div style="font-size:17px;font-weight:800;margin-bottom:4px;">Dublaja Hazır</div>'
+    + '<div style="font-size:12px;color:var(--muted2);">Aşağıdaki ayarlarla dublaj başlatılacak</div>'
+    + '</div>'
+    // Speaker listesi
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Konuşmacı Sesleri</div>'
+    + spRows
+    + '</div>'
+    // Hedef dil + glossary
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">'
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;">'
+    + '<div style="font-size:10px;color:var(--muted2);margin-bottom:3px;">Hedef Dil</div>'
+    + '<div style="font-size:13px;font-weight:700;">' + (hedefDil ? dilAdi : '<span style="color:var(--red2);">⚠ Seçilmedi</span>') + '</div>'
+    + '</div>'
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;cursor:pointer;" onclick="document.getElementById(\'_dub_hazir_modal\').remove();glossaryAc()">'
+    + '<div style="font-size:10px;color:var(--muted2);margin-bottom:3px;">Glossary</div>'
+    + '<div style="font-size:13px;font-weight:700;">' + glossarySay + ' terim' + (glossarySay === 0 ? ' <span style="font-size:10px;color:var(--yellow2);">+ Ekle</span>' : '') + '</div>'
+    + '</div>'
+    + '</div>'
+    + (!hedefDil ? '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:8px 12px;font-size:11px;color:var(--red2);margin-bottom:14px;">⚠ Hedef dil seçilmedi — dil seçmeden dublaj başlatırsanız orijinal dilde seslendirme yapılır.</div>' : '')
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="document.getElementById(\'_dub_hazir_modal\').remove();_dublajiBaslat()" style="flex:1;background:linear-gradient(90deg,var(--accent),#7c3aed);border:none;color:#fff;padding:13px;border-radius:var(--r);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;">🎙 Dublajı Başlat</button>'
+    + '<button onclick="document.getElementById(\'_dub_hazir_modal\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:13px 16px;border-radius:var(--r);font-size:13px;cursor:pointer;font-family:inherit;">İptal</button>'
+    + '</div>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function _dublajiBaslat() {
+  // Pro moda ve seslendirme sekmesine geç (speaker map zaten kayıtlı)
+  if (typeof modGecis === 'function') modGecis('pro');
+  if (typeof sw === 'function') sw('seslendirme');
+  setTimeout(function(){ startProcess(); }, 400);
 }
 function _ttsHL(){
   document.querySelectorAll('[id^="tvli_"]').forEach(el=>{
@@ -5035,9 +5098,13 @@ function renderSegs(srt,fn,tr=false){
   if(uSpk.size>1){
     speakerMapPanelOlustur(segs.map(s=>({text:s.rawText||s.text})));
     _speakerUyariGoster(uSpk.size);
-    if(fn)fetch(`${B}/api/speaker_map/${fn}`).then(r=>r.json()).then(d=>{
-      _speakerMap=d;
-      Object.entries(d).forEach(([sp,vid])=>{const sel=document.getElementById('spv_' + sp);if(sel)sel.value=vid;});
+    // Kayıtlı speaker map varsa yükle → paneli yeniden çiz
+    if(fn)fetch(`${B}/api/speaker_map/${fn}`).then(r=>r.json()).then(function(d){
+      if(d && Object.keys(d).length){
+        _speakerMap = d;
+        // Paneli güncel seslerle yeniden oluştur
+        speakerMapPanelOlustur(segs.map(function(s){return{text:s.rawText||s.text};}));
+      }
     }).catch(()=>{});
   }
 
@@ -7514,6 +7581,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (input) { const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files; input.dispatchEvent(new Event('change')); }
     }
   });
+  // Glossary'yi sessizce önceden yükle — startProcess'te doğru kontrol için
+  fetch(B + '/api/glossary/').then(function(r){ return r.ok ? r.json() : []; }).then(function(d){ if(Array.isArray(d)) _glossary = d; }).catch(function(){});
+
   setTimeout(_welcomeSplashGoster, 1000);
 });
 </script>
