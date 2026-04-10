@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20260409 -->
+<!-- v20260410 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -412,6 +412,15 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 .ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);}
 .ob-dot.on{background:#fff;}
 @keyframes ob-pulse{0%,100%{box-shadow:0 4px 24px rgba(99,102,241,.5);}50%{box-shadow:0 4px 32px rgba(99,102,241,.9),0 0 0 5px rgba(99,102,241,.15);}}
+/* ── Plan Pill ── */
+#nav_plan_pill{display:none;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--green2);cursor:pointer;white-space:nowrap;transition:all .2s;}
+#nav_plan_pill:hover{background:rgba(34,197,94,.2);}
+#nav_plan_pill.warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--yellow2);}
+#nav_plan_pill.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red2);}
+/* ── Error Card ── */
+.err-card{position:fixed;bottom:60px;right:14px;background:var(--s2);border:1px solid rgba(239,68,68,.35);border-radius:10px;padding:14px 16px;z-index:9990;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:sup .2s ease;}
+/* ── Download Expiry Banner ── */
+.dl-expiry{position:fixed;bottom:14px;right:14px;background:var(--s2);border:1px solid rgba(245,158,11,.45);border-radius:10px;padding:13px 16px;z-index:9000;max-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:sup .2s ease;}
 
 /* ══ MOBİL RESPONSIVE ══ */
 @media(max-width:768px){
@@ -588,6 +597,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="mod-toggle-btn" id="btn_sihirli" onclick="modGecis('sihirli')">✨ Magic</button>
       <button class="mod-toggle-btn active" id="btn_pro" onclick="modGecis('pro')">🎛️ Pro</button>
     </div>
+    <div id="nav_plan_pill" onclick="dashboardAc()" title="Kalan dakika — tıkla: My Files"><span>⚡</span><span id="nav_plan_pill_txt">--</span></div>
     <button class="cloud-btn" onclick="dashboardAc()" title="My Files & Profile" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> My Files</button>
     <button class="cloud-btn" onclick="profilAc()" title="Profile & Usage" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
     <button class="cloud-btn" onclick="glossaryAc()" title="Özel terim sözlüğü"><i class="fa-solid fa-book"></i> Glossary</button>
@@ -1735,6 +1745,131 @@ function t2s(str){if(!str)return 0;const c=str.trim().replace(',','.');const p=c
 function fmt(s){return p2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)) + ':' + p2(Math.floor(s%60));}
 function cps(txt,d){return d<=0?0:Math.round(txt.replace(/\s/g,'').length/d);}
 function cpsC(c){return c<=20?'cps-ok':c<=27?'cps-warn':'cps-bad';}
+
+/* ═══ PLAN PILL ═══ */
+function _planPillGuncelle() {
+  const pill = document.getElementById('nav_plan_pill');
+  const txt  = document.getElementById('nav_plan_pill_txt');
+  if (!pill || !_sbUser) return;
+  const plan      = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
+  const kulDk     = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
+  const planLimit = {lite:10, creator:75, studio:200, business:600}[plan] || 10;
+  const kalan     = Math.max(0, planLimit - kulDk);
+  const pct       = Math.min(100, (kulDk / planLimit) * 100);
+  pill.style.display = 'flex';
+  txt.textContent = kalan.toFixed(1) + ' min left';
+  pill.className  = pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : '';
+}
+
+/* ═══ SMART ERROR MESSAGES ═══ */
+function _parseHata(rawMsg) {
+  if (!rawMsg) return 'Unknown error';
+  const m = rawMsg.toLowerCase();
+  if (m.includes('karakter kotanız') || (m.includes('quota') && m.includes('elevenlabs')))
+    return 'ElevenLabs character quota exceeded. Upgrade your ElevenLabs plan at elevenlabs.io, or wait for monthly reset.';
+  if (m.includes('elevenlabs_401') || (m.includes('elevenlabs') && m.includes('api key')))
+    return 'ElevenLabs API key is invalid. Check the <b>ELEVENLABS_API_KEY</b> in Railway environment variables.';
+  if (m.includes('elevenlabs') && (m.includes('402') || m.includes('paid_plan')))
+    return 'This voice requires an ElevenLabs paid plan. Choose a different voice in the Voice Picker.';
+  if (m.includes('429') || (m.includes('rate') && m.includes('limit')))
+    return 'API rate limit hit. Wait 30–60 seconds and try again.';
+  if (m.includes('deepgram') || (m.includes('transkript') && m.includes('hata')))
+    return 'Transcription service error. Your Deepgram API key may be invalid or quota exceeded.';
+  if (m.includes('deepl') || (m.includes('çeviri') && m.includes('hata')))
+    return 'Translation error. Check your DeepL API key in Railway settings.';
+  if ((m.includes('dosya bulunamadı') || m.includes('not found')) && !m.includes('srt'))
+    return 'File not found on server. Files expire after ~24h — please upload again.';
+  if (m.includes('dakika limitiniz') || (m.includes('kredi') && m.includes('yok')) || m.includes('bakiyeniz'))
+    return 'Your monthly minutes are used up. Upgrade your plan to continue processing.';
+  if ((m.includes('boyut') || m.includes('too large')) && m.includes('mb'))
+    return 'File is too large (max 500 MB). Compress your video and try again.';
+  if (m.includes('ffmpeg'))
+    return 'Video processing error (FFmpeg). Contact support if this persists.';
+  if (m.includes('timeout') || m.includes('timed out'))
+    return 'Processing timed out. Try a shorter video or check your internet connection.';
+  if (m.includes('bağlantı kesildi') || m.includes('connection refused') || m.includes('network'))
+    return 'Connection lost. Check your internet connection and try again.';
+  return rawMsg;
+}
+
+function _toastHata(rawMsg) {
+  const clean = rawMsg.replace(/^Hata:\s*/i, '');
+  const msg   = _parseHata(clean);
+  const isQuota = msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('minutes are used') || msg.toLowerCase().includes('upgrade');
+  const card  = document.createElement('div');
+  card.className = 'err-card';
+  card.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;">'
+    + '<div style="font-size:20px;flex-shrink:0;line-height:1;">⚠️</div>'
+    + '<div style="flex:1;">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--red2);margin-bottom:5px;">Error</div>'
+    + '<div style="font-size:11px;color:var(--muted2);line-height:1.6;">' + msg + '</div>'
+    + (isQuota ? '<button onclick="planYukselt();this.closest(\'.err-card\').remove()" style="margin-top:9px;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:7px 13px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Upgrade Plan</button>' : '')
+    + '</div>'
+    + '<button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0;flex-shrink:0;line-height:1;">×</button>'
+    + '</div>';
+  document.body.appendChild(card);
+  setTimeout(function(){ card.remove(); }, 14000);
+}
+
+/* ═══ DOWNLOAD EXPIRY BANNER ═══ */
+function _dlExpiryBanner(fn) {
+  document.querySelectorAll('.dl-expiry').forEach(function(e){ e.remove(); });
+  const ban = document.createElement('div');
+  ban.className = 'dl-expiry';
+  ban.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;">'
+    + '<div style="font-size:20px;line-height:1;flex-shrink:0;">⏳</div>'
+    + '<div style="flex:1;">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--yellow2);margin-bottom:4px;">Download now!</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:9px;line-height:1.5;">Files are stored for ~24h on our servers. Download before they expire.</div>'
+    + '<div style="display:flex;gap:6px;">'
+    + '<a href="' + B + '/indir/' + fn + '" download style="flex:1;text-align:center;background:var(--green);border:none;color:#fff;padding:7px 10px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block;">⬇ Download</a>'
+    + '<button onclick="dashboardAc()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:7px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">My Files</button>'
+    + '</div>'
+    + '</div>'
+    + '<button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0;flex-shrink:0;line-height:1;">×</button>'
+    + '</div>';
+  document.body.appendChild(ban);
+  setTimeout(function(){ ban.remove(); }, 25000);
+}
+
+/* ═══ WELCOME SPLASH ═══ */
+function _welcomeSplashGoster() {
+  if (localStorage.getItem('vf_welcome_done')) { onboardingBaslat(); return; }
+  const ov = document.createElement('div');
+  ov.id = '_welcome_splash';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:16px;padding:32px;width:500px;max-width:95vw;text-align:center;">'
+    + '<div style="width:56px;height:56px;margin:0 auto 14px;background:linear-gradient(135deg,var(--accent2),#a855f7);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">L</div>'
+    + '<div style="font-size:20px;font-weight:800;margin-bottom:6px;">Welcome to Lumnex</div>'
+    + '<div style="font-size:13px;color:var(--muted2);margin-bottom:24px;">AI-powered dubbing, subtitles &amp; transcription. Here\'s what you can do:</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;text-align:left;">'
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
+    + '<div style="font-size:22px;margin-bottom:6px;">📝</div>'
+    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Transcript</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">Convert video speech to editable text</div>'
+    + '</div>'
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
+    + '<div style="font-size:22px;margin-bottom:6px;">🎬</div>'
+    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Subtitle</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">Auto-burn captions into your video</div>'
+    + '</div>'
+    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
+    + '<div style="font-size:22px;margin-bottom:6px;">🎙</div>'
+    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Dub</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">Translate voice to 60+ languages</div>'
+    + '</div>'
+    + '</div>'
+    + '<button onclick="_welcomeSplashKapat()" style="background:linear-gradient(90deg,var(--accent),#7c3aed);border:none;color:#fff;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-bottom:10px;">Get Started →</button>'
+    + '<div style="font-size:11px;color:var(--muted);">Free plan: 10 min/month · No credit card required</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+function _welcomeSplashKapat() {
+  document.getElementById('_welcome_splash')?.remove();
+  localStorage.setItem('vf_welcome_done', '1');
+  setTimeout(onboardingBaslat, 600);
+}
 
 function toast(msg,t='ok',ms=2600){
   const e=document.createElement('div');
@@ -4658,7 +4793,7 @@ function pollStatus(fn){
       if(d.yuzde === 0 && d.durum && d.durum.startsWith('Hata:')) {
         clearInterval(iv);
         document.getElementById('sbox')?.classList.add('hidden');
-        toast(d.durum, 'terr', 8000);
+        _toastHata(d.durum);
         return;
       }
 
@@ -4673,7 +4808,7 @@ function pollStatus(fn){
       errorCount++;
       if(errorCount > 10) {
         clearInterval(iv);
-        toast('Sunucu bağlantısı kesildi','terr');
+        _toastHata('Bağlantı kesildi — sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edin.');
         document.getElementById('sbox')?.classList.add('hidden');
       }
     }
@@ -4686,6 +4821,8 @@ function showResult(fn){
   // Kullanımı Supabase'e kaydet (giriş yapılmışsa)
   if (_sbUser) _kullanimi_kaydet(fn);
   document.getElementById('xwrap')?.classList.remove('hidden');
+  // Download expiry banner (dosya Railway'de ~24h tutulur)
+  if (mod !== 'desifre') _dlExpiryBanner(fn);
   if(mod==='metinden_sese'){
     document.getElementById('tts_player')?.classList.remove('hidden');
     (function(){var _oa=document.getElementById('tts_status');if(_oa)_oa.textContent='Ses uretildi';})();
@@ -6756,6 +6893,7 @@ async function authGirisYapildi(user) {
   }
   const isim = user.email ? user.email.split('@')[0] : 'User';
   toast('Welcome, ' + isim + '!');
+  _planPillGuncelle();
 }
 
 async function _kullanimi_kaydet(dosya_adi) {
@@ -6772,6 +6910,7 @@ async function _kullanimi_kaydet(dosya_adi) {
         const mevcut = parseFloat(localStorage.getItem('vf_kullanim_dk') || '0');
         localStorage.setItem('vf_kullanim_dk', String(Math.round((mevcut + d.eklenen_dakika) * 100) / 100));
         if (_sbProfil) _sbProfil.kullanim_dakika = (parseFloat(_sbProfil.kullanim_dakika || 0) + d.eklenen_dakika);
+        _planPillGuncelle();
       }
     }
   } catch(e) { console.warn('Kullanım kaydı hatası:', e); }
@@ -6781,6 +6920,8 @@ function authCikisYapildi() {
   _sbUser = null; _sbProfil = null;
   const navName = document.getElementById('nav_user_name');
   if (navName) navName.style.display = 'none';
+  const pill = document.getElementById('nav_plan_pill');
+  if (pill) pill.style.display = 'none';
 }
 
 async function authCikis() {
@@ -6798,7 +6939,7 @@ function loginModalAc(mesaj) {
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:32px;width:380px;max-width:95vw;">'
     + '<div style="text-align:center;margin-bottom:24px;">'
     + '<div style="font-size:36px;margin-bottom:8px;">&#127897;</div>'
-    + '<div style="font-size:18px;font-weight:700;">[SITE_NAME]</div>'
+    + '<div style="font-size:18px;font-weight:700;">Lumnex</div>'
     + '<div style="font-size:12px;color:var(--muted2);margin-top:4px;">' + msg + '</div>'
     + '</div>'
     + '<div style="display:flex;background:var(--s3);border-radius:var(--r);padding:3px;margin-bottom:20px;">'
@@ -7318,7 +7459,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (input) { const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files; input.dispatchEvent(new Event('change')); }
     }
   });
-  setTimeout(onboardingBaslat, 1500);
+  setTimeout(_welcomeSplashGoster, 1000);
 });
 </script>
 </body>
