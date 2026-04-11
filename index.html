@@ -598,6 +598,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="mod-toggle-btn active" id="btn_pro" onclick="modGecis('pro')">🎛️ Pro</button>
     </div>
     <div id="nav_plan_pill" onclick="dashboardAc()" title="Kalan dakika — tıkla: My Files"><span>⚡</span><span id="nav_plan_pill_txt">--</span></div>
+    <div id="nav_free_badge" onclick="loginModalAc()" title="Ücretsiz başla" style="display:none;align-items:center;gap:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:100px;padding:4px 11px;font-size:11px;font-weight:700;color:#22c55e;cursor:pointer;white-space:nowrap;">✦ Free: 10 dk/ay</div>
     <button class="cloud-btn" onclick="dashboardAc()" title="My Files & Profile" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> My Files</button>
     <button class="cloud-btn" onclick="profilAc()" title="Profile & Usage" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
     <button class="cloud-btn" onclick="glossaryAc()" title="Özel terim sözlüğü"><i class="fa-solid fa-book"></i> Glossary</button>
@@ -2734,9 +2735,15 @@ function speakerMapPanelOlustur(segmentler) {
 
   panel.innerHTML = '<div class="speaker-map-title"><i class="fa-solid fa-users"></i> Konuşmacı → Ses Eşleştirmesi</div>'
     + rows
-    + '<button onclick="speakerMapKaydet()" style="margin-top:10px;width:100%;padding:8px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
-    + '<i class="fa-solid fa-floppy-disk"></i> Ses Haritasını Kaydet'
-    + '</button>';
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">'
+    + '<button onclick="speakerMapKaydet()" style="padding:8px;background:var(--accent);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<i class="fa-solid fa-floppy-disk"></i> Kaydet'
+    + '</button>'
+    + '<button onclick="speakerOtomatikKlonla()" id="btn_auto_clone" style="padding:8px;background:linear-gradient(90deg,#7c3aed,#ec4899);border:none;border-radius:var(--r);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">'
+    + '<i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik Klonla'
+    + '</button>'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:6px;text-align:center;">Otomatik Klonla: her konuşmacının sesini analiz edip klonlar</div>';
 }
 
 function spPickerAc(spNo) {
@@ -2866,10 +2873,62 @@ async function speakerMapKaydet() {
     const r = await fetch(B + '/api/speaker_map/', { method:'POST', body:fd });
     if (r.ok) {
       toast('✓ Konuşmacı ses haritası kaydedildi');
-      // "Dublaja Hazır" CTA göster
       _dublajaHazirGoster();
     }
   } catch(e) { toast('Kayıt hatası','terr'); }
+}
+
+async function speakerOtomatikKlonla() {
+  // Son yüklenen video yoksa uyar
+  const lastFile = sessionStorage.getItem('vf_last_video_blob');
+  if (!lastFile && !_sonDosya) {
+    toast('Önce bir video yükleyin', 'terr'); return;
+  }
+  const btn = document.getElementById('btn_auto_clone');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Klonlanıyor…'; }
+
+  try {
+    // Video dosyasını al — sessionStorage'da blob URL veya yeniden yüklenmiş
+    let videoBlob = window._lastUploadedFile;  // startProcess'te kaydedilecek
+    if (!videoBlob) {
+      toast('Otomatik klonlama için videoyu tekrar yüklemeniz gerekiyor', 'terr');
+      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik Klonla'; }
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('video_dosyasi', videoBlob, videoBlob.name || 'video.mp4');
+    fd.append('dosya_adi', aSrt || '');
+    fd.append('kaynak_dil', document.getElementById('src_lang')?.value || 'tr');
+
+    toast('🎙 Her konuşmacı analiz ediliyor, klonlanıyor… (30-60s)', 'tinfo', 60000);
+    const r = await fetch(B + '/api/speaker_auto_klonla/', { method:'POST', body:fd });
+    const d = await r.json();
+
+    if (!r.ok) {
+      if (d.plan_gerekli) {
+        toast('Ses klonlama için ElevenLabs Creator planı gereklidir. <a href="#" onclick="upgradePlan()">⚡ Yükselt</a>', 'terr', 8000);
+      } else {
+        _toastHata(d.hata || 'Klonlama başarısız');
+      }
+      return;
+    }
+
+    // speaker_map'e klonlanmış voice_id'leri ata
+    const spMap = d.speaker_map || {};
+    Object.entries(spMap).forEach(function([sp, info]) {
+      _speakerMap[sp] = typeof info === 'object' ? info.voice_id : info;
+    });
+
+    // Paneli yeniden çiz
+    if (window._lastSegs) speakerMapPanelOlustur(window._lastSegs);
+
+    toast('✓ ' + d.speaker_sayisi + ' konuşmacı klonlandı! Sesleri kontrol et ve kaydet.', 'tok', 6000);
+  } catch(e) {
+    _toastHata('Klonlama hatası: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik Klonla'; }
+  }
 }
 
 function _dublajaHazirGoster() {
@@ -4351,9 +4410,10 @@ async function dashboardAc() {
     + '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>'
     + '</div>'
     // Alt butonlar
-    + '<div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;">'
+    + '<div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">'
     + (email ? '<button onclick="authCikis();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 16px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;">Sign Out</button>' : '<button onclick="loginModalAc();document.getElementById(\'_dashboard_modal\').remove()" style="background:var(--accent);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Sign In</button>')
-    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Upgrade Plan</button>'
+    + '<button onclick="apiKeyPaneliAc()" style="background:var(--s3);border:1px solid var(--border2);color:var(--fg);padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa-solid fa-key"></i> API</button>'
+    + '<button onclick="planYukselt()" style="margin-left:auto;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Upgrade Plan</button>'
     + '</div>'
     + '</div>';
 
@@ -4361,6 +4421,95 @@ async function dashboardAc() {
 
   // Dosyaları yükle
   dashboardDosyalariYukle();
+}
+
+async function apiKeyPaneliAc() {
+  document.getElementById('_api_key_modal')?.remove();
+  const uid = _sbProfil?.id || '';
+  const ov = document.createElement('div');
+  ov.id = '_api_key_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:14px;padding:28px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div><div style="font-size:16px;font-weight:800;">🔑 API Erişimi</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-top:2px;">REST API ile Lumnex\'i kendi uygulamanıza entegre edin</div></div>'
+    + '<button onclick="document.getElementById(\'_api_key_modal\').remove()" style="background:none;border:none;color:var(--muted2);font-size:18px;cursor:pointer;">✕</button>'
+    + '</div>'
+    // Dokümantasyon özeti
+    + '<div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:11px;line-height:1.7;color:var(--fg);">'
+    + '<b>Endpointler:</b><br>'
+    + '<code style="color:#60a5fa;">POST /api/v1/transcribe</code> — Video → SRT/JSON/TXT<br>'
+    + '<code style="color:#60a5fa;">POST /api/v1/translate</code> — SRT → Çevrilmiş SRT<br>'
+    + '<code style="color:#60a5fa;">GET /api/v1/status</code> — Key durumu + kota<br>'
+    + '<b>Auth:</b> <code>Authorization: Bearer lmnx_xxx</code>'
+    + '</div>'
+    // Key oluştur
+    + '<div style="margin-bottom:16px;">'
+    + '<div style="font-size:12px;font-weight:700;margin-bottom:8px;">Yeni API Key Oluştur</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<input id="api_key_isim" placeholder="Key adı (ör: Benim Uygulama)" style="flex:1;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 12px;color:var(--fg);font-family:inherit;font-size:12px;">'
+    + '<button onclick="apiKeyOlustur()" style="background:var(--accent);border:none;color:#fff;padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Oluştur</button>'
+    + '</div>'
+    + '<div id="api_key_sonuc" style="margin-top:8px;"></div>'
+    + '</div>'
+    // Mevcut keyler
+    + '<div><div style="font-size:12px;font-weight:700;margin-bottom:8px;">Mevcut Keyler</div>'
+    + '<div id="api_key_liste" style="font-size:11px;color:var(--muted2);padding:12px;text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor…</div>'
+    + '</div></div>';
+
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+
+  // Mevcut keyleri yükle
+  if (uid) {
+    try {
+      const r = await fetch(B + '/api/v1/keys/?user_id=' + uid);
+      const keys = await r.json();
+      const el = document.getElementById('api_key_liste');
+      if (!el) return;
+      if (!keys.length) {
+        el.textContent = 'Henüz API key oluşturulmadı.';
+      } else {
+        el.innerHTML = keys.map(function(k) {
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border1);">'
+            + '<code style="flex:1;font-size:11px;color:var(--accent2);">' + k.key_on + '</code>'
+            + '<span style="font-size:10px;color:var(--muted2);">' + (k.isim||'') + '</span>'
+            + '<span style="font-size:10px;color:var(--muted);">' + (k.istek_sayisi||0) + ' istek</span>'
+            + '<span style="font-size:10px;padding:2px 6px;border-radius:99px;background:' + (k.aktif?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)') + ';color:' + (k.aktif?'#22c55e':'#ef4444') + ';">' + (k.aktif?'Aktif':'İptal') + '</span>'
+            + '</div>';
+        }).join('');
+      }
+    } catch(e) {
+      const el = document.getElementById('api_key_liste');
+      if (el) el.textContent = 'Keyler yüklenemedi.';
+    }
+  }
+}
+
+async function apiKeyOlustur() {
+  const isim = document.getElementById('api_key_isim')?.value?.trim();
+  if (!isim) { toast('Key adı girin', 'twarn'); return; }
+  const uid = _sbProfil?.id || '';
+  if (!uid) { toast('Giriş yapmanız gerekiyor', 'terr'); return; }
+  try {
+    const fd = new FormData();
+    fd.append('isim', isim);
+    fd.append('user_id', uid);
+    const r = await fetch(B + '/api/v1/keys/', { method:'POST', body:fd });
+    const d = await r.json();
+    if (d.api_key) {
+      const el = document.getElementById('api_key_sonuc');
+      if (el) el.innerHTML = '<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:var(--r);padding:10px 12px;">'
+        + '<div style="font-size:10px;color:var(--muted2);margin-bottom:4px;">API Key (bir kez gösterilir, kopyalayın!):</div>'
+        + '<code style="font-size:12px;color:#22c55e;word-break:break-all;">' + d.api_key + '</code>'
+        + '<button onclick="navigator.clipboard.writeText(\'' + d.api_key + '\').then(()=>toast(\'Kopyalandı\'))" '
+        + 'style="display:block;margin-top:6px;background:rgba(34,197,94,.15);border:none;color:#22c55e;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:inherit;">📋 Kopyala</button>'
+        + '</div>';
+      // Listeyi yenile
+      apiKeyPaneliAc();
+    }
+  } catch(e) { toast('Key oluşturulamadı: ' + e.message, 'terr'); }
 }
 
 function dashKart(emoji, baslik, deger, alt) {
@@ -4848,6 +4997,8 @@ function setupTU(media){
 async function startProcess(){
   if(mod==='metinden_sese'&&!document.getElementById('txt_input')?.value.trim())return alert('Metin girin!');
   if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
+  // Auto-clone için dosyayı sakla
+  if(pFile) window._lastUploadedFile = pFile;
   bildirimIzniIste(); // İşlem başlarken browser bildirim izni iste
 
   // Glossary hatırlatıcısı — çeviri seçiliyse ve glossary boşsa
@@ -5126,6 +5277,7 @@ function showResult(fn){
 function renderSegs(srt,fn,tr=false){
   const blocks=srt.trim().split(/\n\n+/);
   segs=[];
+  window._lastSegs = segs;  // auto-clone için
   blocks.forEach(b=>{
     const l=b.trim().split('\n');if(l.length<3)return;
     const tp=l[1].split(' --> ');if(tp.length!==2)return;
@@ -7124,6 +7276,9 @@ async function authBaslat() {
 async function authGirisYapildi(user) {
   _sbUser = user;
   document.getElementById('auth_modal')?.remove();
+  // Ücretsiz badge gizle (giriş yapıldı)
+  const badge = document.getElementById('nav_free_badge');
+  if (badge) badge.style.display = 'none';
   // Backend'den profil çek (Supabase service key ile)
   try {
     const pr = await fetch(B + '/api/profil/?user_id=' + user.id);
@@ -7178,6 +7333,9 @@ function authCikisYapildi() {
   if (navName) navName.style.display = 'none';
   const pill = document.getElementById('nav_plan_pill');
   if (pill) pill.style.display = 'none';
+  // Ücretsiz badge göster (misafir)
+  const badge = document.getElementById('nav_free_badge');
+  if (badge) badge.style.display = 'flex';
 }
 
 async function authCikis() {
@@ -7717,6 +7875,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   // Glossary'yi sessizce önceden yükle — startProcess'te doğru kontrol için
   fetch(B + '/api/glossary/').then(function(r){ return r.ok ? r.json() : []; }).then(function(d){ if(Array.isArray(d)) _glossary = d; }).catch(function(){});
+
+  // Ücretsiz badge — başlangıçta giriş yapılmamışsa göster
+  setTimeout(function() {
+    if (!_sbUser) {
+      const badge = document.getElementById('nav_free_badge');
+      if (badge) badge.style.display = 'flex';
+    }
+  }, 2000);
 
   setTimeout(_welcomeSplashGoster, 1000);
 });

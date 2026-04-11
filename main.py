@@ -276,7 +276,8 @@ def _deepl_base_url() -> str:
         return "https://api-free.deepl.com"
     return "https://api.deepl.com"
 
-async def _deepl_chunk_cevir(client: httpx.AsyncClient, satirlar: list, hedef_dil: str) -> list:
+async def _deepl_chunk_cevir(client: httpx.AsyncClient, satirlar: list, hedef_dil: str,
+                              placeholders: dict = None) -> list:
     deepl_hedef = DEEPL_DILLER.get(hedef_dil.upper(), hedef_dil.upper())
     try:
         r = await client.post(
@@ -286,24 +287,35 @@ async def _deepl_chunk_cevir(client: httpx.AsyncClient, satirlar: list, hedef_di
             timeout=30.0,
         )
         r.raise_for_status()
-        return [t["text"] for t in r.json()["translations"]]
+        sonuc = [t["text"] for t in r.json()["translations"]]
+        if placeholders:
+            sonuc = _deepl_placeholder_geri_al(sonuc, placeholders)
+        return sonuc
     except Exception as e:
         print(f"[DeepL Chunk Hata] {e}")
+        # Placeholder'ları geri al (hata durumunda da)
+        if placeholders:
+            satirlar = _deepl_placeholder_geri_al(satirlar, placeholders)
         return satirlar
 
 async def deepl_paralel_cevir_listesi(metin_listesi: list, hedef_dil: str) -> list:
     if not metin_listesi:
         return []
+    # Glossary terimlerini DeepL'den önce koru
+    glossary = _glossary_yukle()
+    korunmus, placeholders = _deepl_glossary_koru(metin_listesi, glossary)
+    if placeholders:
+        print(f"[DeepL Glossary] {len(placeholders)} terim korunuyor → çeviri sonrası geri alınacak")
     # 100'den az segment → tek API çağrısı (en hızlı)
-    if len(metin_listesi) <= 100:
+    if len(korunmus) <= 100:
         async with httpx.AsyncClient() as client:
-            sonuc = await _deepl_chunk_cevir(client, metin_listesi, hedef_dil)
+            sonuc = await _deepl_chunk_cevir(client, korunmus, hedef_dil, placeholders)
         return sonuc
     # 100+ segment → 100'lük batch'ler halinde paralel
     CHUNK = 100
-    chunks = [metin_listesi[i:i+CHUNK] for i in range(0, len(metin_listesi), CHUNK)]
+    chunks = [korunmus[i:i+CHUNK] for i in range(0, len(korunmus), CHUNK)]
     async with httpx.AsyncClient() as client:
-        sonuclar = await asyncio.gather(*[_deepl_chunk_cevir(client, c, hedef_dil) for c in chunks])
+        sonuclar = await asyncio.gather(*[_deepl_chunk_cevir(client, c, hedef_dil, placeholders) for c in chunks])
     return [m for chunk in sonuclar for m in chunk]
 
 async def srt_paralel_cevir(srt_icerik: str, hedef_dil: str) -> str:
@@ -1145,6 +1157,37 @@ def _glossary_uygula(metin: str) -> str:
         if kaynak and hedef:
             metin = re.sub(r'\b' + re.escape(kaynak) + r'\b', hedef, metin, flags=re.IGNORECASE)
     return metin
+
+def _deepl_glossary_koru(satirlar: list, glossary: list) -> tuple:
+    """DeepL çevirisinden önce glossary kaynak terimlerini token ile koru.
+    Döndürür: (korunmuş_satirlar, {token: hedef_terim} haritası)
+    """
+    if not glossary:
+        return satirlar, {}
+    placeholders: dict = {}
+    sonuc = []
+    for satir in satirlar:
+        for i, madde in enumerate(glossary):
+            kaynak = madde.get("kaynak", "").strip()
+            hedef  = madde.get("hedef",  "").strip()
+            if kaynak and hedef:
+                token = f"LMNX{i:03d}GL"
+                placeholders[token] = hedef
+                satir = re.sub(r'(?<![A-Za-z])' + re.escape(kaynak) + r'(?![A-Za-z])',
+                               token, satir, flags=re.IGNORECASE)
+        sonuc.append(satir)
+    return sonuc, placeholders
+
+def _deepl_placeholder_geri_al(satirlar: list, placeholders: dict) -> list:
+    """Token'ları hedef terimlerle değiştir."""
+    if not placeholders:
+        return satirlar
+    sonuc = []
+    for satir in satirlar:
+        for token, hedef in placeholders.items():
+            satir = satir.replace(token, hedef)
+        sonuc.append(satir)
+    return sonuc
 
 
 def _tts_sessizlik_kirp(audio_path: str) -> bool:
@@ -2624,6 +2667,139 @@ async def video_ses_klonla(
             except Exception: pass
         log.error(f"[VideoSesKlonla] {e}")
         return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.post("/api/speaker_auto_klonla/")
+async def speaker_auto_klonla(
+    video_dosyasi: UploadFile = File(...),
+    dosya_adi:     str = Form(""),
+    kaynak_dil:    str = Form("tr"),
+):
+    """
+    Videodaki her konuşmacıyı otomatik tespit et, seslerini ayır ve ElevenLabs ile klonla.
+    Döndürür: { "0": {"voice_id": "...", "isim": "Konuşmacı 0"}, "1": {...} }
+    Klonlanan sesler speaker_map'e otomatik kaydedilir.
+    """
+    if not ELEVENLABS_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
+    if not DEEPGRAM_API_KEY:
+        return JSONResponse({"hata": _hata_mesaji("deepgram_401")}, status_code=500)
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": _hata_mesaji("ffmpeg_yok")}, status_code=500)
+
+    b_id = uuid.uuid4().hex[:8]
+    ext  = os.path.splitext(video_dosyasi.filename or "video.mp4")[1] or ".mp4"
+    tmp_video = os.path.join(TEMP_DIR, f"sak_{b_id}{ext}")
+    tmp_audio = os.path.join(TEMP_DIR, f"sak_{b_id}.mp3")
+    tmp_files = [tmp_video, tmp_audio]
+
+    try:
+        # 1. Video kaydet
+        with open(tmp_video, "wb") as f:
+            shutil.copyfileobj(video_dosyasi.file, f)
+
+        # 2. Sesi çıkar
+        r = await asyncio.to_thread(subprocess.run, [
+            "ffmpeg", "-y", "-i", tmp_video, "-t", "600",
+            "-q:a", "2", "-vn", tmp_audio
+        ], capture_output=True, text=True, timeout=120)
+        if r.returncode != 0 or not os.path.exists(tmp_audio):
+            return JSONResponse({"hata": "Videodan ses çıkarılamadı."}, status_code=500)
+
+        # 3. Deepgram diarize
+        response = await deepgram_desifre_et(tmp_audio, kaynak_dil)
+        words = response.results.channels[0].alternatives[0].words or []
+
+        # 4. Konuşmacı → zaman aralığı haritası
+        speaker_intervals: dict = {}
+        for w in words:
+            sp = str(getattr(w, "speaker", 0) or 0)
+            t_start = float(getattr(w, "start", 0) or 0)
+            t_end   = float(getattr(w, "end",   0) or 0)
+            if t_end > t_start:
+                speaker_intervals.setdefault(sp, []).append((t_start, t_end))
+
+        if not speaker_intervals:
+            return JSONResponse({"hata": "Konuşmacı tespit edilemedi. Diarization verisiz döndü."}, status_code=400)
+
+        log.info(f"[SpeakerAutoKlon] {len(speaker_intervals)} konuşmacı tespit edildi: {list(speaker_intervals.keys())}")
+
+        # 5. Her konuşmacı için ses segmentlerini birleştir ve klonla
+        speaker_map_sonuc: dict = {}
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            for sp_id, intervals in speaker_intervals.items():
+                # FFmpeg filter_complex ile segmentleri birleştir
+                # Minimum 5 saniye ses gerekli (ElevenLabs için)
+                toplam_sure = sum(e - s for s, e in intervals)
+                if toplam_sure < 3.0:
+                    log.warning(f"[SpeakerAutoKlon] Konuşmacı {sp_id} çok az konuştu ({toplam_sure:.1f}s), atlanıyor")
+                    continue
+
+                tmp_sp = os.path.join(TEMP_DIR, f"sak_{b_id}_sp{sp_id}.mp3")
+                tmp_files.append(tmp_sp)
+
+                # Segmentleri trim + concat ile çıkar
+                filter_parts = []
+                for i, (s, e) in enumerate(intervals[:30]):  # max 30 segment
+                    filter_parts.append(f"[0:a]atrim=start={s:.3f}:end={e:.3f},asetpts=PTS-STARTPTS[a{i}]")
+                concat_inputs = "".join(f"[a{i}]" for i in range(len(filter_parts)))
+                filter_complex = ";".join(filter_parts) + f";{concat_inputs}concat=n={len(filter_parts)}:v=0:a=1[outa]"
+
+                ffmpeg_r = await asyncio.to_thread(subprocess.run, [
+                    "ffmpeg", "-y", "-i", tmp_audio,
+                    "-filter_complex", filter_complex,
+                    "-map", "[outa]",
+                    "-q:a", "2",
+                    tmp_sp
+                ], capture_output=True, text=True, timeout=120)
+
+                if ffmpeg_r.returncode != 0 or not os.path.exists(tmp_sp):
+                    log.warning(f"[SpeakerAutoKlon] Konuşmacı {sp_id} ses çıkarma başarısız: {ffmpeg_r.stderr[-200:]}")
+                    continue
+
+                # ElevenLabs'a klonla
+                isim = f"Konuşmacı {sp_id}"
+                with open(tmp_sp, "rb") as audio_f:
+                    el_r = await client.post(
+                        "https://api.elevenlabs.io/v1/voices/add",
+                        headers={"xi-api-key": ELEVENLABS_API_KEY},
+                        data={"name": isim, "description": f"Lumnex — Auto klonlanan konuşmacı {sp_id}"},
+                        files={"files": (f"speaker_{sp_id}.mp3", audio_f, "audio/mpeg")},
+                    )
+
+                if el_r.status_code == 200:
+                    voice_id = el_r.json().get("voice_id")
+                    speaker_map_sonuc[sp_id] = {"voice_id": voice_id, "isim": isim, "sure": round(toplam_sure, 1)}
+                    log.info(f"[SpeakerAutoKlon] Konuşmacı {sp_id} klonlandı → {voice_id}")
+                elif el_r.status_code == 402:
+                    return JSONResponse({
+                        "hata": "Ses klonlama için ElevenLabs Creator planı gereklidir.",
+                        "plan_gerekli": True,
+                        "kismi": speaker_map_sonuc
+                    }, status_code=402)
+                else:
+                    log.warning(f"[SpeakerAutoKlon] EL hata sp{sp_id}: {el_r.status_code} {el_r.text[:100]}")
+
+        # 6. Speaker map'i kaydet (eğer dosya_adi verilmişse)
+        if dosya_adi and speaker_map_sonuc:
+            map_path = os.path.join(OUTPUT_DIR, dosya_adi.replace(".srt","").replace(".mp4","") + "_speaker_map.json")
+            harita = {sp: v["voice_id"] for sp, v in speaker_map_sonuc.items()}
+            with open(map_path, "w", encoding="utf-8") as f:
+                json.dump(harita, f, ensure_ascii=False)
+
+        return JSONResponse({
+            "basari": True,
+            "speaker_sayisi": len(speaker_map_sonuc),
+            "speaker_map": speaker_map_sonuc,
+        })
+
+    except Exception as e:
+        log.error(f"[SpeakerAutoKlon] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+    finally:
+        for f in tmp_files:
+            try: os.remove(f)
+            except Exception: pass
 
 
 @app.delete("/api/ses_sil/{voice_id}")
@@ -4251,3 +4427,219 @@ async def kullanim_kaydet(user_id: str = Form(...), dosya_adi: str = Form(""), d
 
     ok = await sb_kullanim_ekle(user_id, dk)
     return JSONResponse({"ok": ok, "eklenen_dakika": dk})
+
+
+# ============================================================
+# PUBLIC API — REST API v1 (API key auth)
+# ============================================================
+
+API_KEYS_PATH = os.path.join(os.getenv("DATA_DIR", "/app/data"), "api_keys.json")
+
+def _api_keys_yukle() -> dict:
+    try:
+        if os.path.exists(API_KEYS_PATH):
+            with open(API_KEYS_PATH, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def _api_keys_kaydet(data: dict):
+    os.makedirs(os.path.dirname(API_KEYS_PATH), exist_ok=True)
+    with open(API_KEYS_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def _api_key_dogrula(authorization: str = None) -> dict | None:
+    """Authorization: Bearer <key> başlığından key al ve doğrula."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    key = authorization[7:].strip()
+    keys = _api_keys_yukle()
+    meta = keys.get(key)
+    if meta and meta.get("aktif", True):
+        return meta
+    return None
+
+async def _api_auth(request: Request) -> dict:
+    """FastAPI dependency — API key zorunlu."""
+    auth = request.headers.get("Authorization", "")
+    meta = _api_key_dogrula(auth)
+    if not meta:
+        raise HTTPException(status_code=401, detail="Geçersiz veya eksik API key. Authorization: Bearer <key> başlığı gerekli.")
+    return meta
+
+
+# -- API Key yönetimi --
+
+@app.post("/api/v1/keys/")
+async def api_key_olustur(
+    isim:    str = Form(...),
+    user_id: str = Form(...),
+):
+    """Yeni API key oluşturur. user_id ile kullanıcıya bağlı."""
+    import secrets, datetime
+    key = "lmnx_" + secrets.token_urlsafe(32)
+    keys = _api_keys_yukle()
+    keys[key] = {
+        "isim":       isim,
+        "user_id":    user_id,
+        "olusturuldu": datetime.datetime.utcnow().isoformat(),
+        "istek_sayisi": 0,
+        "aktif":      True,
+    }
+    _api_keys_kaydet(keys)
+    log.info(f"[API] Yeni key oluşturuldu: {isim} ({user_id})")
+    return JSONResponse({"api_key": key, "isim": isim})
+
+
+@app.get("/api/v1/keys/")
+async def api_key_listele(user_id: str):
+    """Kullanıcının API key'lerini listeler (key'in son 8 karakteri gösterilir)."""
+    keys = _api_keys_yukle()
+    sonuc = []
+    for k, v in keys.items():
+        if v.get("user_id") == user_id:
+            sonuc.append({
+                "key_on":      k[:8] + "..." + k[-8:],
+                "isim":        v.get("isim"),
+                "olusturuldu": v.get("olusturuldu"),
+                "istek_sayisi":v.get("istek_sayisi", 0),
+                "aktif":       v.get("aktif", True),
+            })
+    return JSONResponse(sonuc)
+
+
+@app.delete("/api/v1/keys/{key}")
+async def api_key_iptal(key: str, user_id: str):
+    """API key'i iptal eder (siler değil, devre dışı bırakır)."""
+    keys = _api_keys_yukle()
+    if key not in keys or keys[key].get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Key bulunamadı.")
+    keys[key]["aktif"] = False
+    _api_keys_kaydet(keys)
+    return JSONResponse({"basari": True})
+
+
+# -- API v1 endpointleri --
+
+@app.get("/api/v1/status")
+async def api_v1_status(request: Request):
+    """API key geçerliliğini kontrol eder ve kota bilgisini döner."""
+    meta = await _api_auth(request)
+    return JSONResponse({
+        "basari":       True,
+        "isim":         meta.get("isim"),
+        "user_id":      meta.get("user_id"),
+        "istek_sayisi": meta.get("istek_sayisi", 0),
+        "api_versiyonu": "v1",
+        "ozellikler":   ["transcribe", "translate", "process"],
+    })
+
+
+@app.post("/api/v1/transcribe")
+async def api_v1_transcribe(
+    request:      Request,
+    video:        UploadFile = File(...),
+    kaynak_dil:   str = Form("tr"),
+    hedef_dil:    str = Form(""),
+    format:       str = Form("srt"),   # srt | json | txt
+):
+    """
+    Video/ses dosyasını deşifre eder, isteğe bağlı çevirir.
+    Döndürür: { "srt": "...", "txt": "...", "dil": "tr" }
+    Kimlik doğrulama: Authorization: Bearer <api_key>
+    """
+    meta = await _api_auth(request)
+
+    b_id = uuid.uuid4().hex[:8]
+    ext  = os.path.splitext(video.filename or "input.mp4")[1] or ".mp4"
+    tmp_in  = os.path.join(TEMP_DIR, f"apiv1_{b_id}{ext}")
+    tmp_mp3 = os.path.join(TEMP_DIR, f"apiv1_{b_id}.mp3")
+
+    try:
+        with open(tmp_in, "wb") as f:
+            shutil.copyfileobj(video.file, f)
+
+        # Ses çıkar
+        await asyncio.to_thread(subprocess.run, [
+            "ffmpeg", "-y", "-i", tmp_in, "-q:a", "2", "-vn", tmp_mp3
+        ], capture_output=True, timeout=120)
+
+        if not os.path.exists(tmp_mp3):
+            raise ValueError("Ses çıkarılamadı")
+
+        # Deepgram
+        dg_response = await deepgram_desifre_et(tmp_mp3, kaynak_dil)
+        tmp_srt = os.path.join(TEMP_DIR, f"apiv1_{b_id}.srt")
+        deepgram_to_srt(dg_response, tmp_srt)
+        with open(tmp_srt, encoding="utf-8") as f:
+            srt_icerik = f.read()
+        try: os.remove(tmp_srt)
+        except Exception: pass
+
+        # Opsiyonel çeviri
+        if hedef_dil and hedef_dil.upper() != kaynak_dil.upper() and DEEPL_API_KEY:
+            srt_icerik = await srt_paralel_cevir(srt_icerik, hedef_dil)
+
+        # Format
+        if format == "txt":
+            lines = [l for l in srt_icerik.splitlines() if l.strip() and "-->" not in l and not l.strip().isdigit()]
+            cikti = "\n".join(lines)
+        elif format == "json":
+            bloklar = []
+            for blok in srt_icerik.strip().split("\n\n"):
+                s = blok.strip().split("\n")
+                if len(s) >= 3:
+                    bloklar.append({"index": s[0], "zaman": s[1], "metin": "\n".join(s[2:])})
+            cikti = json.dumps(bloklar, ensure_ascii=False)
+        else:
+            cikti = srt_icerik
+
+        # İstek sayacını artır
+        keys = _api_keys_yukle()
+        auth_key = request.headers.get("Authorization", "")[7:].strip()
+        if auth_key in keys:
+            keys[auth_key]["istek_sayisi"] = keys[auth_key].get("istek_sayisi", 0) + 1
+            _api_keys_kaydet(keys)
+
+        return JSONResponse({
+            "basari":     True,
+            "format":     format,
+            "kaynak_dil": kaynak_dil,
+            "hedef_dil":  hedef_dil or kaynak_dil,
+            "icerik":     cikti,
+        })
+
+    except Exception as e:
+        log.error(f"[API v1 /transcribe] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        for f in [tmp_in, tmp_mp3]:
+            try: os.remove(f)
+            except Exception: pass
+
+
+@app.post("/api/v1/translate")
+async def api_v1_translate(
+    request:    Request,
+    icerik:     str = Form(...),   # SRT veya düz metin
+    hedef_dil:  str = Form(...),
+    format:     str = Form("srt"),
+):
+    """
+    SRT veya düz metni DeepL + Glossary ile çevirir.
+    Kimlik doğrulama: Authorization: Bearer <api_key>
+    """
+    await _api_auth(request)
+    try:
+        if format == "srt":
+            sonuc = await srt_paralel_cevir(icerik, hedef_dil)
+        else:
+            # Düz metin
+            satirlar = [icerik]
+            cevrilen = await deepl_paralel_cevir_listesi(satirlar, hedef_dil)
+            sonuc = cevrilen[0] if cevrilen else icerik
+
+        return JSONResponse({"basari": True, "hedef_dil": hedef_dil, "icerik": sonuc})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
