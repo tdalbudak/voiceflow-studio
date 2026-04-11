@@ -33,9 +33,9 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 # Stripe fiyat ID'leri — Stripe Dashboard'dan alınacak
 STRIPE_PRICES = {
-    "creator":  os.getenv("STRIPE_PRICE_CREATOR",  ""),   # $9/mo
-    "studio":   os.getenv("STRIPE_PRICE_STUDIO",   ""),   # $19/mo
-    "business": os.getenv("STRIPE_PRICE_BUSINESS", ""),   # $49/mo
+    "creator":  os.getenv("STRIPE_PRICE_CREATOR",  ""),   # $14/mo
+    "studio":   os.getenv("STRIPE_PRICE_STUDIO",   ""),   # $34/mo
+    "business": os.getenv("STRIPE_PRICE_BUSINESS", ""),   # $89/mo
 }
 
 # ── Loglama ──
