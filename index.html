@@ -1884,42 +1884,77 @@ function _glossaryHatirlatici() {
 }
 
 /* ═══ WELCOME SPLASH ═══ */
+/* ── Magic Gorev state ── */
+window._magicGorev = localStorage.getItem('vf_magic_gorev') || null;
+
+const MAGIC_GOREVLER = {
+  dublaj:    { emoji:'🌍', baslik:'Başka dile çevir',      acik:'Ses + altyazıyı otomatik çevir',         mod:'seslendirme', adimlar:['Video Yükle','Dil Seç','İşle','İndir'] },
+  tiktok:    { emoji:'📱', baslik:'TikTok / Shorts altyazı', acik:'Viral kelime-kelime altyazı ekle',       mod:'altyazi',     adimlar:['Video Yükle','Stil Seç','İşle','İndir'] },
+  altyazi:   { emoji:'💬', baslik:'Altyazı ekle',           acik:'Otomatik altyazı oluştur ve göm',        mod:'altyazi',     adimlar:['Video Yükle','Dil Seç','İşle','İndir'] },
+  duzenle:   { emoji:'✂️', baslik:'Video düzenle',          acik:'Sessizlik, dolgu kelimeleri, kırp',      mod:'desifre',     adimlar:['Video Yükle','Analiz Et','Düzenle','İndir'] },
+  transkript:{ emoji:'📝', baslik:'Transkript / Özet',      acik:'Sesten yazıya çevir, AI ile özetle',     mod:'desifre',     adimlar:['Video Yükle','Dil Seç','İşle','İndir'] },
+};
+
 function _welcomeSplashGoster() {
-  if (localStorage.getItem('vf_welcome_done')) { onboardingBaslat(); return; }
+  if (localStorage.getItem('vf_welcome_done')) {
+    _magicGorevUygula(window._magicGorev);
+    return;
+  }
   const ov = document.createElement('div');
   ov.id = '_welcome_splash';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
-  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:16px;padding:32px;width:500px;max-width:95vw;text-align:center;">'
-    + '<div style="width:56px;height:56px;margin:0 auto 14px;background:linear-gradient(135deg,var(--accent2),#a855f7);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">L</div>'
-    + '<div style="font-size:20px;font-weight:800;margin-bottom:6px;">Welcome to Lumnex</div>'
-    + '<div style="font-size:13px;color:var(--muted2);margin-bottom:24px;">AI-powered dubbing, subtitles &amp; transcription. Here\'s what you can do:</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;text-align:left;">'
-    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
-    + '<div style="font-size:22px;margin-bottom:6px;">📝</div>'
-    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Transcript</div>'
-    + '<div style="font-size:11px;color:var(--muted2);">Convert video speech to editable text</div>'
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const kartlar = Object.entries(MAGIC_GOREVLER).map(function(entry) {
+    const key = entry[0], g = entry[1];
+    return '<button onclick="_welcomeGorevSec(\'' + key + '\')" style="'
+      + 'background:var(--s2);border:1.5px solid var(--border2);border-radius:14px;padding:18px 14px;'
+      + 'cursor:pointer;font-family:inherit;text-align:left;transition:all .18s;display:flex;flex-direction:column;gap:6px;'
+      + '" onmouseover="this.style.borderColor=\'var(--accent2)\';this.style.background=\'rgba(99,102,241,.1)\'"'
+      + ' onmouseout="this.style.borderColor=\'var(--border2)\';this.style.background=\'var(--s2)\'">'
+      + '<span style="font-size:28px;">' + g.emoji + '</span>'
+      + '<span style="font-size:13px;font-weight:700;color:var(--txt);">' + g.baslik + '</span>'
+      + '<span style="font-size:11px;color:var(--muted2);line-height:1.4;">' + g.acik + '</span>'
+      + '</button>';
+  }).join('');
+
+  ov.innerHTML = '<div style="background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:560px;max-width:95vw;text-align:center;">'
+    + '<div style="width:52px;height:52px;margin:0 auto 16px;background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;">L</div>'
+    + '<div style="font-size:22px;font-weight:800;margin-bottom:6px;">Ne yapmak istiyorsun?</div>'
+    + '<div style="font-size:13px;color:var(--muted2);margin-bottom:24px;">Seçimine göre sizi adım adım yönlendiririz</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;text-align:left;">'
+    + kartlar
     + '</div>'
-    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
-    + '<div style="font-size:22px;margin-bottom:6px;">🎬</div>'
-    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Subtitle</div>'
-    + '<div style="font-size:11px;color:var(--muted2);">Auto-burn captions into your video</div>'
-    + '</div>'
-    + '<div style="background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:14px;">'
-    + '<div style="font-size:22px;margin-bottom:6px;">🎙</div>'
-    + '<div style="font-size:12px;font-weight:700;margin-bottom:3px;">Dub</div>'
-    + '<div style="font-size:11px;color:var(--muted2);">Translate voice to 60+ languages</div>'
-    + '</div>'
-    + '</div>'
-    + '<button onclick="_welcomeSplashKapat()" style="background:linear-gradient(90deg,var(--accent),#7c3aed);border:none;color:#fff;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-bottom:10px;">Get Started →</button>'
-    + '<div style="font-size:11px;color:var(--muted);">Free plan: 10 min/month · No credit card required</div>'
+    + '<button onclick="_welcomeSplashKapat()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">Pro Studio\'ya geç (gelişmiş mod) →</button>'
+    + '<div style="margin-top:12px;font-size:11px;color:var(--muted);">Free plan: 10 dk/ay · Kredi kartı gerekmez</div>'
     + '</div>';
   document.body.appendChild(ov);
+}
+
+function _welcomeGorevSec(gorev) {
+  document.getElementById('_welcome_splash')?.remove();
+  localStorage.setItem('vf_welcome_done', '1');
+  localStorage.setItem('vf_magic_gorev', gorev);
+  window._magicGorev = gorev;
+  _magicGorevUygula(gorev);
+  _aiAsistanGoster();
 }
 
 function _welcomeSplashKapat() {
   document.getElementById('_welcome_splash')?.remove();
   localStorage.setItem('vf_welcome_done', '1');
-  setTimeout(onboardingBaslat, 600);
+  modGecis('pro');
+}
+
+function _magicGorevUygula(gorev) {
+  if (!gorev || !MAGIC_GOREVLER[gorev]) { modGecis('sihirli'); return; }
+  modGecis('sihirli');
+  _magicAdimGoster(0);
+  // Empty state metnini güncelle
+  const lbl = document.getElementById('lbl_upload');
+  const g = MAGIC_GOREVLER[gorev];
+  if (lbl) lbl.textContent = g.emoji + ' ' + g.baslik + ' — Video veya link yükle';
+  const icon = document.querySelector('.vbox-empty-icon');
+  if (icon) icon.textContent = g.emoji;
 }
 
 function toast(msg,t='ok',ms=2600){
@@ -1980,6 +2015,9 @@ async function cloudUpload(svc){
         var _dp = _platformURLTespit(indirUrl);
         if (_dp) { window._detectedPlatform = _dp; }
         toast('✓ "' + d.baslik + '" — ' + d.boyut_mb + 'MB (' + kaliteSecim + ')');
+        // Magic mod adım ilerlet
+        if (_appMod==='sihirli') _magicAdimGoster(1);
+        setTimeout(_aiProaktifMesaj, 800);
         document.getElementById('modal')?.classList.remove('hidden');
         modalStep(1);
         updateModalBtn();
@@ -2500,6 +2538,8 @@ function dl(c,n,m){
 document.getElementById('finput').addEventListener('change',function(){
   if(!this.files.length)return;
   pFile=this.files[0];pURL=URL.createObjectURL(pFile);
+  // Magic mode adım ilerlet
+  if (_appMod==='sihirli') _magicAdimGoster(1);
   // Lokal dosyada aspect ratio'dan platform tespit et
   window._detectedPlatform = null;
   var _tmpVid = document.createElement('video');
@@ -5056,7 +5096,9 @@ async function startProcess(){
   if(mod!=='metinden_sese'&&!pFile)return alert('Medya yükleyin!');
   // Auto-clone için dosyayı sakla
   if(pFile) window._lastUploadedFile = pFile;
-  bildirimIzniIste(); // İşlem başlarken browser bildirim izni iste
+  bildirimIzniIste();
+  // Magic mod adım: İşle
+  if (_appMod==='sihirli') _magicAdimGoster(2);
 
   // Glossary hatırlatıcısı — çeviri seçiliyse ve glossary boşsa
   const _hedefDilCheck = document.getElementById('tgt_lang')?.value || document.getElementById('tts_tgt_lang')?.value || '';
@@ -5334,7 +5376,9 @@ function showResult(fn){
 function renderSegs(srt,fn,tr=false){
   const blocks=srt.trim().split(/\n\n+/);
   segs=[];
-  window._lastSegs = segs;  // auto-clone için
+  window._lastSegs = segs;
+  // Magic mod adım: İndir
+  if (_appMod==='sihirli') { _magicAdimGoster(3); _magicTamamlandiGoster(); }
   blocks.forEach(b=>{
     const l=b.trim().split('\n');if(l.length<3)return;
     const tp=l[1].split(' --> ');if(tp.length!==2)return;
@@ -7508,50 +7552,98 @@ function modGecis(yeniMod) {
     });
     (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='flex';})();
     document.getElementById('slist')?.classList.add('hidden');
-    // Sihirli modda vbox_empty (upload alanı) HER ZAMAN görünür kalır
     var vbe = document.getElementById('vbox_empty');
     if (vbe) { vbe.style.display='flex'; vbe.style.pointerEvents='all'; vbe.style.zIndex='1'; }
-    toast('Sihirli Mod aktif — video yukleyin!');
+    // Gorev varsa context'i uygula
+    if (window._magicGorev && MAGIC_GOREVLER[window._magicGorev]) {
+      var g = MAGIC_GOREVLER[window._magicGorev];
+      var lbl = document.getElementById('lbl_upload');
+      if (lbl) lbl.textContent = g.emoji + ' ' + g.baslik + ' — Video veya link yükle';
+      var icon = document.querySelector('.vbox-empty-icon');
+      if (icon) icon.textContent = g.emoji;
+    }
+    _magicAdimGoster(pFile ? 1 : 0);
   } else {
     (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='none';})();
+    document.getElementById('_magic_steps')?.remove();
     sw(mod);
-    toast('Pro Studio modu aktif');
+  }
+}
+
+/* ── Magic adım göstergesi ── */
+window._magicAdimNo = 0;
+function _magicAdimGoster(adim) {
+  window._magicAdimNo = adim;
+  const gorev = window._magicGorev && MAGIC_GOREVLER[window._magicGorev];
+  const adimlar = gorev ? gorev.adimlar : ['Video Yükle','Ayarla','İşle','İndir'];
+
+  document.getElementById('_magic_steps')?.remove();
+  const bar = document.createElement('div');
+  bar.id = '_magic_steps';
+  bar.style.cssText = 'padding:10px 16px 0;display:flex;align-items:center;gap:0;';
+
+  adimlar.forEach(function(s, i) {
+    const aktif = i === adim;
+    const bitti = i < adim;
+    const renk = bitti ? '#22c55e' : aktif ? 'var(--accent2)' : 'var(--muted)';
+    const bg   = bitti ? 'rgba(34,197,94,.15)' : aktif ? 'rgba(99,102,241,.15)' : 'transparent';
+    bar.innerHTML += '<div style="display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:20px;background:' + bg + ';">'
+      + '<div style="width:18px;height:18px;border-radius:50%;background:' + renk + ';display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:800;flex-shrink:0;">'
+      + (bitti ? '✓' : (i+1)) + '</div>'
+      + '<span style="font-size:11px;font-weight:' + (aktif?'700':'400') + ';color:' + renk + ';white-space:nowrap;">' + s + '</span>'
+      + '</div>';
+    if (i < adimlar.length - 1) {
+      bar.innerHTML += '<div style="flex:1;height:1px;background:' + (bitti?'rgba(34,197,94,.4)':'var(--border)') + ';min-width:8px;"></div>';
+    }
+  });
+
+  const magicActions = document.getElementById('magic_actions');
+  if (magicActions && magicActions.parentNode) {
+    magicActions.parentNode.insertBefore(bar, magicActions);
   }
 }
 
 function magicAction(tip) {
   const videoGerekli = !['klonlama','podcast_ozet'].includes(tip);
-  if (videoGerekli && !pFile) { toast('Önce video yükle!','twarn'); return; }
+  if (videoGerekli && !pFile) {
+    // Video yoksa upload'a yönlendir
+    toast('<i class="fa-solid fa-arrow-up"></i> Önce video yükle ya da link yapıştır', 'twarn', 3000);
+    document.getElementById('finput')?.click();
+    return;
+  }
 
   if (tip==='hizli_dublaj') {
+    _magicAdimGoster(1);
     hizliDublajModalAc();
 
   } else if (tip==='hormozi') {
+    _magicAdimGoster(1);
     if (typeof subSablonUygula === 'function') subSablonUygula('tiktok_bold');
-    sw('altyazi'); modGecis('pro');
+    // TikTok modunu tetikle, Pro'ya ATMA
+    document.getElementById('tiktok_mode') && (document.getElementById('tiktok_mode').checked = true);
+    sw('altyazi');
+    toast('📱 TikTok altyazı stili ayarlandı — Start\'a bas!', 'tok', 3500);
 
   } else if (tip==='klonlama') {
-    modGecis('pro'); sw('seslendirme');
+    _magicAdimGoster(1);
     kendiSesiyleyDublajModalAc();
 
   } else if (tip==='silence_cut') {
-    modGecis('pro');
+    _magicAdimGoster(1);
     if (segs.length===0) {
-      // Önce transkript al, sonra magic cut + silence cut
       sw('desifre');
-      toast('Transkript alınıyor, bittikten sonra temizlik yapılacak...','twarn',4000);
+      toast('Transkript alınıyor, bittikten sonra temizlik yapılacak...', 'twarn', 4000);
     } else {
-      magicCut().then(()=> {
-        if (aDosya) silenceCut();
-      });
+      magicCut().then(function(){ if (aDosya) silenceCut(); });
     }
 
   } else if (tip==='magic_cut') {
-    modGecis('pro');
-    if (segs.length===0) { sw('desifre'); toast('Önce transkript alın','twarn',3000); }
+    _magicAdimGoster(1);
+    if (segs.length===0) { sw('desifre'); toast('Önce transkript alın', 'twarn', 3000); }
     else magicCut();
 
   } else if (tip==='podcast_ozet') {
+    _magicAdimGoster(pFile ? 2 : 0);
     podcastOzetModalAc();
   }
 }
@@ -7945,7 +8037,137 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 2000);
 
   setTimeout(_welcomeSplashGoster, 1000);
+  // Floating AI asistan her zaman aktif
+  setTimeout(_aiAsistanGoster, 2500);
 });
+
+/* ════════════════════════════════════════════════════
+   MAGIC MOD — Tamamlandı + Proaktif AI Asistan
+════════════════════════════════════════════════════ */
+
+function _magicTamamlandiGoster() {
+  document.getElementById('_magic_done')?.remove();
+  const gorev = window._magicGorev && MAGIC_GOREVLER[window._magicGorev];
+  const gorevAdi = gorev ? gorev.baslik : 'İşlem';
+  const platform = window._detectedPlatform || 'original';
+  const platEmoji = {tiktok:'📱',shorts:'📱',youtube:'▶️',instagram_story:'📸',instagram_post:'📸',original:'⬛'}[platform] || '⬛';
+
+  const div = document.createElement('div');
+  div.id = '_magic_done';
+  div.style.cssText = 'margin:10px 16px 0;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;';
+  div.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">'
+    + '<span style="font-size:18px;">✅</span>'
+    + '<div style="flex:1;">'
+    + '<div style="font-size:13px;font-weight:700;color:#22c55e;">' + gorevAdi + ' tamamlandı!</div>'
+    + '<div style="font-size:11px;color:var(--muted2);">Dosyan hazır, indirebilir veya paylaşabilirsin</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+    + '<button onclick="xport(\'original\')" style="background:#22c55e;border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">'
+    + '<i class="fa-solid fa-download"></i> İndir</button>'
+    + '<button onclick="xport(\'burn_sub\')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:9px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">'
+    + platEmoji + ' ' + (platform !== 'original' ? platform.charAt(0).toUpperCase()+platform.slice(1) + ' için Kaydet' : 'Altyazı Gömülü İndir') + '</button>'
+    + '<button onclick="_magicYeniden()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:9px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">'
+    + '↩ Yeni Video</button>'
+    + '</div>';
+
+  const bar = document.getElementById('_magic_steps');
+  if (bar && bar.parentNode) bar.parentNode.insertBefore(div, bar.nextSibling);
+  else document.getElementById('magic_actions')?.parentNode?.appendChild(div);
+}
+
+function _magicYeniden() {
+  document.getElementById('_magic_done')?.remove();
+  document.getElementById('_magic_steps')?.remove();
+  // Dosyayı temizle
+  pFile = null; pURL = null; aSrt = null; aDosya = null; segs = [];
+  const vid = document.getElementById('vid'); if (vid) { vid.src=''; vid.style.display='none'; }
+  const empty = document.getElementById('vbox_empty'); if (empty) empty.style.display='flex';
+  _magicGorevUygula(window._magicGorev);
+}
+
+/* ── Proaktif AI Asistan ── */
+var _aiPanelAcik = false;
+
+function _aiAsistanGoster() {
+  if (document.getElementById('_ai_float')) return;
+  const btn = document.createElement('div');
+  btn.id = '_ai_float';
+  btn.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:8000;display:flex;flex-direction:column;align-items:flex-end;gap:8px;';
+  btn.innerHTML = '<div id="_ai_bubble" style="display:none;background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);font-size:13px;line-height:1.6;">'
+    + '<div id="_ai_bubble_txt" style="color:var(--txt);margin-bottom:10px;"></div>'
+    + '<div id="_ai_bubble_btns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>'
+    + '</div>'
+    + '<button onclick="_aiAsistanToggle()" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c3aed);border:none;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,.5);display:flex;align-items:center;justify-content:center;" title="AI Asistan">'
+    + '<i class="fa-solid fa-wand-magic-sparkles"></i></button>';
+  document.body.appendChild(btn);
+
+  // İlk mesajı 1.5sn sonra göster
+  setTimeout(_aiProaktifMesaj, 1500);
+}
+
+function _aiAsistanToggle() {
+  const bubble = document.getElementById('_ai_bubble');
+  if (!bubble) return;
+  _aiPanelAcik = !_aiPanelAcik;
+  bubble.style.display = _aiPanelAcik ? 'block' : 'none';
+  if (_aiPanelAcik && !document.getElementById('_ai_bubble_txt')?.textContent) {
+    _aiProaktifMesaj();
+  }
+}
+
+function _aiProaktifMesaj() {
+  const bubble = document.getElementById('_ai_bubble');
+  const txtEl = document.getElementById('_ai_bubble_txt');
+  const btnsEl = document.getElementById('_ai_bubble_btns');
+  if (!bubble || !txtEl || !btnsEl) return;
+
+  let mesaj = '', butonlar = [];
+
+  if (!pFile) {
+    const gorev = window._magicGorev && MAGIC_GOREVLER[window._magicGorev];
+    if (gorev) {
+      mesaj = '👋 ' + gorev.emoji + ' <b>' + gorev.baslik + '</b> seçtin. Başlamak için videonuzu yükle!';
+      butonlar = [
+        { label: '📁 Dosya Seç', onclick: 'document.getElementById(\'finput\').click();_aiAsistanToggle()' },
+        { label: '🔗 Link Yapıştır', onclick: 'cloudUpload(\'url\');_aiAsistanToggle()' },
+      ];
+    } else {
+      mesaj = '👋 Merhaba! Video yükle, ne yapmak istediğini söyle — seni yönlendiririm.';
+      butonlar = [
+        { label: '🌍 Dil Değiştir', onclick: '_welcomeGorevSec(\'dublaj\')' },
+        { label: '📱 TikTok Altyazı', onclick: '_welcomeGorevSec(\'tiktok\')' },
+      ];
+    }
+  } else if (!segs.length) {
+    mesaj = '✅ Video yüklendi! Şimdi ne yapalım?';
+    butonlar = [
+      { label: '▶ Başlat', onclick: 'startProcess();_aiAsistanToggle()' },
+      { label: '🌍 Dil Değiştir', onclick: 'hizliDublajModalAc();_aiAsistanToggle()' },
+      { label: '📱 TikTok Stili', onclick: 'magicAction(\'hormozi\');_aiAsistanToggle()' },
+    ];
+  } else {
+    const platform = window._detectedPlatform;
+    mesaj = '🎉 İşlem tamamlandı!' + (platform && platform!=='original' ? ' <b>' + platform + '</b> formatına optimize edeyim mi?' : ' Ne yapmak istersin?');
+    butonlar = [
+      { label: '⬇ İndir', onclick: 'xport(\'original\');_aiAsistanToggle()' },
+      { label: '✂ Magic Cut', onclick: 'magicCut();_aiAsistanToggle()' },
+      { label: '↩ Yeni Video', onclick: '_magicYeniden();_aiAsistanToggle()' },
+    ];
+  }
+
+  txtEl.innerHTML = mesaj;
+  btnsEl.innerHTML = butonlar.map(function(b) {
+    return '<button onclick="' + b.onclick + '" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:6px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">' + b.label + '</button>';
+  }).join('');
+
+  bubble.style.display = 'block';
+  _aiPanelAcik = true;
+  // 6sn sonra otomatik kapat (kullanıcı dokunamazsa)
+  setTimeout(function() {
+    if (_aiPanelAcik) { bubble.style.display='none'; _aiPanelAcik=false; }
+  }, 6000);
+}
 
 /* ════════════════════════════════════════════════════
    GOOGLE DRIVE OAUTH — Dosya Seçici
