@@ -1976,6 +1976,9 @@ async function cloudUpload(svc){
       if(d.basari){
         pFile = {name: d.baslik||'video.mp4', size: d.boyut_mb*1024*1024, _tempId: d.temp_id, _dosyaYolu: d.dosya_yolu};
         pURL = `${B}/indir/${d.dosya_adi}`;
+        // URL'den platform tespit et — çıktıda otomatik seç
+        var _dp = _platformURLTespit(indirUrl);
+        if (_dp) { window._detectedPlatform = _dp; }
         toast('✓ "' + d.baslik + '" — ' + d.boyut_mb + 'MB (' + kaliteSecim + ')');
         document.getElementById('modal')?.classList.remove('hidden');
         modalStep(1);
@@ -2139,6 +2142,19 @@ function kaydetModalAc(fmt_) {
     + '</div>';
 
   document.body.appendChild(ov);
+  // Tespit edilen platformu otomatik seç
+  if (isVideo && window._detectedPlatform && window._detectedPlatform !== 'original') {
+    var autoBtn = document.querySelector('[data-plat="' + window._detectedPlatform + '"]');
+    if (autoBtn) {
+      platformSec(window._detectedPlatform, autoBtn);
+      autoBtn.style.boxShadow = '0 0 0 2px var(--accent2)';
+    }
+    var hint = document.createElement('div');
+    hint.style.cssText = 'font-size:10px;color:var(--accent3);margin-top:6px;text-align:center;';
+    hint.textContent = '✦ ' + window._detectedPlatform.charAt(0).toUpperCase() + window._detectedPlatform.slice(1) + ' otomatik tespit edildi';
+    var platSec = document.getElementById('platform_sec');
+    if (platSec) platSec.parentNode.appendChild(hint);
+  }
   setTimeout(function(){ const inp=document.getElementById('kaydet_isim'); if(inp){inp.focus();inp.select();} },100);
 }
 
@@ -2221,6 +2237,27 @@ async function paylasBaslat(platform) {
 }
 
 window._secilenPlatform = 'original';
+window._detectedPlatform = null;  // URL veya video boyutundan otomatik tespit
+
+function _platformURLTespit(url) {
+  if (!url) return null;
+  if (url.includes('/shorts/') || url.includes('shorts.youtube')) return 'shorts';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+  if (url.includes('tiktok.com')) return 'tiktok';
+  if (url.includes('instagram.com/reel') || url.includes('instagram.com/p/')) return 'instagram_story';
+  if (url.includes('instagram.com')) return 'instagram_post';
+  return null;
+}
+
+function _platformVideoTespit(vid) {
+  // Video yüklenince width/height'a bakarak platform tahmin et
+  if (!vid || !vid.videoWidth || !vid.videoHeight) return null;
+  const ratio = vid.videoWidth / vid.videoHeight;
+  if (ratio < 0.75) return 'tiktok';   // 9:16 dikey
+  if (ratio > 1.4)  return 'youtube';  // 16:9 yatay
+  if (ratio >= 0.95 && ratio <= 1.05) return 'instagram_post'; // 1:1 kare
+  return 'original';
+}
 
 function kaydetModalAc(fmt_) {
   document.getElementById('_kaydet_modal')?.remove();
@@ -2463,6 +2500,15 @@ function dl(c,n,m){
 document.getElementById('finput').addEventListener('change',function(){
   if(!this.files.length)return;
   pFile=this.files[0];pURL=URL.createObjectURL(pFile);
+  // Lokal dosyada aspect ratio'dan platform tespit et
+  window._detectedPlatform = null;
+  var _tmpVid = document.createElement('video');
+  _tmpVid.src = pURL;
+  _tmpVid.onloadedmetadata = function() {
+    var dp = _platformVideoTespit(_tmpVid);
+    if (dp) window._detectedPlatform = dp;
+    _tmpVid.src = '';
+  };
   // Center stage güncelle
   const empty = document.getElementById('vbox_empty');
   if (empty) empty.style.display = 'none';
