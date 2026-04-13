@@ -1987,8 +1987,7 @@ async function cloudUpload(svc){
       toast('Bağlantı hatası','terr');
     }
   }else if(svc==='gdrive'){
-    const url=prompt('Google Drive paylaşım linkini yapıştırın:\n(Herkesle paylaşıldığından emin olun)');
-    if(url){ window._pendingUrl=url; cloudUpload('url'); }
+    gdriveAc();
   }else if(svc==='dropbox'){
     const url=prompt('Dropbox paylaşım linkini yapıştırın:');
     if(url){ window._pendingUrl=url; cloudUpload('url'); }
@@ -3751,6 +3750,18 @@ document.addEventListener('DOMContentLoaded', function() {
     toast('🎉 Payment successful! ' + plan.charAt(0).toUpperCase()+plan.slice(1) + ' plan activated.', 'tok', 6000);
     history.replaceState({}, '', window.location.pathname);
   }
+  // Google Drive OAuth callback
+  if (urlParams.get('gdrive_token')) {
+    const tk = urlParams.get('gdrive_token');
+    localStorage.setItem('gdrive_token', tk);
+    history.replaceState({}, '', window.location.pathname);
+    toast('<i class="fa-brands fa-google-drive"></i> Google Drive bağlandı — dosyalarınız yükleniyor...', 'tok', 4000);
+    setTimeout(function(){ gdriveAc(); }, 600);
+  }
+  if (urlParams.get('gdrive_error')) {
+    toast('Google Drive bağlantısı başarısız: ' + urlParams.get('gdrive_error'), 'terr', 5000);
+    history.replaceState({}, '', window.location.pathname);
+  }
   // IP dil tespiti — 1 sn sonra (sayfa yüklenmesini bekleme)
   setTimeout(ipDilTespit, 1000);
 });
@@ -5319,6 +5330,9 @@ function renderSegs(srt,fn,tr=false){
     + '      </button>'
     + '      <button class="dbtn" onclick="aiSegmentDuzelt()" title="AI ile transkripti düzelt/iyileştir" style="background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.3);color:#818cf8;">'
     + '        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Düzelt'
+    + '      </button>'
+    + '      <button class="dbtn" onclick="transcriptEditorAc()" title="Metni seçerek videodan bölüm sil (Maestra stili)" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#a78bfa;">'
+    + '        <i class="fa-solid fa-file-lines"></i> Text Editor'
     + '      </button>'
     + '      <button class="dbtn" onclick="magicCut()" title="Dolgu kelimeleri sil (um, hmm, şey...)" style="background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3);color:#eab308;">'
     + '        <i class="fa-solid fa-scissors"></i> Magic Cut'
@@ -7886,6 +7900,292 @@ document.addEventListener('DOMContentLoaded', function() {
 
   setTimeout(_welcomeSplashGoster, 1000);
 });
+
+/* ════════════════════════════════════════════════════
+   GOOGLE DRIVE OAUTH — Dosya Seçici
+════════════════════════════════════════════════════ */
+
+async function gdriveAc() {
+  const token = localStorage.getItem('gdrive_token');
+  if (!token) {
+    // Henüz auth yok — OAuth başlat
+    const userId = window._sbUser ? window._sbUser.id : '';
+    window.location.href = B + '/api/gdrive/auth/?user_id=' + encodeURIComponent(userId);
+    return;
+  }
+  // Token var — dosyaları çek
+  _gdriveModal(token);
+}
+
+async function _gdriveModal(token) {
+  // Eski modal varsa kaldır
+  document.getElementById('_gdrive_modal')?.remove();
+
+  const ov = document.createElement('div');
+  ov.id = '_gdrive_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = `
+    <div style="background:var(--s1);border:1px solid var(--border2);border-radius:16px;width:580px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.8);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;">
+          <i class="fa-brands fa-google-drive" style="color:#4285f4;font-size:18px;"></i> Google Drive
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="localStorage.removeItem('gdrive_token');document.getElementById('_gdrive_modal')?.remove();toast('Drive bağlantısı kesildi','twarn');" style="background:none;border:1px solid var(--border2);color:var(--muted2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">Çıkış</button>
+          <button onclick="document.getElementById('_gdrive_modal')?.remove()" style="background:none;border:none;color:var(--muted2);font-size:18px;cursor:pointer;line-height:1;">×</button>
+        </div>
+      </div>
+      <div id="_gdrive_list" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="text-align:center;padding:32px;color:var(--muted2);font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Dosyalar yükleniyor...</div>
+      </div>
+      <div style="padding:10px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;">
+        Yalnızca Drive'daki video dosyaları gösterilir · En son değiştirilene göre sıralı
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  try {
+    const r = await fetch(B + '/api/gdrive/files/?token=' + encodeURIComponent(token));
+    if (r.status === 401) {
+      localStorage.removeItem('gdrive_token');
+      document.getElementById('_gdrive_modal')?.remove();
+      toast('Google oturumu sona erdi — tekrar giriş yapılıyor...', 'twarn', 3000);
+      setTimeout(gdriveAc, 1200);
+      return;
+    }
+    const d = await r.json();
+    const files = d.files || [];
+    const listEl = document.getElementById('_gdrive_list');
+    if (!listEl) return;
+
+    if (!files.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted2);font-size:13px;">Drive\'da video dosyası bulunamadı.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    files.forEach(function(f) {
+      const sizeMb = f.size ? (parseInt(f.size) / 1024 / 1024).toFixed(1) + ' MB' : '';
+      const date = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString('tr-TR') : '';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);cursor:pointer;transition:background .15s;';
+      row.onmouseenter = function(){ this.style.background='var(--s3)'; };
+      row.onmouseleave = function(){ this.style.background=''; };
+      row.innerHTML = '<i class="fa-solid fa-film" style="color:var(--accent3);font-size:16px;flex-shrink:0;"></i>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>'
+        + '<div style="font-size:11px;color:var(--muted2);">' + [sizeMb, date].filter(Boolean).join(' · ') + '</div>'
+        + '</div>'
+        + '<button style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">İçe Aktar</button>';
+      row.querySelector('button').addEventListener('click', function(e) {
+        e.stopPropagation();
+        gdriveImport(token, f.id, f.name, row.querySelector('button'));
+      });
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    const listEl = document.getElementById('_gdrive_list');
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:32px;color:#f87171;font-size:13px;">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function gdriveImport(token, fileId, fileName, btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Drive\'dan indiriliyor: ' + fileName, 'tok', 30000);
+
+  try {
+    const fd = new FormData();
+    fd.append('token', token);
+    fd.append('file_id', fileId);
+    fd.append('file_name', fileName);
+    const r = await fetch(B + '/api/gdrive/import/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.basari) {
+      document.getElementById('_gdrive_modal')?.remove();
+      // Dosyayı yüklenmiş gibi işle
+      pFile = { name: fileName, size: d.boyut_mb * 1024 * 1024, _dosyaYolu: d.dosya_adi };
+      pURL = B + '/indir/' + d.dosya_adi;
+      // Video player'a yükle
+      const vid = document.getElementById('vid');
+      if (vid) { vid.src = pURL; vid.style.display = 'block'; }
+      const empty = document.getElementById('vbox_empty');
+      if (empty) empty.style.display = 'none';
+      // Modal aç
+      document.getElementById('modal')?.classList.remove('hidden');
+      modalStep(1);
+      updateModalBtn();
+      toast('✓ ' + fileName + ' — ' + d.boyut_mb + 'MB aktarıldı', 'tok', 5000);
+    } else {
+      toast('Drive import hatası: ' + (d.hata || 'Bilinmeyen'), 'terr', 6000);
+      if (btn) { btn.disabled = false; btn.textContent = 'Tekrar'; }
+    }
+  } catch(e) {
+    toast('Bağlantı hatası: ' + e.message, 'terr');
+    if (btn) { btn.disabled = false; btn.textContent = 'Hata'; }
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   TRANSCRIPT EDITOR — Maestra Stili
+════════════════════════════════════════════════════ */
+
+var _teWords = [];       // kelime listesi [{word, start, end}]
+var _teVideoFile = '';   // hangi video dosyası
+var _teSel = {a: -1, b: -1}; // seçim aralığı (index)
+
+async function transcriptEditorAc() {
+  if (!aSrt) { toast('Önce transkript alın', 'twarn'); return; }
+
+  // words.json'u çek
+  const r = await fetch(B + '/api/words/' + aSrt);
+  if (!r.ok) {
+    toast('Kelime verisi yok — Transcript sekmesinde işlem çalıştırın', 'twarn', 4000);
+    return;
+  }
+  const d = await r.json();
+  _teWords = d.words || [];
+  if (!_teWords.length) { toast('Kelime verisi boş', 'twarn'); return; }
+
+  // Video dosyası adını bul
+  _teVideoFile = aSrt.replace('.srt', '.mp4');
+
+  _teRender();
+}
+
+function _teRender() {
+  document.getElementById('_te_modal')?.remove();
+
+  const ov = document.createElement('div');
+  ov.id = '_te_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  let wordsHtml = '';
+  _teWords.forEach(function(w, i) {
+    wordsHtml += '<span class="_te_w" data-i="' + i + '" title="' + w.start.toFixed(2) + 's" '
+      + 'onclick="_teClick(event,' + i + ')" '
+      + 'style="display:inline-block;padding:2px 4px;margin:2px;border-radius:4px;cursor:pointer;transition:background .1s;user-select:none;">'
+      + (w.word || w.text || '') + ' </span>';
+  });
+
+  ov.innerHTML = `
+    <div style="background:var(--s1);border:1px solid var(--border2);border-radius:16px;width:720px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.8);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;">
+          <i class="fa-solid fa-scissors" style="color:var(--accent3);"></i> Transcript Editor
+          <span style="font-size:11px;font-weight:400;color:var(--muted2);">Kelimeye tıkla → video ilerler · Shift+tıkla → seçim · Seç → Sil butonu</span>
+        </div>
+        <button onclick="document.getElementById('_te_modal')?.remove()" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div id="_te_content" style="flex:1;overflow-y:auto;padding:16px;line-height:2.2;font-size:14px;">
+        ${wordsHtml}
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <span id="_te_info" style="font-size:12px;color:var(--muted2);flex:1;">Seçim yok</span>
+        <button id="_te_del_btn" onclick="_teSil()" disabled style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5;">
+          <i class="fa-solid fa-scissors"></i> Seçimi Videodan Sil
+        </button>
+        <button onclick="_teTemizle()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">Seçimi Temizle</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function _teClick(e, i) {
+  const w = _teWords[i];
+  if (!w) return;
+
+  if (e.shiftKey && _teSel.a >= 0) {
+    // Shift+tık → aralık seç
+    _teSel.b = i;
+    if (_teSel.b < _teSel.a) { var tmp = _teSel.a; _teSel.a = _teSel.b; _teSel.b = tmp; }
+  } else {
+    // Normal tık → video seek + seçim başlat
+    const vid = document.getElementById('vid');
+    if (vid && vid.src) { vid.currentTime = w.start; }
+    _teSel = { a: i, b: i };
+  }
+  _teVurgu();
+}
+
+function _teVurgu() {
+  const spans = document.querySelectorAll('._te_w');
+  spans.forEach(function(s) {
+    const i = parseInt(s.dataset.i);
+    if (i >= _teSel.a && i <= _teSel.b) {
+      s.style.background = 'rgba(239,68,68,.35)';
+      s.style.borderRadius = '4px';
+    } else {
+      s.style.background = '';
+    }
+  });
+
+  const info = document.getElementById('_te_info');
+  const btn = document.getElementById('_te_del_btn');
+  if (_teSel.a >= 0 && _teSel.b >= _teSel.a) {
+    const wA = _teWords[_teSel.a];
+    const wB = _teWords[_teSel.b];
+    const sure = (wB.end - wA.start).toFixed(2);
+    const kelimeSayisi = _teSel.b - _teSel.a + 1;
+    if (info) info.textContent = kelimeSayisi + ' kelime seçildi · ' + wA.start.toFixed(2) + 's → ' + wB.end.toFixed(2) + 's (' + sure + 's)';
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+  } else {
+    if (info) info.textContent = 'Seçim yok';
+    if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+  }
+}
+
+function _teTemizle() {
+  _teSel = { a: -1, b: -1 };
+  _teVurgu();
+}
+
+async function _teSil() {
+  if (_teSel.a < 0 || !_teVideoFile) return;
+  const wA = _teWords[_teSel.a];
+  const wB = _teWords[_teSel.b];
+  const baslangic = wA.start;
+  const bitis = wB.end;
+
+  const onay = confirm('Videodan ' + baslangic.toFixed(2) + 's – ' + bitis.toFixed(2) + 's arası silinecek.\nBu işlem geri alınamaz. Devam edilsin mi?');
+  if (!onay) return;
+
+  const btn = document.getElementById('_te_del_btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...'; }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Video kesiliyor...', 'tok', 30000);
+
+  try {
+    const fd = new FormData();
+    fd.append('video_dosya_adi', _teVideoFile);
+    fd.append('kes_baslangic', baslangic);
+    fd.append('kes_bitis', bitis);
+    const r = await fetch(B + '/api/transcript_kes/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.basari) {
+      // Yeni video dosyası → player'ı güncelle
+      const vid = document.getElementById('vid');
+      if (vid) { vid.src = B + '/indir/' + d.cikti + '?v=' + Date.now(); vid.load(); }
+      _teVideoFile = d.cikti;
+      pURL = B + '/indir/' + d.cikti;
+      // Kelimeyi listeden çıkar
+      _teWords.splice(_teSel.a, _teSel.b - _teSel.a + 1);
+      // Zamanları offset ile güncelle
+      const offset = bitis - baslangic;
+      for (var i = _teSel.a; i < _teWords.length; i++) {
+        _teWords[i].start = Math.max(0, _teWords[i].start - offset);
+        _teWords[i].end = Math.max(0, _teWords[i].end - offset);
+      }
+      _teSel = { a: -1, b: -1 };
+      _teRender();
+      toast('✓ Bölüm silindi → ' + d.cikti, 'tok', 5000);
+    } else {
+      toast('Hata: ' + (d.hata || 'Bilinmeyen'), 'terr', 6000);
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-scissors"></i> Seçimi Videodan Sil'; }
+    }
+  } catch(e) {
+    toast('Bağlantı hatası: ' + e.message, 'terr');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-scissors"></i> Seçimi Videodan Sil'; }
+  }
+}
 </script>
 </body>
 </html>

@@ -4643,3 +4643,232 @@ async def api_v1_translate(
         return JSONResponse({"basari": True, "hedef_dil": hedef_dil, "icerik": sonuc})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ════════════════════════════════════════════════════════════════
+# GOOGLE DRIVE OAUTH
+# ════════════════════════════════════════════════════════════════
+
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI  = os.getenv("GOOGLE_REDIRECT_URI", "")
+
+# state → {user_id, ts}  /  token_key → {access_token, ts}
+_gdrive_state: dict = {}
+_gdrive_tokens: dict = {}
+
+
+@app.get("/api/gdrive/auth/")
+async def gdrive_auth(user_id: str = ""):
+    if not GOOGLE_CLIENT_ID:
+        return JSONResponse({"hata": "GOOGLE_CLIENT_ID env var eksik"}, status_code=500)
+    from urllib.parse import urlencode
+    from fastapi.responses import RedirectResponse
+
+    state = uuid.uuid4().hex
+    _gdrive_state[state] = {"user_id": user_id, "ts": __import__("time").time()}
+
+    redirect = GOOGLE_REDIRECT_URI or "https://voiceflow-studio-production-eebc.up.railway.app/api/gdrive/callback/"
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": redirect,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/drive.readonly",
+        "access_type": "offline",
+        "state": state,
+        "prompt": "select_account",
+    }
+    return RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params))
+
+
+@app.get("/api/gdrive/callback/")
+async def gdrive_callback(code: str = "", state: str = "", error: str = ""):
+    from fastapi.responses import RedirectResponse
+
+    if error:
+        return RedirectResponse(f"/app?gdrive_error={error}")
+
+    stored = _gdrive_state.pop(state, {})
+    redirect = GOOGLE_REDIRECT_URI or "https://voiceflow-studio-production-eebc.up.railway.app/api/gdrive/callback/"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect,
+                    "grant_type": "authorization_code",
+                },
+                timeout=15.0,
+            )
+            r.raise_for_status()
+            tok = r.json()
+    except Exception as e:
+        log.error(f"[GDrive] Token exchange hatası: {e}")
+        return RedirectResponse("/app?gdrive_error=token_failed")
+
+    token_key = uuid.uuid4().hex
+    _gdrive_tokens[token_key] = {
+        "access_token": tok.get("access_token", ""),
+        "user_id": stored.get("user_id", ""),
+        "ts": __import__("time").time(),
+    }
+    log.info(f"[GDrive] OAuth başarılı — token_key={token_key[:8]}...")
+    return RedirectResponse(f"/app?gdrive_token={token_key}")
+
+
+@app.get("/api/gdrive/files/")
+async def gdrive_files(token: str):
+    stored = _gdrive_tokens.get(token)
+    if not stored:
+        return JSONResponse({"hata": "Geçersiz veya süresi dolmuş token"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://www.googleapis.com/drive/v3/files",
+                headers={"Authorization": f"Bearer {stored['access_token']}"},
+                params={
+                    "q": "mimeType contains 'video/' and trashed=false",
+                    "fields": "files(id,name,size,mimeType,modifiedTime)",
+                    "orderBy": "modifiedTime desc",
+                    "pageSize": "50",
+                },
+                timeout=15.0,
+            )
+            if r.status_code == 401:
+                return JSONResponse({"hata": "Google oturumu sona erdi. Tekrar giriş yapın."}, status_code=401)
+            r.raise_for_status()
+            return JSONResponse(r.json())
+    except Exception as e:
+        log.error(f"[GDrive] Dosya listesi hatası: {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+@app.post("/api/gdrive/import/")
+async def gdrive_import(
+    token: str = Form(...),
+    file_id: str = Form(...),
+    file_name: str = Form(...),
+):
+    """Google Drive'dan video indir → ciktilar klasörüne kaydet."""
+    stored = _gdrive_tokens.get(token)
+    if not stored:
+        return JSONResponse({"hata": "Geçersiz token"}, status_code=401)
+
+    ext = os.path.splitext(file_name)[1] or ".mp4"
+    b_id = uuid.uuid4().hex[:8]
+    cikti_adi = f"gdrive_{b_id}{ext}"
+    cikti_yol = os.path.join(OUTPUT_DIR, cikti_adi)
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=15.0)) as client:
+            async with client.stream(
+                "GET",
+                f"https://www.googleapis.com/drive/v3/files/{file_id}",
+                headers={"Authorization": f"Bearer {stored['access_token']}"},
+                params={"alt": "media"},
+            ) as r:
+                r.raise_for_status()
+                with open(cikti_yol, "wb") as f:
+                    async for chunk in r.aiter_bytes(65536):
+                        f.write(chunk)
+
+        boyut_mb = os.path.getsize(cikti_yol) / (1024 * 1024)
+        log.info(f"[GDrive] İndirildi: {file_name} → {cikti_adi} ({boyut_mb:.1f}MB)")
+        return JSONResponse({
+            "basari": True,
+            "dosya_adi": cikti_adi,
+            "boyut_mb": round(boyut_mb, 1),
+            "orijinal_ad": file_name,
+        })
+    except Exception as e:
+        if os.path.exists(cikti_yol):
+            os.unlink(cikti_yol)
+        log.error(f"[GDrive] İndirme hatası: {e}")
+        return JSONResponse({"hata": f"İndirme başarısız: {e}"}, status_code=500)
+
+
+# ════════════════════════════════════════════════════════════════
+# TRANSCRIPT EDITOR — Video Bölgesi Kes
+# ════════════════════════════════════════════════════════════════
+
+@app.post("/api/transcript_kes/")
+async def transcript_kes(
+    video_dosya_adi: str = Form(...),
+    kes_baslangic: float = Form(...),
+    kes_bitis: float = Form(...),
+):
+    """
+    Maestra-style: Video'dan [kes_baslangic, kes_bitis] aralığını sil.
+    [0 → kes_baslangic] + [kes_bitis → son] concat eder.
+    """
+    if not ffmpeg_var_mi():
+        return JSONResponse({"hata": "FFmpeg yüklü değil"}, status_code=500)
+
+    giris = os.path.join(OUTPUT_DIR, video_dosya_adi)
+    if not os.path.exists(giris):
+        return JSONResponse({"hata": "Video bulunamadı"}, status_code=404)
+
+    b_id = uuid.uuid4().hex[:8]
+    tmp = os.path.join(TEMP_DIR, f"tkes_{b_id}")
+    os.makedirs(tmp, exist_ok=True)
+
+    p1 = os.path.join(tmp, "p1.mp4")
+    p2 = os.path.join(tmp, "p2.mp4")
+    liste = os.path.join(tmp, "list.txt")
+    cikti_adi = f"edited_{b_id}.mp4"
+    cikti_yol = os.path.join(OUTPUT_DIR, cikti_adi)
+
+    encode = ["-c:v", "libx264", "-c:a", "aac", "-preset", "fast"]
+
+    try:
+        parcalar = []
+
+        # Parça 1: 0 → kes_baslangic
+        if kes_baslangic > 0.1:
+            r1 = await asyncio.to_thread(
+                subprocess.run,
+                ["ffmpeg", "-y", "-i", giris, "-t", str(kes_baslangic)] + encode + [p1],
+                capture_output=True, text=True, timeout=300,
+            )
+            if r1.returncode == 0:
+                parcalar.append(p1)
+
+        # Parça 2: kes_bitis → son
+        r2 = await asyncio.to_thread(
+            subprocess.run,
+            ["ffmpeg", "-y", "-ss", str(kes_bitis), "-i", giris] + encode + [p2],
+            capture_output=True, text=True, timeout=300,
+        )
+        if r2.returncode == 0 and os.path.getsize(p2) > 1000:
+            parcalar.append(p2)
+
+        if not parcalar:
+            return JSONResponse({"hata": "Kesilecek parça oluşturulamadı"}, status_code=500)
+
+        if len(parcalar) == 1:
+            shutil.copy(parcalar[0], cikti_yol)
+        else:
+            with open(liste, "w") as f:
+                for p in parcalar:
+                    f.write(f"file '{p}'\n")
+            r3 = await asyncio.to_thread(
+                subprocess.run,
+                ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", liste, "-c", "copy", cikti_yol],
+                capture_output=True, text=True, timeout=300,
+            )
+            if r3.returncode != 0:
+                return JSONResponse({"hata": "Concat başarısız: " + r3.stderr[-200:]}, status_code=500)
+
+        log.info(f"[Transcript Kes] {video_dosya_adi} [{kes_baslangic:.2f}→{kes_bitis:.2f}s] → {cikti_adi}")
+        return JSONResponse({"basari": True, "cikti": cikti_adi})
+
+    except Exception as e:
+        log.error(f"[Transcript Kes Hata] {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
