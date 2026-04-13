@@ -216,18 +216,21 @@ footer{border-top:1px solid var(--border);padding:40px 28px;display:flex;justify
           <th class="us">Lumnex</th>
           <th>HeyGen</th>
           <th>Rask AI</th>
+          <th>Maestra</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Starting price</td><td class="us">Free / $9.99</td><td>$24/mo</td><td>$15/mo</td></tr>
-        <tr><td>Minutes included</td><td class="us">10 free / 75 paid</td><td>10 min only</td><td>Limited</td></tr>
-        <tr><td>AI Dubbing</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
-        <tr><td>Voice Cloning</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
-        <tr><td>Auto-Subtitles</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
-        <tr><td>TikTok word-by-word mode</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
-        <tr><td>Browser voice recording</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
-        <tr><td>Emotion control sliders</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td></tr>
-        <tr><td>Speaker detection</td><td class="us chk">✓</td><td class="crs">✗</td><td class="chk">✓</td></tr>
+        <tr><td>Starting price</td><td class="us">Free / $19/mo</td><td>$29/mo</td><td>$60/mo</td><td>$39/mo</td></tr>
+        <tr><td>Price per minute</td><td class="us" style="color:#22c55e;font-weight:700;">$0.29/min</td><td>$0.97/min</td><td>$2.40/min</td><td>$0.11/min*</td></tr>
+        <tr><td>Voice quality</td><td class="us chk">ElevenLabs (best)</td><td>ElevenLabs</td><td>Own TTS</td><td>OpenAI TTS</td></tr>
+        <tr><td>AI Dubbing</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td><td class="chk">✓</td></tr>
+        <tr><td>Voice Cloning</td><td class="us chk">✓</td><td class="chk">✓</td><td class="chk">✓</td><td class="crs">✗</td></tr>
+        <tr><td>TikTok / Shorts mode</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Transcript text editor</td><td class="us chk">✓ Unique</td><td class="crs">✗</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Turkish native support</td><td class="us chk">✓ Native</td><td class="crs">✗</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Emotion control</td><td class="us chk">✓</td><td class="crs">✗</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Pay-as-you-go credits</td><td class="us chk">✓</td><td class="crs">✗</td><td class="crs">✗</td><td class="crs">✗</td></tr>
+        <tr><td>Speaker detection</td><td class="us chk">✓</td><td class="crs">✗</td><td class="chk">✓</td><td class="crs">✗</td></tr>
       </tbody>
     </table>
   </div>
@@ -257,7 +260,7 @@ footer{border-top:1px solid var(--border);padding:40px 28px;display:flex;justify
 <section id="pricing">
   <div class="sec-label">Simple pricing</div>
   <div class="sec-title">Pay only for what you use.</div>
-  <div class="sec-sub">Start free. Scale when you grow. Cancel anytime.</div>
+  <div class="sec-sub">Start free. Scale when you grow. Cancel anytime — or just buy extra minutes when you need them.</div>
   <div class="pricing-grid">
     <div class="price-card">
       <div class="price-name">Lite</div>
@@ -266,43 +269,44 @@ footer{border-top:1px solid var(--border);padding:40px 28px;display:flex;justify
       <ul class="price-features">
         <li>AI Transcription</li>
         <li>Auto-subtitles (SRT/VTT)</li>
-        <li>3 AI voices</li>
         <li>TikTok caption mode</li>
-        <li>Transcript editor</li>
+        <li>Transcript text editor</li>
+        <li>3 AI voices</li>
       </ul>
       <button class="btn-plan ghost" onclick="location.href='/app'">Get started free</button>
     </div>
     <div class="price-card featured">
+      <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;text-align:center;">MOST POPULAR</div>
       <div class="price-name">Creator</div>
-      <div class="price-amount">$9<span>/mo</span></div>
-      <div class="price-mins">75 minutes / month</div>
+      <div class="price-amount">$19<span>/mo</span></div>
+      <div class="price-mins">65 minutes / month · $0.29/min</div>
       <ul class="price-features">
         <li>Everything in Lite</li>
         <li>AI Dubbing (60+ languages)</li>
-        <li>30+ premium voices</li>
+        <li>150+ ElevenLabs voices</li>
         <li>Voice cloning</li>
         <li>Emotion control sliders</li>
-        <li>Priority processing</li>
+        <li>Batch processing</li>
       </ul>
       <button class="btn-plan primary" onclick="location.href='/app'">Start Creator</button>
     </div>
     <div class="price-card">
       <div class="price-name">Studio</div>
-      <div class="price-amount">$19<span>/mo</span></div>
-      <div class="price-mins">200 minutes / month</div>
+      <div class="price-amount">$45<span>/mo</span></div>
+      <div class="price-mins">160 minutes / month · $0.28/min</div>
       <ul class="price-features">
         <li>Everything in Creator</li>
-        <li>Batch processing</li>
         <li>Multi-speaker dubbing</li>
-        <li>API access</li>
+        <li>REST API access</li>
+        <li>DeepL Glossary</li>
         <li>A/B version compare</li>
       </ul>
       <button class="btn-plan ghost" onclick="location.href='/app'">Start Studio</button>
     </div>
     <div class="price-card">
       <div class="price-name">Business</div>
-      <div class="price-amount">$49<span>/mo</span></div>
-      <div class="price-mins">600 minutes / month</div>
+      <div class="price-amount">$115<span>/mo</span></div>
+      <div class="price-mins">450 minutes / month · $0.26/min</div>
       <ul class="price-features">
         <li>Everything in Studio</li>
         <li>Unlimited voice clones</li>
@@ -312,6 +316,66 @@ footer{border-top:1px solid var(--border);padding:40px 28px;display:flex;justify
       </ul>
       <button class="btn-plan ghost" onclick="location.href='/app'">Start Business</button>
     </div>
+  </div>
+
+  <!-- Ek Kredi Paketi -->
+  <div style="max-width:680px;margin:40px auto 0;background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.25);border-radius:16px;padding:28px 32px;text-align:center;">
+    <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px;">Pay-as-you-go</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:8px;">Need extra minutes? Just buy them.</div>
+    <div style="font-size:14px;color:var(--muted2);margin-bottom:24px;">No subscription needed. Credits never expire.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:20px;font-weight:800;color:#22c55e;">$6</div>
+        <div style="font-size:15px;font-weight:700;margin:4px 0;">20 dk</div>
+        <div style="font-size:11px;color:var(--muted2);">$0.30/min</div>
+      </div>
+      <div style="background:var(--s2);border:1px solid rgba(99,102,241,.4);border-radius:12px;padding:16px;">
+        <div style="font-size:20px;font-weight:800;color:#a78bfa;">$14</div>
+        <div style="font-size:15px;font-weight:700;margin:4px 0;">50 dk</div>
+        <div style="font-size:11px;color:var(--muted2);">$0.28/min</div>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:20px;font-weight:800;color:#ec4899;">$26</div>
+        <div style="font-size:15px;font-weight:700;margin:4px 0;">100 dk</div>
+        <div style="font-size:11px;color:var(--muted2);">$0.26/min</div>
+      </div>
+    </div>
+    <a href="/app" class="btn-primary" style="display:inline-flex;font-size:14px;padding:12px 28px;">Buy Credits in App →</a>
+  </div>
+</section>
+
+<!-- Türk İçerik Üreticisi Bölümü -->
+<section style="background:linear-gradient(135deg,rgba(220,38,38,.06),rgba(255,255,255,.02));border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="sec-label">🇹🇷 Türk İçerik Üreticileri</div>
+  <div class="sec-title" style="font-size:clamp(24px,4vw,40px);">Türkçe içeriğini dünyaya taşı.</div>
+  <div class="sec-sub">Lumnex, Türkçe'yi tam native olarak destekleyen tek AI dublaj platformu. Rakipler Türkçe'yi desteklemiyor.</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:860px;margin:0 auto 36px;">
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">🌍</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">TR → 60+ Dil</div>
+      <div style="font-size:12px;color:var(--muted2);">Türkçe videonu İngilizce, Almanca, Arapça ve daha fazlasına çevir</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">📱</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">TikTok / Reels Altyazı</div>
+      <div style="font-size:12px;color:var(--muted2);">Viral kelime-kelime altyazı modu — Türkçe ve hedef dilde</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">🎙</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Kendi Sesinle Dublaj</div>
+      <div style="font-size:12px;color:var(--muted2);">Sesini klonla, 60+ dilde kendi sesinle konuş</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">✂️</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Transkript Editör</div>
+      <div style="font-size:12px;color:var(--muted2);">Metni seçerek videodan bölüm sil — Türkçe arayüzle</div>
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <a href="/app" class="btn-primary" style="display:inline-flex;font-size:15px;padding:14px 32px;">
+      🚀 Ücretsiz Başla — 10 dk/ay
+    </a>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);">Kredi kartı gerekmez · Anında kullan</div>
   </div>
 </section>
 

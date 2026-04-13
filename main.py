@@ -31,12 +31,24 @@ RESEND_FROM         = os.getenv("RESEND_FROM", "Lumnex <onboarding@resend.dev>")
 SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://biqsljanevkxrgpdxard.supabase.co")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
-# Stripe fiyat ID'leri — Stripe Dashboard'dan alınacak
+# Stripe abonelik fiyat ID'leri
+# Maliyet/dk: ~$0.155 (ElevenLabs Scale + Deepgram + DeepL + Gemini)
+# Hedef marj: %45 → satış fiyatı ~$0.28/dk
 STRIPE_PRICES = {
-    "creator":  os.getenv("STRIPE_PRICE_CREATOR",  ""),   # $14/mo
-    "studio":   os.getenv("STRIPE_PRICE_STUDIO",   ""),   # $34/mo
-    "business": os.getenv("STRIPE_PRICE_BUSINESS", ""),   # $89/mo
+    "creator":  os.getenv("STRIPE_PRICE_CREATOR",  ""),   # $19/mo — 65 dk  ($0.292/dk, %47 marj)
+    "studio":   os.getenv("STRIPE_PRICE_STUDIO",   ""),   # $45/mo — 160 dk ($0.281/dk, %45 marj)
+    "business": os.getenv("STRIPE_PRICE_BUSINESS", ""),   # $115/mo— 450 dk ($0.256/dk, %40 marj)
 }
+
+# Stripe tek seferlik kredi paketi ID'leri (ek dakika satın alma)
+STRIPE_CREDITS = {
+    "mini":  os.getenv("STRIPE_CREDIT_MINI",  ""),   # $6  — 20 dk  ($0.30/dk, %48 marj)
+    "pro":   os.getenv("STRIPE_CREDIT_PRO",   ""),   # $14 — 50 dk  ($0.28/dk, %45 marj)
+    "power": os.getenv("STRIPE_CREDIT_POWER", ""),   # $26 — 100 dk ($0.26/dk, %40 marj)
+}
+
+PLAN_LIMIT_DK = {"lite": 10, "creator": 65, "studio": 160, "business": 450}
+KREDI_DK      = {"mini": 20, "pro": 50, "power": 100}
 
 # ── Loglama ──
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -773,15 +785,30 @@ async def sb_kullanim_ekle(user_id: str, dakika: float) -> bool:
         else:
             mevcut = float(profil.get("kullanim_dakika") or 0)
             yeni_ay_bas = ay_bas_str[:10]
-        yeni_toplam = round(mevcut + dakika, 2)
+        plan = profil.get("plan", "lite")
+        limit = PLAN_LIMIT_DK.get(plan, 10)
+        plan_kalan = max(0.0, limit - mevcut)
+        kredi_dk = float(profil.get("kredi_dakika") or 0)
+
+        # Önce plan dakikasından düş, yetmezse krediden
+        plan_harcanan = min(dakika, plan_kalan)
+        kredi_harcanan = max(0.0, round(dakika - plan_harcanan, 2))
+
+        yeni_toplam = round(mevcut + plan_harcanan, 2)
+        yeni_kredi  = max(0.0, round(kredi_dk - kredi_harcanan, 2))
+
+        payload: dict = {"kullanim_dakika": yeni_toplam, "ay_baslangic": yeni_ay_bas, "updated_at": "now()"}
+        if kredi_harcanan > 0:
+            payload["kredi_dakika"] = yeni_kredi
+
         async with httpx.AsyncClient(timeout=8.0) as c:
             r = await c.patch(
                 f"{SUPABASE_URL}/rest/v1/profiles",
                 params={"id": f"eq.{user_id}"},
                 headers=_sb_headers(),
-                json={"kullanim_dakika": yeni_toplam, "ay_baslangic": yeni_ay_bas, "updated_at": "now()"},
+                json=payload,
             )
-        log.info(f"[Supabase] Kullanım eklendi user={user_id[:8]} +{dakika:.1f}dk toplam={yeni_toplam:.1f}dk")
+        log.info(f"[Supabase] Kullanım: user={user_id[:8]} +{dakika:.1f}dk (plan={plan_harcanan:.1f} kredi={kredi_harcanan:.1f}) toplam={yeni_toplam:.1f}dk")
         return r.status_code in (200, 204)
     except Exception as e:
         log.error(f"[Supabase] kullanim_ekle hata: {e}")
@@ -3074,24 +3101,29 @@ async def bakiye_kontrol(request: Request):
 
     import datetime
     plan = profil.get("plan", "lite")
-    limitler = {"lite": 10, "creator": 75, "studio": 200, "business": 600}
-    limit = limitler.get(plan, 10)
+    limit = PLAN_LIMIT_DK.get(plan, 10)
 
     # Aylık reset kontrolü
     bugun = datetime.date.today()
     ay_bas_str = profil.get("ay_baslangic") or str(bugun)
     ay_bas = datetime.date.fromisoformat(ay_bas_str[:10])
     if bugun.year != ay_bas.year or bugun.month != ay_bas.month:
-        kullanim = 0.0  # Yeni ay, sıfırdan say
+        kullanim = 0.0
     else:
         kullanim = float(profil.get("kullanim_dakika") or 0)
 
-    kalan = max(0.0, limit - kullanim)
-    yeterli = kalan >= maliyet
+    # Ek satın alınan kredi dakikaları (sıfırlanmaz)
+    kredi_dk = float(profil.get("kredi_dakika") or 0)
+
+    plan_kalan = max(0.0, limit - kullanim)
+    toplam_kalan = plan_kalan + kredi_dk
+    yeterli = toplam_kalan >= maliyet
 
     return JSONResponse({
         "yeterli": yeterli,
-        "bakiye": round(kalan, 1),
+        "bakiye": round(toplam_kalan, 1),
+        "plan_kalan": round(plan_kalan, 1),
+        "kredi_kalan": round(kredi_dk, 1),
         "kullanim": round(kullanim, 1),
         "limit": limit,
         "plan": plan,
@@ -4346,11 +4378,21 @@ async def stripe_webhook(request: Request):
     if etype == "checkout.session.completed":
         session     = event["data"]["object"]
         email       = session.get("customer_email") or session.get("customer_details", {}).get("email", "")
-        plan        = session.get("metadata", {}).get("plan", "creator")
+        meta        = session.get("metadata", {})
         customer_id = session.get("customer", "")
-        sub_id      = session.get("subscription", "")
-        log.info(f"[Stripe] Payment OK — email={email} plan={plan} customer={customer_id}")
-        await sb_plan_guncelle(email, plan, customer_id, sub_id)
+
+        if meta.get("type") == "credits":
+            # Tek seferlik kredi satın alma
+            paket   = meta.get("paket", "mini")
+            user_id = meta.get("user_id", "")
+            log.info(f"[Stripe] Credits OK — email={email} paket={paket}")
+            await _kredi_ekle(user_id, email, paket)
+        else:
+            # Abonelik
+            plan   = meta.get("plan", "creator")
+            sub_id = session.get("subscription", "")
+            log.info(f"[Stripe] Payment OK — email={email} plan={plan} customer={customer_id}")
+            await sb_plan_guncelle(email, plan, customer_id, sub_id)
 
     elif etype in ("customer.subscription.deleted", "customer.subscription.paused"):
         import stripe as _stripe2
@@ -4370,6 +4412,89 @@ async def stripe_webhook(request: Request):
 
     return JSONResponse({"received": True})
 
+
+@app.post("/api/stripe/credits/")
+async def stripe_credits_checkout(
+    paket: str = Form(...),   # mini | pro | power
+    email: str = Form(""),
+    user_id: str = Form(""),
+    success_url: str = Form(""),
+):
+    """Tek seferlik ek dakika satın alma."""
+    if not STRIPE_SECRET_KEY:
+        return JSONResponse({"hata": "Stripe yapılandırılmamış"}, status_code=500)
+
+    price_id = STRIPE_CREDITS.get(paket.lower())
+    if not price_id:
+        return JSONResponse({"hata": f"Bilinmeyen paket: {paket}"}, status_code=400)
+
+    import stripe as _stripe
+    _stripe.api_key = STRIPE_SECRET_KEY
+
+    base = success_url or "https://lumnex.ai"
+    ok_url = f"{base}/app?credits=success&paket={paket}"
+    ko_url = f"{base}/app?credits=cancel"
+
+    try:
+        params = {
+            "mode": "payment",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": ok_url,
+            "cancel_url": ko_url,
+            "metadata": {"type": "credits", "paket": paket, "user_id": user_id},
+        }
+        if email:
+            params["customer_email"] = email
+
+        session = _stripe.checkout.Session.create(**params)
+        log.info(f"[Stripe Credits] {paket} paket checkout — user={user_id[:8] if user_id else 'anon'}")
+        return JSONResponse({"checkout_url": session.url})
+    except Exception as e:
+        log.error(f"[Stripe Credits] Hata: {e}")
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
+async def _kredi_ekle(user_id: str, email: str, paket: str):
+    """Başarılı ödeme sonrası kredi_dakika ekle."""
+    dk = KREDI_DK.get(paket, 0)
+    if not dk:
+        return
+    # Email ile user_id bul
+    if not user_id and email:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as c:
+                r = await c.get(
+                    f"{SUPABASE_URL}/rest/v1/profiles",
+                    headers=_sb_headers(),
+                    params={"email": f"eq.{email}", "select": "id,kredi_dakika"},
+                )
+                data = r.json()
+                if data:
+                    user_id = data[0]["id"]
+        except Exception as e:
+            log.error(f"[Kredi] Email ile user bulunamadı: {e}")
+            return
+
+    if not user_id:
+        log.error(f"[Kredi] user_id yok — {email} {paket}")
+        return
+
+    try:
+        profil = await sb_profil_getir(user_id)
+        mevcut_kredi = float((profil or {}).get("kredi_dakika") or 0)
+        yeni_kredi = round(mevcut_kredi + dk, 1)
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            await c.patch(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                params={"id": f"eq.{user_id}"},
+                headers=_sb_headers(),
+                json={"kredi_dakika": yeni_kredi, "updated_at": "now()"},
+            )
+        log.info(f"[Kredi] +{dk}dk eklendi user={user_id[:8]} toplam={yeni_kredi}dk paket={paket}")
+    except Exception as e:
+        log.error(f"[Kredi] Ekleme hatası: {e}")
+
+
 @app.get("/api/profil/")
 async def profil_getir(user_id: str):
     """Kullanıcının güncel plan ve kullanım bilgisini döner."""
@@ -4381,8 +4506,8 @@ async def profil_getir(user_id: str):
 
     import datetime
     plan = profil.get("plan", "lite")
-    limitler = {"lite": 10, "creator": 75, "studio": 200, "business": 600}
-    limit = limitler.get(plan, 10)
+    limit = PLAN_LIMIT_DK.get(plan, 10)
+    kredi_dk = float(profil.get("kredi_dakika") or 0)
 
     bugun = datetime.date.today()
     ay_bas_str = profil.get("ay_baslangic") or str(bugun)
@@ -4392,11 +4517,14 @@ async def profil_getir(user_id: str):
     else:
         kullanim = float(profil.get("kullanim_dakika") or 0)
 
+    plan_kalan = max(0, limit - kullanim)
     return JSONResponse({
         "plan": plan,
         "kullanim_dakika": round(kullanim, 1),
         "limit_dakika": limit,
-        "kalan_dakika": round(max(0, limit - kullanim), 1),
+        "kalan_dakika": round(plan_kalan, 1),
+        "kredi_dakika": round(kredi_dk, 1),
+        "toplam_kalan": round(plan_kalan + kredi_dk, 1),
         "email": profil.get("email", ""),
     })
 

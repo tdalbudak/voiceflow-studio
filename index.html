@@ -3836,6 +3836,13 @@ document.addEventListener('DOMContentLoaded', function() {
     toast('🎉 Payment successful! ' + plan.charAt(0).toUpperCase()+plan.slice(1) + ' plan activated.', 'tok', 6000);
     history.replaceState({}, '', window.location.pathname);
   }
+  // Kredi satın alma başarılı
+  if (urlParams.get('credits') === 'success') {
+    const paket = urlParams.get('paket') || '';
+    const dkMap = {mini:'20', pro:'50', power:'100'};
+    toast('🎉 ' + (dkMap[paket] || '') + ' dk krediniz eklendi!', 'tok', 6000);
+    history.replaceState({}, '', window.location.pathname);
+  }
   // Google Drive OAuth callback
   if (urlParams.get('gdrive_token')) {
     const tk = urlParams.get('gdrive_token');
@@ -6878,14 +6885,16 @@ async function batchBaslat() {
         }, 2000);
       });
       tamamlanan++;
-      if (statusEl) { statusEl.textContent = '✓'; statusEl.style.color = 'var(--green2)'; }
+      if (statusEl) {
+        statusEl.innerHTML = '<a href="' + B + '/indir/' + d.beklenen_dosya_adi + '" download style="color:var(--green2);font-size:10px;text-decoration:none;">⬇ İndir</a>';
+      }
     } catch(e) {
-      if (statusEl) { statusEl.textContent = '✗'; statusEl.style.color = 'var(--red2)'; }
+      if (statusEl) { statusEl.textContent = '✗ Hata'; statusEl.style.color = 'var(--red2)'; }
     }
     if (bar) bar.style.width = ((i+1) / _batchQueue.length * 100) + '%';
   }
   _batchRunning = false;
-  if (status) status.textContent = '✓ Tamamlandı: ' + tamamlanan + '/' + _batchQueue.length;
+  if (status) status.textContent = '✓ Tamamlandı: ' + tamamlanan + '/' + _batchQueue.length + ' — Yukarıdaki linklere tıkla';
   toast('Toplu işlem: ' + tamamlanan + '/' + _batchQueue.length + ' tamamlandı');
 }
 
@@ -7181,7 +7190,7 @@ function profilAc() {
     ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign Out</button>'
     : '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign In</button>';
 
-  const planlar = [['lite','$0','10 min'],['creator','$14','75 min'],['studio','$34','200 min'],['business','$89','600 min']];
+  const planlar = [['lite','$0','10 min'],['creator','$19','65 min'],['studio','$45','160 min'],['business','$115','450 min']];
   const planHtml = planlar.map(function(pfd) {
     const p = pfd[0], f = pfd[1], d = pfd[2];
     const aktif = p === plan.toLowerCase();
@@ -7216,15 +7225,21 @@ function profilAc() {
     + '<button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Upgrade ↑</button>'
     + '</div>'
     + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + kullanim.toFixed(1) + ' / ' + limit + ' minutes used this month</div>'
-    + '<div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;">'
+    + '<div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;margin-bottom:10px;">'
     + '<div style="height:100%;background:' + renk + ';border-radius:100px;width:' + yuzde + '%;"></div>'
-    + '</div></div>'
+    + '</div>'
+    + '<div id="_profil_kredi_row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);">'
+    + '<div><div style="font-size:10px;color:var(--muted2);">Ek Kredi</div><div id="_profil_kredi_val" style="font-size:13px;font-weight:700;">-- dk</div></div>'
+    + '<button onclick="kredSatinAlModalAc()" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ Kredi Al</button>'
+    + '</div>'
+    + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">' + planHtml + '</div>'
     + '<div style="display:flex;gap:8px;">'
     + '<button onclick="window.open(\'/privacy\',\'_blank\')" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Privacy</button>'
     + '<button onclick="window.open(\'/terms\',\'_blank\')" style="flex:1;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:8px;border-radius:var(--r);cursor:pointer;font-size:11px;font-family:inherit;">Terms</button>'
     + '</div></div>';
   document.body.appendChild(overlay);
+  setTimeout(_profilKrediyiGuncelle, 200);
 }
 
 async function planYukselt(plan) {
@@ -7241,9 +7256,9 @@ async function planYukselt(plan) {
       + '<button onclick="document.getElementById(\'_plan_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
-      + _planCard('creator','Creator','$14/mo','75 min/month',['AI Dubbing','Voice Cloning','30+ voices','Emotion controls'],'#22c55e')
-      + _planCard('studio','Studio','$34/mo','200 min/month',['Everything in Creator','Batch processing','API access','A/B compare'],'#6366f1')
-      + _planCard('business','Business','$89/mo','600 min/month',['Everything in Studio','Unlimited clones','Custom brand kit','Priority support'],'#ec4899')
+      + _planCard('creator','Creator','$19/mo','65 min/month',['AI Dubbing','Voice Cloning','30+ voices','Emotion controls'],'#22c55e')
+      + _planCard('studio','Studio','$45/mo','160 min/month',['Everything in Creator','Batch processing','API access','A/B compare'],'#6366f1')
+      + _planCard('business','Business','$115/mo','450 min/month',['Everything in Studio','Unlimited clones','Custom brand kit','Priority support'],'#ec4899')
       + '</div>'
       + '<div style="margin-top:14px;font-size:11px;color:var(--muted);text-align:center;">Secure payment via Stripe · Cancel anytime · All plans include 7-day free trial</div>'
       + '</div>';
@@ -8040,6 +8055,76 @@ document.addEventListener('DOMContentLoaded', function() {
   // Floating AI asistan her zaman aktif
   setTimeout(_aiAsistanGoster, 2500);
 });
+
+/* ════════════════════════════════════════════════════
+   KREDİ SATIN ALMA
+════════════════════════════════════════════════════ */
+
+// Profil açıkken kredi bakiyeyi güncelle
+async function _profilKrediyiGuncelle() {
+  if (!_sbUser) return;
+  try {
+    const r = await fetch(B + '/api/profil/?user_id=' + _sbUser.id);
+    if (!r.ok) return;
+    const d = await r.json();
+    const el = document.getElementById('_profil_kredi_val');
+    if (el) el.textContent = (d.kredi_dakika || 0).toFixed(1) + ' dk';
+  } catch(e) {}
+}
+
+function kredSatinAlModalAc() {
+  document.getElementById('_profil_overlay')?.remove();
+  document.getElementById('_kred_modal')?.remove();
+
+  const PAKETLER = [
+    { id:'mini',  fiyat:'$6',  dk:'20 dk',  desc:'Küçük işler için',    renk:'#22c55e'  },
+    { id:'pro',   fiyat:'$14', dk:'50 dk',  desc:'Düzenli kullanım',    renk:'#6366f1'  },
+    { id:'power', fiyat:'$26', dk:'100 dk', desc:'Yoğun üreticiler',    renk:'#ec4899'  },
+  ];
+
+  const ov = document.createElement('div');
+  ov.id = '_kred_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const kartlar = PAKETLER.map(function(p) {
+    return '<div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:12px;padding:18px;text-align:center;">'
+      + '<div style="font-size:22px;font-weight:800;color:' + p.renk + ';margin-bottom:2px;">' + p.fiyat + '</div>'
+      + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + p.dk + '</div>'
+      + '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;">' + p.desc + '</div>'
+      + '<button onclick="kredSatinAl(\'' + p.id + '\')" style="width:100%;background:' + p.renk + ';border:none;color:#fff;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Satın Al</button>'
+      + '</div>';
+  }).join('');
+
+  ov.innerHTML = '<div style="background:var(--s1);border:1px solid var(--border2);border-radius:16px;padding:28px;width:500px;max-width:95vw;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    + '<div style="font-size:15px;font-weight:700;">⚡ Ek Dakika Satın Al</div>'
+    + '<button onclick="document.getElementById(\'_kred_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-bottom:20px;">Aylık planına ek olarak istediğin zaman dakika ekle — süresi dolmaz</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">' + kartlar + '</div>'
+    + '<div style="font-size:11px;color:var(--muted);text-align:center;">Stripe ile güvenli ödeme · Tek seferlik · İptal gerekmez</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+}
+
+async function kredSatinAl(paket) {
+  if (!_sbUser) { loginModalAc(); return; }
+  document.getElementById('_kred_modal')?.remove();
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Checkout hazırlanıyor...', 'tok', 5000);
+  try {
+    const fd = new FormData();
+    fd.append('paket', paket);
+    fd.append('user_id', _sbUser.id);
+    fd.append('email', _sbUser.email || '');
+    fd.append('success_url', window.location.origin);
+    const r = await fetch(B + '/api/stripe/credits/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.checkout_url) window.location.href = d.checkout_url;
+    else toast('Hata: ' + (d.hata || 'Bilinmeyen'), 'terr', 5000);
+  } catch(e) {
+    toast('Bağlantı hatası', 'terr');
+  }
+}
 
 /* ════════════════════════════════════════════════════
    MAGIC MOD — Tamamlandı + Proaktif AI Asistan
