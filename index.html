@@ -533,13 +533,15 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 @keyframes vp-sel-pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5);}50%{box-shadow:0 0 0 4px rgba(59,130,246,.15);}}
 @keyframes vp-avatar-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
 @keyframes vp-avatar-shine{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
-.vp-card{background:#111827;border:2px solid #1a2235;border-radius:12px;padding:10px 8px 8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.vp-card{background:#111827;border:1.5px solid #1a2235;border-radius:12px;padding:9px 10px;cursor:pointer;transition:border-color .18s,background .18s;display:flex;align-items:center;gap:10px;}
 .vp-card:hover{border-color:#3b82f6;background:#131e30;}
-.vp-card.sel{border-color:#3b82f6;background:#0f1e38;}
-.vp-avatar{width:100%;aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;margin-bottom:8px;}
-.vp-avatar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%);background-size:200% 100%;animation:vp-avatar-shine 3s ease-in-out infinite;pointer-events:none;}
-.vp-pro-badge{position:absolute;top:5px;right:5px;background:#92400e;border:1px solid #f59e0b;color:#fde68a;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;}
-.vp-free-badge{position:absolute;top:5px;right:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#86efac;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;}
+.vp-card.sel{border-color:#3b82f6;background:#0f1e38;box-shadow:0 0 0 1px rgba(59,130,246,.3);}
+.vp-photo-wrap{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#1a2235;position:relative;}
+.vp-photo{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}
+.vp-card:hover .vp-photo{transform:scale(1.1);}
+.vp-photo-fb{width:52px;height:52px;display:none;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border-radius:9px;}
+.vp-pro-badge{background:#78350f;border:1px solid rgba(245,158,11,.4);color:#fde68a;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;display:inline-block;}
+.vp-free-badge{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;line-height:1.5;display:inline-block;}
 
 /* ── Toast iyileştirmesi ── */
 .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
@@ -6226,24 +6228,13 @@ function buildVoiceList() {
 
   el.innerHTML = filtreli.map(function(v) {
     const isSel = voice === v.id;
-    const grad  = (_VP_GRAD || {})[v.tone || 'neutral'] || ['#334155','#1e293b'];
-    const icon  = v.gender === 'female' ? 'fa-person-dress' : 'fa-person';
-    return '<div id="vli_' + v.id + '" onclick="selVoiceById(\'' + v.id + '\')" class="vp-card' + (isSel?' sel':'') + '" style="padding:8px;">'
-      // mini avatar
-      + '<div style="width:100%;aspect-ratio:1.2;border-radius:8px;background:linear-gradient(145deg,' + grad[0] + ',' + grad[1] + ');position:relative;overflow:hidden;margin-bottom:6px;">'
-      + '  <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent 60%);pointer-events:none;"></div>'
-      + '  <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);"><i class="fa-solid ' + icon + '" style="font-size:32px;color:rgba(255,255,255,.38);"></i></div>'
-      + '  <div style="position:absolute;top:3px;left:5px;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
-      + '<div class="vp-free-badge" style="font-size:7px;">FREE</div>'
-      + (isSel ? '<div style="position:absolute;inset:-1px;border-radius:9px;border:2px solid #3b82f6;pointer-events:none;"></div>' : '')
+    return '<div id="vli_' + v.id + '" onclick="selVoiceById(\'' + v.id + '\')" class="vp-card' + (isSel?' sel':'') + '" style="padding:7px 8px;">'
+      + _vpAvatarHtml(v, 40)
+      + '<div style="flex:1;min-width:0;">'
+      + '  <div style="font-size:10px;font-weight:700;color:#e8edf5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + ' ' + (v.flag||'') + '</div>'
+      + '  <div style="font-size:9px;color:#5a7090;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (v.desc||'') + '</div>'
       + '</div>'
-      // name + flag
-      + '<div style="display:flex;align-items:center;gap:3px;margin-bottom:4px;">'
-      + '  <span style="font-size:10px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
-      + '  <span style="font-size:11px;">' + (v.flag||'') + '</span>'
-      + '</div>'
-      // headphone
-      + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" style="width:100%;height:22px;border-radius:6px;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'">'
+      + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" style="width:26px;height:26px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'">'
       + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:9px;"></i>'
       + '</button>'
       + '</div>';
@@ -6372,7 +6363,7 @@ function _vpFavSet(id, btn) {
   localStorage.setItem('vf_fav_voices', JSON.stringify(_vpFavs));
 }
 
-/* ─── Tone → avatar gradient map ─── */
+/* ─── Tone → fallback gradient map ─── */
 const _VP_GRAD = {
   deep:      ['#1e3a8a','#0f172a'],
   neutral:   ['#334155','#1e293b'],
@@ -6381,26 +6372,26 @@ const _VP_GRAD = {
 };
 const _VP_LANG_LABEL = {tr:'🇹🇷 Türkçe', en:'🌐 English', de:'🇩🇪 Deutsch', fr:'🇫🇷 Français', it:'🇮🇹 Italiano', es:'🇪🇸 Español', pt:'🇧🇷 Português', ru:'🇷🇺 Русский', ar:'🇸🇦 العربية', hi:'🇮🇳 हिन्दी', ja:'🇯🇵 日本語', ko:'🇰🇷 한국어', zh:'🇨🇳 中文', nl:'🇳🇱 Nederlands', pl:'🇵🇱 Polski', sv:'🇸🇪 Svenska'};
 
-function _vpAvatarHtml(v) {
-  const grad = _VP_GRAD[v.tone || 'neutral'] || _VP_GRAD.neutral;
-  const icon = v.gender === 'female' ? 'fa-person-dress' : 'fa-person';
+function _vpPhotoIdx(name) {
+  var h = 5381;
+  for (var i = 0; i < name.length; i++) h = ((h << 5) + h + name.charCodeAt(i)) & 0x7fffffff;
+  return h % 70; // randomuser.me has 70 photos per gender (0-69)
+}
+
+function _vpAvatarHtml(v, size) {
+  size = size || 52;
+  const idx = _vpPhotoIdx(v.name);
+  const gPath = v.gender === 'female' ? 'women' : 'men';
+  const photoUrl = 'https://randomuser.me/api/portraits/' + gPath + '/' + idx + '.jpg';
+  const fbGrad = _VP_GRAD[v.tone||'neutral'] || _VP_GRAD.neutral;
+  const fbEmoji = v.gender === 'female' ? '👩' : '👨';
   const isSel = voice === v.id;
-  const pulseBorder = isSel ? 'animation:vp-sel-pulse 1.5s ease-in-out infinite;' : '';
-  return ''
-    + '<div class="vp-avatar" style="background:linear-gradient(145deg,' + grad[0] + ',' + grad[1] + ');">'
-    // light top-left highlight
-    + '  <div style="position:absolute;top:0;left:0;width:55%;height:55%;background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.14),transparent 70%);pointer-events:none;"></div>'
-    // shimmer via CSS class ::after
-    // person silhouette bottom-center
-    + '  <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);text-align:center;">'
-    + '    <i class="fa-solid ' + icon + '" style="font-size:44px;color:rgba(255,255,255,.38);"></i>'
-    + '  </div>'
-    // initial top-left
-    + '  <div style="position:absolute;top:5px;left:7px;font-size:12px;font-weight:900;color:rgba(255,255,255,.55);">' + v.name[0] + '</div>'
-    // pro/free badge top-right
-    + '  <div class="vp-free-badge">FREE</div>'
-    // selection ring
-    + (isSel ? '  <div style="position:absolute;inset:-1px;border-radius:11px;border:2px solid #3b82f6;' + pulseBorder + 'pointer-events:none;"></div>' : '')
+  const selRing = isSel ? 'position:absolute;inset:0;border-radius:9px;border:2px solid #3b82f6;pointer-events:none;z-index:1;' : '';
+  return '<div class="vp-photo-wrap" style="width:' + size + 'px;height:' + size + 'px;">'
+    + '<img class="vp-photo" src="' + photoUrl + '" alt="' + v.name + '" loading="lazy" '
+    + 'onerror="this.style.display=\'none\';this.nextElementSibling.style.cssText=\'display:flex;background:linear-gradient(135deg,' + fbGrad[0] + ',' + fbGrad[1] + ');width:' + size + 'px;height:' + size + 'px;\'">'
+    + '<div class="vp-photo-fb">' + fbEmoji + '</div>'
+    + (isSel ? '<div style="' + selRing + '"></div>' : '')
     + '</div>';
 }
 
@@ -6443,26 +6434,30 @@ function _vpRender() {
     voices.forEach(function(v) {
       const isFav = _vpFavs.includes(v.id);
       const isSel = voice === v.id;
-
       const isAzure = v.provider === 'azure';
-      html += '<div class="vp-card' + (isSel?' sel':'') + '" onclick="selVoiceById(\'' + v.id + '\')" style="' + (isAzure?'border-color:#0ea5e9;':'') + '">'
-        + _vpAvatarHtml(v)
-        // demo badge + name + flag row
-        + (isAzure ? '<div style="font-size:9px;font-weight:800;background:#0ea5e9;color:#fff;border-radius:4px;padding:1px 5px;margin-bottom:4px;display:inline-block;letter-spacing:.5px;">DEMO</div>' : '')
-        + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">'
-        + '  <span style="font-size:11px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
-        + '  <span style="font-size:13px;flex-shrink:0;">' + (v.flag||'') + '</span>'
+
+      html += '<div class="vp-card' + (isSel?' sel':'') + '" onclick="selVoiceById(\'' + v.id + '\')" style="' + (isAzure?'border-color:rgba(14,165,233,.5);':'') + '">'
+        // photo
+        + _vpAvatarHtml(v, 52)
+        // info
+        + '<div style="flex:1;min-width:0;">'
+        + '  <div style="display:flex;align-items:center;gap:3px;margin-bottom:5px;">'
+        + '    <span style="font-size:12px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
+        + '    <span style="font-size:12px;flex-shrink:0;">' + (v.flag||'') + '</span>'
+        + '  </div>'
+        + '  <div style="display:flex;align-items:center;gap:5px;">'
+        + '    <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" '
+        + '      style="background:none;border:none;cursor:pointer;font-size:14px;color:' + (isFav?'#f43f5e':'#2d4060') + ';padding:0;line-height:1;transition:color .15s;" title="Favori">♥</button>'
+        + (isAzure ? '<span style="font-size:8px;font-weight:800;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.35);color:#7dd3fc;padding:1px 5px;border-radius:4px;line-height:1.5;">DEMO</span>' : '')
+        + (v.freeOk ? '<span class="vp-free-badge">FREE</span>' : '')
+        + '  </div>'
         + '</div>'
-        // actions: heart + headphones
-        + '<div style="display:flex;align-items:center;justify-content:space-between;">'
-        + '  <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" id="_vpfav_' + v.id + '" '
-        + '    style="background:none;border:none;cursor:pointer;font-size:15px;color:' + (isFav?'#f43f5e':'#2d4060') + ';padding:0;line-height:1;transition:color .15s;" title="Favori">♥</button>'
-        + '  <button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" '
-        + '    style="width:26px;height:26px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" '
-        + '    onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'" title="Dinle">'
-        + '    <i class="fa-solid fa-headphones" style="color:#fff;font-size:10px;"></i>'
-        + '  </button>'
-        + '</div>'
+        // play button
+        + '<button onclick="event.stopPropagation();sesOnizle(\'' + v.id + '\',this,\'' + v.lang + '\')" '
+        + '  style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;" '
+        + '  onmouseover="this.style.background=\'#2563eb\'" onmouseout="this.style.background=\'#1d4ed8\'" title="Dinle">'
+        + '  <i class="fa-solid fa-headphones" style="color:#fff;font-size:11px;"></i>'
+        + '</button>'
         + '</div>'; // card
     });
     html += '</div></div>'; // grid + group
