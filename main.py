@@ -4284,31 +4284,51 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
 
     # System context'i kullanıcı mesajının başına ekle — daha uyumlu yaklaşım
     tam_sorgu = f"{system_prompt}\n\n---\nUser: {sorgu}"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            r = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
-                json={
-                    "contents": [{"parts": [{"text": tam_sorgu}]}],
-                    "generationConfig": {"maxOutputTokens": 700, "temperature": 0.7}
-                }
-            )
-        if r.status_code == 200:
-            data = r.json()
-            candidates = data.get("candidates", [])
-            if not candidates:
+    # Model fallback listesi — 429 quota aşılınca sıradakini dene
+    GEMINI_MODELLER = [
+        "gemini-2.0-flash-001",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+    ]
+    son_hata = ""
+    for model in GEMINI_MODELLER:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}",
+                    json={
+                        "contents": [{"parts": [{"text": tam_sorgu}]}],
+                        "generationConfig": {"maxOutputTokens": 700, "temperature": 0.7}
+                    }
+                )
+            if r.status_code == 200:
+                data = r.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    text = candidates[0]["content"]["parts"][0]["text"]
+                    log.info(f"[Gemini AI Asistan] OK model={model}")
+                    return JSONResponse({"yanit": text})
                 pf = data.get("promptFeedback", {})
                 reason = pf.get("blockReason", "NO_CANDIDATES")
-                log.error(f"[Gemini AI Asistan] Yanıt engellendi: {reason}")
-                return JSONResponse({"hata": f"Response blocked: {reason}"}, status_code=500)
-            text = candidates[0]["content"]["parts"][0]["text"]
-            return JSONResponse({"yanit": text})
-        else:
-            log.error(f"[Gemini AI Asistan] HTTP {r.status_code}: {r.text[:300]}")
-            return JSONResponse({"hata": f"Gemini error {r.status_code}: {r.text[:120]}"}, status_code=500)
-    except Exception as e:
-        log.error(f"[Gemini AI Asistan] {e}")
-        return JSONResponse({"hata": str(e)}, status_code=500)
+                son_hata = f"Response blocked: {reason}"
+                break
+            elif r.status_code == 429:
+                log.warning(f"[Gemini AI Asistan] 429 quota — model={model}, fallback deneniyor")
+                son_hata = "quota_429"
+                continue
+            else:
+                son_hata = f"HTTP {r.status_code}: {r.text[:120]}"
+                log.error(f"[Gemini AI Asistan] {son_hata}")
+                break
+        except Exception as e:
+            son_hata = str(e)
+            log.error(f"[Gemini AI Asistan] model={model} hata: {e}")
+            continue
+
+    if son_hata == "quota_429":
+        return JSONResponse({"hata": "AI quota exceeded. Please try again in a few minutes."}, status_code=429)
+    return JSONResponse({"hata": son_hata or "AI service unavailable"}, status_code=500)
 
 
 # ============================================================

@@ -4423,6 +4423,19 @@ function sw(m){
       }
     }
   }
+
+  // ── Magic mod aktifse tüm gelişmiş panelleri yeniden gizle ──
+  if (_appMod === 'sihirli') {
+    ['tl','mixer','sec_sub_design','sec_audio','sec_voice_btn','sec_style'].forEach(function(id){
+      document.getElementById(id)?.classList.add('hidden');
+    });
+    document.getElementById('slist')?.classList.add('hidden');
+    const vbe = document.getElementById('vbox_empty');
+    if (vbe && !pFile) { vbe.style.display='flex'; vbe.style.pointerEvents='all'; vbe.style.zIndex='1'; }
+    const oa = document.getElementById('magic_actions');
+    if (oa) oa.style.display = 'flex';
+    _magicAdimGoster(pFile ? 1 : 0);
+  }
 }
 
 /* ═══ DUBLAJ + ALTYAZI TOGGLE ═══ */
