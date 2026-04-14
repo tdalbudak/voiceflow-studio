@@ -444,7 +444,7 @@ EMAIL_SABLONLAR = {
     <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Son Kez Dene →</a>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://lumnex-production-395d.up.railway.app/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Ya da Creator planına geç ($9/ay) →</a>
+    <a href="https://voiceflow-studio-production-eebc.up.railway.app/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Ya da Creator planına geç ($14/ay · 750 kredi) →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
     <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
@@ -4278,7 +4278,7 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
         "- Podcast transcript: 1.Upload audio 2.Select Deşifre mode 3.Click Start 4.Edit segments 5.Download SRT or TXT\n"
         "- Clone own voice: 1.Go to Seslendirme mode 2.Click 'Kendi Sesimle Dublaj' 3.Record 30s+ 4.System clones voice 5.Dub to any language\n"
         "- Remove fillers: 1.Get transcript first 2.Click Magic Cut button in toolbar 3.Done\n\n"
-        "PLANS: Lite $0/10min · Creator $9/75min · Studio $19/200min · Business $49/600min\n\n"
+        "PLANS (credit system — 1 min = 10 credits): Lite $0/100cr · Creator $14/750cr · Studio $34/2000cr · Business $89/6000cr · Dubbing costs 10cr/min · Subtitles 2.5cr/min\n\n"
         f"IMPORTANT: Always reply in {dil_adi}. Use numbered steps for workflow questions. Use emoji. Be concise."
     )
 
