@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import json
 import logging
+import random
+import time
 from fastapi import FastAPI, UploadFile, Form, BackgroundTasks, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -130,7 +132,7 @@ async def kayit_email(
     """
     Kullanıcı kayıt olunca:
     1. Hoşgeldin emaili anında gönder
-    2. Gün 2 + Gün 5 hatırlatmalarını arka planda zamanla
+    2. Gün 3 + Gün 7 hatırlatmalarını arka planda zamanla
     """
     if not email or "@" not in email:
         return JSONResponse({"hata": "Geçerli email gerekli"}, status_code=400)
@@ -146,6 +148,41 @@ async def kayit_email(
         "basari": basari,
         "mesaj": "Hoşgeldin emaili gönderildi, hatırlatmalar zamanlandı"
     })
+
+
+@app.post("/api/dogrulama_gonder/")
+async def dogrulama_gonder(
+    email: str = Form(...),
+):
+    """6 haneli OTP üret, Resend ile gönder, 15 dk sakla."""
+    if not email or "@" not in email:
+        return JSONResponse({"hata": "Geçerli email gerekli"}, status_code=400)
+    kod = _otp_uret()
+    _OTP_STORE[email.lower()] = (kod, time.time() + 900)  # 15 dakika
+    s = EMAIL_SABLONLAR["dogrulama"]
+    basari = await resend_email_gonder(email, s["konu"], s["html"], extra={"kod": kod})
+    if basari:
+        return JSONResponse({"basari": True, "mesaj": "Doğrulama kodu gönderildi"})
+    return JSONResponse({"basari": False, "hata": "Email gönderilemedi"}, status_code=500)
+
+
+@app.post("/api/dogrulama_kontrol/")
+async def dogrulama_kontrol(
+    email: str = Form(...),
+    kod:   str = Form(...),
+):
+    """OTP kodu doğrula."""
+    kayit = _OTP_STORE.get(email.lower())
+    if not kayit:
+        return JSONResponse({"basari": False, "hata": "Kod bulunamadı veya süresi doldu"}, status_code=400)
+    beklenen_kod, son_kullanim = kayit
+    if time.time() > son_kullanim:
+        del _OTP_STORE[email.lower()]
+        return JSONResponse({"basari": False, "hata": "Kodun süresi doldu, yeni kod iste"}, status_code=400)
+    if kod.strip() != beklenen_kod:
+        return JSONResponse({"basari": False, "hata": "Kod yanlış"}, status_code=400)
+    del _OTP_STORE[email.lower()]
+    return JSONResponse({"basari": True, "mesaj": "Email doğrulandı"})
 
 
 @app.post("/api/email_test/")
@@ -353,9 +390,43 @@ async def srt_paralel_cevir(srt_icerik: str, hedef_dil: str) -> str:
 # EMAIL — RESEND ENTEGRASYONu
 # ============================================================
 
+_SITE_URL = "https://voiceflow-studio-production-eebc.up.railway.app"
+
+# In-memory OTP store: email → (code, expiry_ts)
+_OTP_STORE: dict = {}
+
+def _otp_uret() -> str:
+    return str(random.randint(100000, 999999))
+
 EMAIL_SABLONLAR = {
+"dogrulama": {
+    "konu": "Lumnex hesabını doğrula 🔐",
+    "html": """<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px;">
+    <div style="width:10px;height:10px;border-radius:50%;background:#6366f1;"></div>
+    <span style="font-size:18px;font-weight:800;color:#fafafa;">Lumnex</span>
+  </div>
+  <div style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.1));border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:36px 32px;text-align:center;margin-bottom:24px;">
+    <div style="font-size:42px;margin-bottom:14px;">🔐</div>
+    <h1 style="color:#fafafa;font-size:22px;font-weight:800;margin:0 0 10px;">E-posta adresini doğrula</h1>
+    <p style="color:#a1a1aa;font-size:14px;margin:0 0 28px;line-height:1.6;">Aşağıdaki kodu Lumnex'a gir. 15 dakika geçerlidir.</p>
+    <div style="background:#09090b;border:2px solid #6366f1;border-radius:14px;padding:22px 32px;display:inline-block;">
+      <div style="font-size:40px;font-weight:900;letter-spacing:12px;color:#fafafa;font-family:monospace;">{kod}</div>
+    </div>
+    <p style="color:#52525b;font-size:12px;margin:18px 0 0;">Bu kodu kimseyle paylaşma.</p>
+  </div>
+  <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">Bu emaili sen istemediysen görmezden gelebilirsin.</p>
+  <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;margin-top:24px;">
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex LLC</p>
+  </div>
+</div>
+</body></html>"""
+},
 "hosgeldin": {
-    "konu": "Lumnex'ya Hoş Geldin! 🎬",
+    "konu": "Lumnex'e Hoş Geldin! 🎬",
     "html": """<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -367,24 +438,33 @@ EMAIL_SABLONLAR = {
   <div style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.1));border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:32px;margin-bottom:24px;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">🎬</div>
     <h1 style="color:#fafafa;font-size:24px;font-weight:800;margin:0 0 10px;">Hoş Geldin, {isim}!</h1>
-    <p style="color:#a1a1aa;font-size:15px;margin:0;line-height:1.6;">Videonuzu dakikalar içinde 100+ dile açmaya hazır mısın?</p>
+    <p style="color:#a1a1aa;font-size:15px;margin:0;line-height:1.6;">Videolarını dakikalar içinde 60+ dile taşımaya hazır mısın?</p>
   </div>
   <div style="background:#18181b;border:1px solid rgba(34,197,94,.3);border-radius:14px;padding:20px;margin-bottom:20px;">
     <span style="font-size:28px;">🎁</span>
-    <div style="font-size:15px;font-weight:700;color:#fafafa;margin:8px 0 4px;">Sana 10 Ücretsiz Dakika Hediye!</div>
-    <div style="font-size:13px;color:#71717a;">Kayıt bonusu olarak hesabına 10 dakika eklendi. Hemen kullanmaya başla.</div>
+    <div style="font-size:15px;font-weight:700;color:#fafafa;margin:8px 0 4px;">100 Ücretsiz Kredi Seni Bekliyor!</div>
+    <div style="font-size:13px;color:#71717a;">Hesabına 100 kredi eklendi. Dublaj 10kr/dk · Altyazı 2.5kr/dk · TTS 5kr/dk</div>
+  </div>
+  <div style="background:#111113;border:1px solid #27272a;border-radius:14px;padding:20px;margin-bottom:24px;">
+    <div style="font-size:13px;color:#71717a;margin-bottom:12px;font-weight:600;">Neler yapabilirsin:</div>
+    <div style="font-size:13px;color:#a1a1aa;line-height:2.2;">
+      🌍 Videonu 60+ dile <strong style="color:#fafafa;">dublajla</strong><br>
+      📱 <strong style="color:#fafafa;">TikTok / Hormozi</strong> viral altyazı oluştur<br>
+      📝 Konuşmayı <strong style="color:#fafafa;">metne dönüştür</strong>, SRT/VTT indir<br>
+      🎙️ <strong style="color:#fafafa;">Kendi sesinle</strong> her dilde konuş
+    </div>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Editörü Aç →</a>
+    <a href="{site}/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Editörü Aç →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex</p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex LLC · Wyoming, USA</p>
   </div>
 </div>
 </body></html>"""
 },
-"hatirlat_2gun": {
-    "konu": "5 dakikan seni bekliyor 👀",
+"hatirlat_3gun": {
+    "konu": "100 kredin seni bekliyor 👀",
     "html": """<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -397,7 +477,7 @@ EMAIL_SABLONLAR = {
   <p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 24px;">Rakiplerin bugün TikTok'ta viral oluyor. Sen de 5 dakikada Türkçe videonun İngilizce versiyonunu çıkarabilirsin.</p>
   <div style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);border-radius:12px;padding:16px;margin-bottom:24px;">
     <span style="font-size:20px;">⏰</span>
-    <span style="font-size:14px;color:#eab308;font-weight:600;margin-left:8px;">Ücretsiz 10 dakikan hâlâ duruyor, kullanmadan gitmesin!</span>
+    <span style="font-size:14px;color:#eab308;font-weight:600;margin-left:8px;">Ücretsiz 100 kredin hâlâ duruyor — kullanmadan gitmesin!</span>
   </div>
   <div style="background:#111113;border:1px solid #27272a;border-radius:14px;padding:20px;margin-bottom:24px;">
     <div style="font-size:13px;color:#71717a;margin-bottom:12px;">Bu hafta kullanıcılar ne yaptı:</div>
@@ -408,16 +488,16 @@ EMAIL_SABLONLAR = {
     </div>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Şimdi Dene →</a>
+    <a href="{site}/app" style="display:inline-block;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Şimdi Dene →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex LLC · <a href="{site}/app" style="color:#52525b;">Aboneliği yönet</a></p>
   </div>
 </div>
 </body></html>"""
 },
-"hatirlat_5gun": {
-    "konu": "Son şans: Ücretsiz dakikaların sona eriyor ⚡",
+"hatirlat_7gun": {
+    "konu": "100 kredin bu ay sıfırlanıyor ⚡",
     "html": """<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -428,26 +508,26 @@ EMAIL_SABLONLAR = {
   </div>
   <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:24px;margin-bottom:24px;text-align:center;">
     <div style="font-size:36px;margin-bottom:8px;">⚡</div>
-    <div style="font-size:18px;font-weight:800;color:#fafafa;margin-bottom:6px;">Ücretsiz dakikaların sona eriyor</div>
-    <div style="font-size:13px;color:#a1a1aa;">Hesabındaki 10 ücretsiz dakika bu ay biter — kullanmazsan kaybolur.</div>
+    <div style="font-size:18px;font-weight:800;color:#fafafa;margin-bottom:6px;">Ücretsiz 100 kredin bu ay sıfırlanıyor</div>
+    <div style="font-size:13px;color:#a1a1aa;">Kullanmadan biterse bir sonraki aya devroluyor mu? <strong style="color:#ef4444;">Hayır, sıfırlanıyor.</strong></div>
   </div>
   <div style="background:#111113;border:1px solid #27272a;border-radius:14px;padding:20px;margin-bottom:24px;">
-    <div style="font-size:13px;font-weight:700;color:#a1a1aa;margin-bottom:14px;">Kaçırdıkların:</div>
+    <div style="font-size:13px;font-weight:700;color:#a1a1aa;margin-bottom:14px;">Henüz denemediklerin:</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">🎙️</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Ses Klonlama</div><div style="font-size:11px;color:#71717a;">Kendi sesinle 100+ dil</div></div>
-      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">🔥</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Hormozi Altyazı</div><div style="font-size:11px;color:#71717a;">Viral içerik için</div></div>
-      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">✂️</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Magic Cut</div><div style="font-size:11px;color:#71717a;">Dolgu sesler otomatik silinir</div></div>
-      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">📱</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Platform Boyutu</div><div style="font-size:11px;color:#71717a;">TikTok/YouTube/IG otomatik</div></div>
+      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">🎙️</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Ses Klonlama</div><div style="font-size:11px;color:#71717a;">Kendi sesinle 60+ dil</div></div>
+      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">🔥</div><div style="font-size:12px;font-weight:700;color:#fafafa;">Hormozi Altyazı</div><div style="font-size:11px;color:#71717a;">Viral içerik formatı</div></div>
+      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">🌍</div><div style="font-size:12px;font-weight:700;color:#fafafa;">AI Dublaj</div><div style="font-size:11px;color:#71717a;">ElevenLabs kalitesi</div></div>
+      <div style="background:#18181b;border-radius:10px;padding:12px;"><div style="font-size:18px;">📱</div><div style="font-size:12px;font-weight:700;color:#fafafa;">TikTok Modu</div><div style="font-size:11px;color:#71717a;">Kelime kelime highlight</div></div>
     </div>
   </div>
   <div style="text-align:center;margin-bottom:16px;">
-    <a href="https://lumnex-production-395d.up.railway.app/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Son Kez Dene →</a>
+    <a href="{site}/app" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-size:15px;font-weight:700;">Kredilerimi Kullan →</a>
   </div>
   <div style="text-align:center;margin-bottom:32px;">
-    <a href="https://voiceflow-studio-production-eebc.up.railway.app/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Ya da Creator planına geç ($14/ay · 750 kredi) →</a>
+    <a href="{site}/#pricing" style="font-size:13px;color:#71717a;text-decoration:none;">Creator planına geç — $14/ay · 750 kredi/ay →</a>
   </div>
   <div style="border-top:1px solid #27272a;padding-top:20px;text-align:center;">
-    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex · <a href="#" style="color:#52525b;">Aboneliği iptal et</a></p>
+    <p style="font-size:12px;color:#52525b;margin:0;">© 2026 Lumnex LLC · <a href="{site}/app" style="color:#52525b;">Aboneliği yönet</a></p>
   </div>
 </div>
 </body></html>"""
@@ -455,12 +535,16 @@ EMAIL_SABLONLAR = {
 }
 
 
-async def resend_email_gonder(to_email: str, konu: str, html: str, isim: str = "") -> bool:
+async def resend_email_gonder(to_email: str, konu: str, html: str, isim: str = "", extra: dict = None) -> bool:
     """Resend API ile email gönderir."""
     if not RESEND_API_KEY:
         log.warning("[Resend] API key eksik")
         return False
-    html_final = html.replace("{isim}", isim or to_email.split("@")[0].capitalize())
+    ad = isim or to_email.split("@")[0].capitalize()
+    html_final = html.replace("{isim}", ad).replace("{site}", _SITE_URL)
+    if extra:
+        for k, v in extra.items():
+            html_final = html_final.replace("{" + k + "}", str(v))
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             r = await client.post(
@@ -488,18 +572,18 @@ async def resend_email_gonder(to_email: str, konu: str, html: str, isim: str = "
 
 
 async def hatirlatma_zamanlayici(email: str, isim: str):
-    """Kayıt sonrası gün 2 ve gün 5 hatırlatma emaillerini gönderir."""
-    # Gün 2 — 48 saat sonra
-    await asyncio.sleep(48 * 3600)
-    s2 = EMAIL_SABLONLAR["hatirlat_2gun"]
-    await resend_email_gonder(email, s2["konu"], s2["html"], isim)
-    log.info(f"[Email] Gün 2 hatırlatması gönderildi → {email}")
-
-    # Gün 5 — 72 saat daha bekle (toplamda 5 gün)
+    """Kayıt sonrası gün 3 ve gün 7 hatırlatma emaillerini gönderir."""
+    # Gün 3 — 72 saat sonra
     await asyncio.sleep(72 * 3600)
-    s5 = EMAIL_SABLONLAR["hatirlat_5gun"]
-    await resend_email_gonder(email, s5["konu"], s5["html"], isim)
-    log.info(f"[Email] Gün 5 hatırlatması gönderildi → {email}")
+    s3 = EMAIL_SABLONLAR["hatirlat_3gun"]
+    await resend_email_gonder(email, s3["konu"], s3["html"], isim)
+    log.info(f"[Email] Gün 3 hatırlatması gönderildi → {email}")
+
+    # Gün 7 — 96 saat daha bekle (toplamda 7 gün)
+    await asyncio.sleep(96 * 3600)
+    s7 = EMAIL_SABLONLAR["hatirlat_7gun"]
+    await resend_email_gonder(email, s7["konu"], s7["html"], isim)
+    log.info(f"[Email] Gün 7 hatırlatması gönderildi → {email}")
 
 
 # ============================================================
