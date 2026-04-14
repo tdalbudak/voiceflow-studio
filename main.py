@@ -5137,3 +5137,24 @@ async def transcript_kes(
         return JSONResponse({"hata": str(e)}, status_code=500)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ============================================================
+# KEEP-ALIVE — Supabase inactivity pause engelleyici
+# ============================================================
+
+@app.get("/api/ping_db/")
+async def ping_db():
+    """Supabase keep-alive endpoint. Günde 1 kez cron-job.org tarafından çağrılır."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as c:
+            r = await c.get(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                params={"select": "id", "limit": "1"},
+                headers=_sb_headers(),
+            )
+        log.info(f"[KeepAlive] Supabase ping OK — status={r.status_code}")
+        return {"ok": True, "status": r.status_code}
+    except Exception as e:
+        log.warning(f"[KeepAlive] Supabase ping hata: {e}")
+        return {"ok": False, "error": str(e)}
