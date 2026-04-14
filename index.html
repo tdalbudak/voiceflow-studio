@@ -8595,5 +8595,31 @@ async function _teSil() {
   }
 }
 </script>
+
+<script>
+/* ── Landing wizard state reader ── */
+(function(){
+  var raw = localStorage.getItem('lumnex_wiz');
+  if(!raw) return;
+  try {
+    var state = JSON.parse(raw);
+    localStorage.removeItem('lumnex_wiz');
+    if(!state || !state.mode) return;
+    setTimeout(function(){
+      if(typeof sw === 'function') sw(state.mode);
+      if(state.targetLang){
+        var tl = document.getElementById('tgt_lang');
+        if(tl) tl.value = state.targetLang.toUpperCase();
+        var navDil = document.getElementById('nav_dil_goster');
+        if(navDil){ navDil.textContent = '→ '+(state.targetLang.toUpperCase()); navDil.style.display='inline'; }
+      }
+      if(state.linkUrl){
+        var btn = document.getElementById('btn_link');
+        if(btn){ btn._prefillUrl = state.linkUrl; }
+      }
+    }, 500);
+  } catch(e){}
+})();
+</script>
 </body>
 </html>
