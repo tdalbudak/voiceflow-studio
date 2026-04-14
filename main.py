@@ -30,6 +30,9 @@ RESEND_API_KEY      = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM         = os.getenv("RESEND_FROM", "Lumnex <onboarding@resend.dev>")
 SUPABASE_URL        = os.getenv("SUPABASE_URL", "https://biqsljanevkxrgpdxard.supabase.co")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+AZURE_SPEECH_KEY    = os.getenv("AZURE_SPEECH_KEY", "")
+AZURE_SPEECH_REGION = os.getenv("AZURE_SPEECH_REGION", "eastus")
+OPENAI_API_KEY      = os.getenv("OPENAI_API_KEY", "")
 
 # Stripe abonelik fiyat ID'leri
 # Maliyet/dk: ~$0.155 (ElevenLabs Scale + Deepgram + DeepL + Gemini)
@@ -41,14 +44,15 @@ STRIPE_PRICES = {
 }
 
 # Stripe tek seferlik kredi paketi ID'leri (ek dakika satın alma)
+# Azure Neural TTS maliyet: ~$0.032/dk → yüksek margin
 STRIPE_CREDITS = {
-    "mini":  os.getenv("STRIPE_CREDIT_MINI",  ""),   # $6  — 20 dk  ($0.30/dk, %48 marj)
-    "pro":   os.getenv("STRIPE_CREDIT_PRO",   ""),   # $14 — 50 dk  ($0.28/dk, %45 marj)
-    "power": os.getenv("STRIPE_CREDIT_POWER", ""),   # $26 — 100 dk ($0.26/dk, %40 marj)
+    "mini":  os.getenv("STRIPE_CREDIT_MINI",  ""),   # $4  — 25 dk  ($0.16/dk, %80 marj)
+    "pro":   os.getenv("STRIPE_CREDIT_PRO",   ""),   # $8  — 60 dk  ($0.133/dk, %76 marj)
+    "power": os.getenv("STRIPE_CREDIT_POWER", ""),   # $18 — 150 dk ($0.12/dk, %72 marj)
 }
 
-PLAN_LIMIT_DK = {"lite": 10, "creator": 65, "studio": 160, "business": 450}
-KREDI_DK      = {"mini": 20, "pro": 50, "power": 100}
+PLAN_LIMIT_DK = {"lite": 10, "creator": 75, "studio": 200, "business": 600}
+KREDI_DK      = {"mini": 25, "pro": 60, "power": 150}
 
 # ── Loglama ──
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -165,7 +169,8 @@ async def baslangic_kontrolu():
     log.info("=" * 50)
     log.info("Lumnex başlatılıyor...")
     if not DEEPGRAM_API_KEY:   log.warning("⚠ DEEPGRAM_API_KEY eksik — deşifre çalışmaz")
-    if not ELEVENLABS_API_KEY: log.warning("⚠ ELEVENLABS_API_KEY eksik — TTS çalışmaz")
+    if not ELEVENLABS_API_KEY: log.warning("⚠ ELEVENLABS_API_KEY eksik — ElevenLabs TTS çalışmaz")
+    if not AZURE_SPEECH_KEY:   log.warning("⚠ AZURE_SPEECH_KEY eksik — Azure Neural TTS çalışmaz")
     if not DEEPL_API_KEY:      log.warning("⚠ DEEPL_API_KEY eksik — çeviri çalışmaz")
     if ffmpeg_var_mi():        log.info("✓ FFmpeg mevcut")
     else:                      log.warning("⚠ FFmpeg bulunamadı")
@@ -541,7 +546,81 @@ def _tts_cache_temizle(max_mb: int = 500):
             log.info(f"[TTS Cache] Temizlendi: {os.path.basename(sil)}")
     except Exception as e:
         log.warning(f"[TTS Cache] Temizleme hatası: {e}")
+async def openai_ses_uret(metin: str, ses_id: str, output_path: str) -> bool:
+    """OpenAI TTS-1 — ses_id formatı: openai_alloy / openai_nova vb. — Lite plan için"""
+    if not metin or not metin.strip():
+        return False
+    if not OPENAI_API_KEY:
+        log.warning("[OpenAI TTS] OPENAI_API_KEY eksik")
+        return False
+    voice = ses_id.replace("openai_", "")
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.post(
+                "https://api.openai.com/v1/audio/speech",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                json={"model": "tts-1", "input": metin[:4096], "voice": voice},
+                timeout=60.0,
+            )
+        if r.status_code == 200:
+            with open(output_path, "wb") as f:
+                f.write(r.content)
+            _tts_cache_set(metin, ses_id, output_path)
+            return True
+        else:
+            log.error(f"[OpenAI TTS] {r.status_code} — {r.text[:200]}")
+            return False
+    except Exception as e:
+        log.error(f"[OpenAI TTS] İstisna: {e}")
+        return False
+
+
+async def azure_ses_uret(metin: str, ses_id: str, output_path: str) -> bool:
+    """Azure Neural TTS — ses_id formatı: azure_tr-TR-AhmetNeural"""
+    if not metin or not metin.strip():
+        return False
+    if not AZURE_SPEECH_KEY:
+        log.warning("[Azure TTS] AZURE_SPEECH_KEY eksik")
+        return False
+
+    voice_name = ses_id.replace("azure_", "")
+    # Dil kodu ses adından çıkar: tr-TR-AhmetNeural → tr-TR
+    lang_code  = "-".join(voice_name.split("-")[:2]) if voice_name.count("-") >= 2 else "en-US"
+
+    ssml = (
+        f"<speak version='1.0' xml:lang='{lang_code}'>"
+        f"<voice xml:lang='{lang_code}' name='{voice_name}'>"
+        f"{metin[:5000]}"
+        f"</voice></speak>"
+    )
+    url = f"https://{AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1"
+    headers = {
+        "Ocp-Apim-Subscription-Key": AZURE_SPEECH_KEY,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.post(url, content=ssml.encode("utf-8"), headers=headers, timeout=60.0)
+        if r.status_code == 200:
+            with open(output_path, "wb") as f:
+                f.write(r.content)
+            _tts_cache_set(metin, ses_id, output_path)
+            return True
+        else:
+            log.error(f"[Azure TTS] {r.status_code} — {r.text[:200]}")
+            return False
+    except Exception as e:
+        log.error(f"[Azure TTS] İstisna: {e}")
+        return False
+
+
 async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2, style: float = 0.0, stability: float = 0.5) -> bool:
+    # OpenAI / Azure seslerini ilgili fonksiyona yönlendir
+    if ses_id.startswith("openai_"):
+        return await openai_ses_uret(metin, ses_id, output_path)
+    if ses_id.startswith("azure_"):
+        return await azure_ses_uret(metin, ses_id, output_path)
     if not metin or not metin.strip():
         log.warning("[ElevenLabs] Boş metin gönderildi")
         return False
@@ -1441,6 +1520,14 @@ async def elevenlabs_segment_uret(
     - Rate limit ve hatalarda retry
     - Ses hedef süreden uzunsa akıllı sıkıştırma
     """
+    # OpenAI / Azure seslerini ilgili fonksiyona yönlendir
+    if ses_id.startswith("openai_"):
+        metin_temiz = metin_normalize(metin, dil)
+        return await openai_ses_uret(metin_temiz, ses_id, output_path)
+    if ses_id.startswith("azure_"):
+        metin_temiz = metin_normalize(metin, dil)
+        return await azure_ses_uret(metin_temiz, ses_id, output_path)
+
     # Metin normalize et
     # 1. Gemini ile jargon + dolgu temizle (8s timeout, hata durumunda fallback)
     metin_gemini = await gemini_jargon_temizle(metin, dil)
@@ -1647,7 +1734,7 @@ def deepgram_to_srt(dg_response, path: str):
 # ============================================================
 # ANA İŞLEM MOTORU
 # ============================================================
-async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55, user_id=""):
+async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55, user_id="", filigran=False):
     import time as _time
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
@@ -1726,7 +1813,8 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             # Normalize et
             metin_final = metin_normalize(metin_final, hedef_dil.lower() if hedef_dil else "tr")
 
-            islem_durumlari[out_file] = {"durum": "ElevenLabs sesi sentezliyor...", "yuzde": 60}
+            provider_log = "Azure" if ses_id.startswith("azure_") else "OpenAI" if ses_id.startswith("openai_") else "ElevenLabs"
+            islem_durumlari[out_file] = {"durum": f"{provider_log} sesi sentezliyor...", "yuzde": 60}
             ok = await elevenlabs_ses_uret(metin_final, ses_id, os.path.join(OUTPUT_DIR, out_file), style=style, stability=stability)
             if ok:
                 islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
@@ -2051,6 +2139,28 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
             islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
             return
 
+        # ── FİLİGRAN ── Lite/demo kullanıcılar için video output'a watermark ekle
+        if filigran and modul in ("altyazi", "seslendirme"):
+            cikti_tam = os.path.join(OUTPUT_DIR, out_file)
+            if os.path.exists(cikti_tam) and islem_durumlari.get(out_file, {}).get("yuzde") == 100:
+                wm_tmp = cikti_tam + "_wm.mp4"
+                wm_cmd = [
+                    "ffmpeg", "-y", "-i", cikti_tam,
+                    "-vf", "drawtext=text='lumnex.ai':fontsize=18:fontcolor=white@0.65:x=w-tw-14:y=h-th-14:box=1:boxcolor=black@0.45:boxborderw=4",
+                    "-c:a", "copy", "-preset", "ultrafast", wm_tmp,
+                ]
+                try:
+                    proc = await asyncio.create_subprocess_exec(*wm_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                    await proc.communicate()
+                    if proc.returncode == 0:
+                        os.replace(wm_tmp, cikti_tam)
+                        log.info(f"[Filigran] ✓ Eklendi: {out_file}")
+                    else:
+                        log.warning("[Filigran] FFmpeg watermark başarısız, orijinal korundu")
+                        if os.path.exists(wm_tmp): os.remove(wm_tmp)
+                except Exception as _wme:
+                    log.warning(f"[Filigran] Hata: {_wme}")
+
     except Exception as e:
         import traceback
         log.error(f"[Motor FATAL] {e}\n{traceback.format_exc()}")
@@ -2065,8 +2175,19 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
                 if sure_sn <= 0 and tmp_in and os.path.exists(tmp_in):
                     sure_sn = ses_sure_olc(tmp_in)
                 sure_dk = round(sure_sn / 60, 2) if sure_sn > 0 else 1.0
+                # Modül bazlı çarpan — gerçek maliyete göre dakika tüketimi
+                MODUL_CARPAN = {
+                    "desifre":      0.1,   # Deepgram only — çok ucuz
+                    "altyazi":      0.25,  # Deepgram + DeepL — ucuz
+                    "metinden_sese":0.5,   # Azure/OpenAI TTS — orta
+                    "seslendirme":  1.0,   # ElevenLabs dublaj — pahalı
+                }
+                carpan = MODUL_CARPAN.get(modul, 1.0)
+                tuketim_dk = round(sure_dk * carpan, 2)
                 islem_durumlari[out_file]["sure_dakika"] = sure_dk
-                await sb_kullanim_ekle(user_id, sure_dk)
+                islem_durumlari[out_file]["tuketim_dakika"] = tuketim_dk
+                islem_durumlari[out_file]["carpan"] = carpan
+                await sb_kullanim_ekle(user_id, tuketim_dk)
         except Exception as _eu:
             log.warning(f"[Motor] Kullanım kaydı hatası: {_eu}")
         if tmp_in and os.path.exists(tmp_in):
@@ -2130,14 +2251,24 @@ async def islem_baslat(
         style_f     = 0.0
         stability_f = 0.55
 
+    # Filigran: user_id yoksa (demo) veya Lite plan ise
+    uid = user_id.strip() or ""
+    filigran = False
+    if not uid:
+        filigran = True  # demo / giriş yapmamış
+    elif modul in ("altyazi", "seslendirme"):
+        profil = await sb_profil_getir(uid)
+        if profil and profil.get("plan", "lite") == "lite":
+            filigran = True
+
     arka_plan.add_task(
         islem_motoru, out_file, modul, hedef_dil,
         ses_id, tmp_in, yazili_metin, kaynak_dil,
         f_name, f_size, f_color, is_bold, is_shadow, m_v,
         orig_vol_f, dub_vol_f, style_f, stability_f,
-        user_id.strip() or "",
+        uid, filigran,
     )
-    return JSONResponse({"beklenen_dosya_adi": out_file})
+    return JSONResponse({"beklened_dosya_adi": out_file, "beklenen_dosya_adi": out_file})
 
 
 @app.post("/api/cevir/")
@@ -4525,6 +4656,12 @@ async def profil_getir(user_id: str):
         "kalan_dakika": round(plan_kalan, 1),
         "kredi_dakika": round(kredi_dk, 1),
         "toplam_kalan": round(plan_kalan + kredi_dk, 1),
+        # Kredi sistemi (1 dk = 10 kredi)
+        "kullanim_kredi": round(kullanim * 10, 1),
+        "limit_kredi": limit * 10,
+        "kalan_kredi": round(plan_kalan * 10, 1),
+        "ek_kredi": round(kredi_dk * 10, 1),
+        "toplam_kalan_kredi": round((plan_kalan + kredi_dk) * 10, 1),
         "email": profil.get("email", ""),
     })
 
@@ -4554,7 +4691,7 @@ async def kullanim_kaydet(user_id: str = Form(...), dosya_adi: str = Form(""), d
         return JSONResponse({"ok": False, "sebep": "süre hesaplanamadı"})
 
     ok = await sb_kullanim_ekle(user_id, dk)
-    return JSONResponse({"ok": ok, "eklenen_dakika": dk})
+    return JSONResponse({"ok": ok, "eklenen_dakika": dk, "eklenen_kredi": round(dk * 10, 1)})
 
 
 # ============================================================

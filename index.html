@@ -597,8 +597,8 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <button class="mod-toggle-btn" id="btn_sihirli" onclick="modGecis('sihirli')">✨ Magic</button>
       <button class="mod-toggle-btn active" id="btn_pro" onclick="modGecis('pro')">🎛️ Pro</button>
     </div>
-    <div id="nav_plan_pill" onclick="dashboardAc()" title="Kalan dakika — tıkla: My Files"><span>⚡</span><span id="nav_plan_pill_txt">--</span></div>
-    <div id="nav_free_badge" onclick="loginModalAc()" title="Ücretsiz başla" style="display:none;align-items:center;gap:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:100px;padding:4px 11px;font-size:11px;font-weight:700;color:#22c55e;cursor:pointer;white-space:nowrap;">✦ Free: 10 dk/ay</div>
+    <div id="nav_plan_pill" onclick="dashboardAc()" title="Kalan kredi — tıkla: My Files"><span>⚡</span><span id="nav_plan_pill_txt">--</span></div>
+    <div id="nav_free_badge" onclick="loginModalAc()" title="Ücretsiz başla" style="display:none;align-items:center;gap:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:100px;padding:4px 11px;font-size:11px;font-weight:700;color:#22c55e;cursor:pointer;white-space:nowrap;">✦ Free: 100 kredi/ay</div>
     <button class="cloud-btn" onclick="dashboardAc()" title="My Files & Profile" style="gap:5px;"><i class="fa-solid fa-folder-open"></i> My Files</button>
     <button class="cloud-btn" onclick="profilAc()" title="Profile & Usage" style="gap:5px;"><i class="fa-solid fa-user"></i> <span id="nav_user_name" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span></button>
     <button class="cloud-btn" onclick="glossaryAc()" title="Özel terim sözlüğü"><i class="fa-solid fa-book"></i> Glossary</button>
@@ -1752,13 +1752,15 @@ function _planPillGuncelle() {
   const pill = document.getElementById('nav_plan_pill');
   const txt  = document.getElementById('nav_plan_pill_txt');
   if (!pill || !_sbUser) return;
-  const plan      = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
-  const kulDk     = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
-  const planLimit = {lite:10, creator:75, studio:200, business:600}[plan] || 10;
-  const kalan     = Math.max(0, planLimit - kulDk);
-  const pct       = Math.min(100, (kulDk / planLimit) * 100);
+  const plan           = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
+  const kulDk          = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
+  const PLAN_LIMIT_KREDI = {lite:100, creator:750, studio:2000, business:6000};
+  const limitKredi     = PLAN_LIMIT_KREDI[plan] || 100;
+  const kulKredi       = _sbProfil && _sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : kulDk * 10;
+  const kalanKredi     = Math.max(0, limitKredi - kulKredi);
+  const pct            = Math.min(100, (kulKredi / limitKredi) * 100);
   pill.style.display = 'flex';
-  txt.textContent = kalan.toFixed(1) + ' min left';
+  txt.textContent = Math.round(kalanKredi) + ' kredi';
   pill.className  = pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : '';
 }
 
@@ -3084,6 +3086,15 @@ function _ttsHL(){
 
 // paid:true = ElevenLabs Free plan'da çalışmıyor (library voice, 402 döner)
 const VOICES = [
+  // ── OpenAI TTS-1 — Lite (Ücretsiz) Plan ──────────────────────────
+  { id:'openai_alloy',   name:'Alloy',   flag:'🇺🇸', desc:'Balanced, Clear',    color:'#22c55e', lang:'en', gender:'male',   tone:'neutral', provider:'openai', freeOk:true },
+  { id:'openai_echo',    name:'Echo',    flag:'🇺🇸', desc:'Deep, Resonant',     color:'#16a34a', lang:'en', gender:'male',   tone:'deep',    provider:'openai', freeOk:true },
+  { id:'openai_fable',   name:'Fable',   flag:'🇺🇸', desc:'Warm, Storyteller',  color:'#15803d', lang:'en', gender:'male',   tone:'warm',    provider:'openai', freeOk:true },
+  { id:'openai_onyx',    name:'Onyx',    flag:'🇺🇸', desc:'Firm, Authoritative',color:'#166534', lang:'en', gender:'male',   tone:'deep',    provider:'openai', freeOk:true },
+  { id:'openai_nova',    name:'Nova',    flag:'🇺🇸', desc:'Energetic, Bright',  color:'#4ade80', lang:'en', gender:'female', tone:'energetic',provider:'openai', freeOk:true },
+  { id:'openai_shimmer', name:'Shimmer', flag:'🇺🇸', desc:'Soft, Natural',      color:'#86efac', lang:'en', gender:'female', tone:'warm',    provider:'openai', freeOk:true },
+  // ── Türkçe ── (Azure Neural — Demo)  flag:'🇹🇷', desc:'Güçlü, Profesyonel', color:'#0ea5e9', lang:'tr', gender:'male',   tone:'neutral', provider:'azure' },
+  { id:'azure_tr-TR-EmelNeural',  name:'Emel (Neural)',   flag:'🇹🇷', desc:'Sıcak, Doğal',       color:'#38bdf8', lang:'tr', gender:'female', tone:'warm',    provider:'azure' },
   // ── Türkçe ──
   { id:'E7GwUhgj9sbeAZgubRba', name:'Bahadır',  flag:'🇹🇷', desc:'Derin, Hikayesel',      color:'#f97316', lang:'tr', gender:'male',   tone:'deep' },
   { id:'xFsOR54lR471QiCvQ5re', name:'İlknur',   flag:'🇹🇷', desc:'Net, Sıcak, Genç',      color:'#a855f7', lang:'tr', gender:'female', tone:'warm' },
@@ -3093,6 +3104,9 @@ const VOICES = [
   { id:'EXAVITQu4vr4xnSDxMaL', name:'Zeynep',   flag:'🇹🇷', desc:'Olgun, Etkileyici',      color:'#7c3aed', lang:'tr', gender:'female', tone:'neutral' },
   { id:'cgSgspJ2msm6clMCkdW9', name:'Elif',     flag:'🇹🇷', desc:'Enerjik, Canlı',         color:'#db2777', lang:'tr', gender:'female', tone:'energetic' },
   { id:'21m00Tcm4TlvDq8ikWAM', name:'Ayşe',     flag:'🇹🇷', desc:'Sakin, Anlatıcı',        color:'#9333ea', lang:'tr', gender:'female', tone:'neutral' },
+  // ── Almanca ── (Azure Neural — Demo)
+  { id:'azure_de-DE-KasperNeural',  name:'Kasper (Neural)',  flag:'🇩🇪', desc:'Güçlü, Net',      color:'#0ea5e9', lang:'de', gender:'male',   tone:'neutral', provider:'azure' },
+  { id:'azure_de-DE-KatjaNeural',   name:'Katja (Neural)',   flag:'🇩🇪', desc:'Profesyonel',     color:'#38bdf8', lang:'de', gender:'female', tone:'neutral', provider:'azure' },
   // ── Almanca ──
   { id:'dFA3XRddYScy6ylAYTIO', name:'Helmut',   flag:'🇩🇪', desc:'Warm, Sanft',           color:'#dc2626', lang:'de', gender:'male',   tone:'warm' },
   { id:'60UU378MZ8YbeLyaF7TI', name:'Jonas',    flag:'🇩🇪', desc:'Selbstbewusst',         color:'#b91c1c', lang:'de', gender:'male',   tone:'neutral' },
@@ -3103,6 +3117,9 @@ const VOICES = [
   { id:'XrExE9yKIg1WjnnlVkGX', name:'Anna',     flag:'🇩🇪', desc:'Professionell, Klar',    color:'#9333ea', lang:'de', gender:'female', tone:'neutral' },
   { id:'FGY2WhTYpPnrIDTdsKH5', name:'Sophie',   flag:'🇩🇪', desc:'Freundlich, Natürlich',  color:'#06b6d4', lang:'de', gender:'female', tone:'energetic' },
   { id:'LcfcDJNUP1GQjkzn1xUU', name:'Emma',     flag:'🇩🇪', desc:'Ruhig, Einfühlsam',      color:'#a78bfa', lang:'de', gender:'female', tone:'warm' },
+  // ── Fransızca ── (Azure Neural — Demo)
+  { id:'azure_fr-FR-HenriNeural',   name:'Henri (Neural)',   flag:'🇫🇷', desc:'Doğal, Sıcak',    color:'#0ea5e9', lang:'fr', gender:'male',   tone:'warm',    provider:'azure' },
+  { id:'azure_fr-FR-DeniseNeural',  name:'Denise (Neural)',  flag:'🇫🇷', desc:'Net, Zarif',      color:'#38bdf8', lang:'fr', gender:'female', tone:'neutral', provider:'azure' },
   // ── Fransızca ──
   { id:'8qnuneLiGjGrT4A62CCe', name:'Jules',    flag:'🇫🇷', desc:'Conversationnel',       color:'#3b82f6', lang:'fr', gender:'male',   tone:'neutral' },
   { id:'p2Wol3C7j3rHbfOrbL18', name:'Lisa',     flag:'🇫🇷', desc:'Chaleureuse, Émotive',  color:'#60a5fa', lang:'fr', gender:'female', tone:'warm' },
@@ -3120,6 +3137,11 @@ const VOICES = [
   { id:'zcAOhNBS3c14rBihAFp1', name:'Giovanni', flag:'🇮🇹', desc:'Carismatico, Caldo',     color:'#dc2626', lang:'it', gender:'male',   tone:'warm' },
   { id:'FGY2WhTYpPnrIDTdsKH5', name:'Giulia',   flag:'🇮🇹', desc:'Energica, Vivace',       color:'#06b6d4', lang:'it', gender:'female', tone:'energetic' },
   { id:'LcfcDJNUP1GQjkzn1xUU', name:'Sofia',    flag:'🇮🇹', desc:'Calda, Naturale',        color:'#a78bfa', lang:'it', gender:'female', tone:'warm' },
+  // ── İngilizce ── (Azure Neural — Demo)
+  { id:'azure_en-US-GuyNeural',     name:'Guy (Neural)',     flag:'🇺🇸', desc:'Deep, Confident',  color:'#0ea5e9', lang:'en', gender:'male',   tone:'deep',    provider:'azure' },
+  { id:'azure_en-US-DavisNeural',   name:'Davis (Neural)',   flag:'🇺🇸', desc:'Casual, Clear',    color:'#0284c7', lang:'en', gender:'male',   tone:'neutral', provider:'azure' },
+  { id:'azure_en-US-JennyNeural',   name:'Jenny (Neural)',   flag:'🇺🇸', desc:'Friendly, Warm',   color:'#38bdf8', lang:'en', gender:'female', tone:'warm',    provider:'azure' },
+  { id:'azure_en-US-AriaNeural',    name:'Aria (Neural)',    flag:'🇺🇸', desc:'Natural, Expressive',color:'#7dd3fc',lang:'en', gender:'female', tone:'energetic',provider:'azure' },
   // ── İngilizce Erkek — free plan ──
   { id:'nPczCjzI2devNBz1zQrb', name:'Brian',    flag:'🇺🇸', desc:'Deep, Comforting',      color:'#6366f1', lang:'en', gender:'male',   tone:'deep'         },
   { id:'pNInz6obpgDQGcFmaJgB', name:'Adam',     flag:'🇺🇸', desc:'Dominant, Firm',        color:'#a78bfa', lang:'en', gender:'male',   tone:'deep'         },
@@ -3839,7 +3861,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Kredi satın alma başarılı
   if (urlParams.get('credits') === 'success') {
     const paket = urlParams.get('paket') || '';
-    const dkMap = {mini:'20', pro:'50', power:'100'};
+    const dkMap = {mini:'25', pro:'60', power:'150'};
     toast('🎉 ' + (dkMap[paket] || '') + ' dk krediniz eklendi!', 'tok', 6000);
     history.replaceState({}, '', window.location.pathname);
   }
@@ -4476,9 +4498,12 @@ async function dashboardAc() {
   const isim  = email ? email.split('@')[0] : 'Guest';
   const plan  = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
   const kulDk = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
-  const planLimit = {lite:10, creator:75, studio:200, business:600}[plan] || 10;
-  const planRenk  = {lite:'#71717a', creator:'#22c55e', studio:'#6366f1', business:'#ec4899'}[plan] || '#71717a';
-  const pct = Math.min(100, Math.round((kulDk/planLimit)*100));
+  const PLAN_LIMIT_KREDI_DASH = {lite:100, creator:750, studio:2000, business:6000};
+  const limitKredi = PLAN_LIMIT_KREDI_DASH[plan] || 100;
+  const kulKredi   = _sbProfil && _sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : kulDk * 10;
+  const kalanKredi = Math.max(0, limitKredi - kulKredi);
+  const planRenk   = {lite:'#71717a', creator:'#22c55e', studio:'#6366f1', business:'#ec4899'}[plan] || '#71717a';
+  const pct = Math.min(100, Math.round((kulKredi / limitKredi) * 100));
 
   ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);width:700px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">'
     // Header
@@ -4495,9 +4520,9 @@ async function dashboardAc() {
     + '</div>'
     // Kullanım
     + '<div style="padding:16px 24px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
-    + dashKart('⏱️', 'Usage', kulDk.toFixed(1) + ' / ' + planLimit + ' min', pct + '%')
+    + dashKart('⚡', 'Used', Math.round(kulKredi) + ' / ' + limitKredi + ' kr', pct + '%')
     + dashKart('💳', 'Plan', plan.charAt(0).toUpperCase()+plan.slice(1), plan==='lite'?'Free':'Active')
-    + dashKart('⚡', 'Remaining', Math.max(0, planLimit-kulDk).toFixed(1) + ' min', pct<80?'Good':'Low')
+    + dashKart('✦', 'Remaining', Math.round(kalanKredi) + ' kredi', pct<80?'Good':'Low')
     + '</div>'
     // Kullanım bar
     + '<div style="padding:0 24px 14px;border-bottom:1px solid var(--border);">'
@@ -6217,6 +6242,7 @@ let _vpFavs = JSON.parse(localStorage.getItem('vf_fav_voices') || '[]');
 let _vpFilter = { genderF:false, genderM:false, favOnly:false, proOnly:false };
 
 function voicePickerAc(ctx) {
+  window._vpCtx = ctx || '';
   document.getElementById('_voice_picker')?.remove();
   const ov = document.createElement('div');
   ov.id = '_voice_picker';
@@ -6370,14 +6396,24 @@ function _vpRender() {
   if (!body) return;
   const q    = (document.getElementById('_vp_search')?.value || '').toLowerCase();
   const dial = document.getElementById('_vp_dial')?.value || '';
+  const userPlan = (localStorage.getItem('vf_plan') || (_sbUser ? 'lite' : 'demo'));
+  const isLite   = userPlan === 'lite' || userPlan === 'demo';
+  // Metinden sese modunda sadece Azure sesler göster
+  const isTtsMode = (mod === 'metinden_sese') || (window._vpCtx === 'tts');
 
-  const groups = ['tr','en','de','fr','it','es','pt','ru','ar','hi','ja','ko','zh','nl','pl','sv'];
+  const groups = isTtsMode
+    ? ['tr','en','de','fr','it','es','pt','ru','ar','hi','ja','ko','zh','nl','pl','sv']
+    : ['en','tr','de','fr','it','es','pt','ru','ar','hi','ja','ko','zh','nl','pl','sv'];
 
   let html = '';
   groups.forEach(function(lang) {
     if (dial && dial !== lang) return;
     const voices = VOICES.filter(function(v) {
       if (v.lang !== lang) return false;
+      // Metinden sese: sadece Azure sesler
+      if (isTtsMode && v.provider !== 'azure') return false;
+      // Lite/demo plan: sadece openai_ ve azure_ sesler
+      if (isLite && !v.freeOk && v.provider !== 'azure') return false;
       if (_vpFilter.genderF && v.gender !== 'female') return false;
       if (_vpFilter.genderM && v.gender !== 'male')   return false;
       if (_vpFilter.favOnly && !_vpFavs.includes(v.id)) return false;
@@ -6395,9 +6431,11 @@ function _vpRender() {
       const isFav = _vpFavs.includes(v.id);
       const isSel = voice === v.id;
 
-      html += '<div class="vp-card' + (isSel?' sel':'') + '" onclick="selVoiceById(\'' + v.id + '\')">'
+      const isAzure = v.provider === 'azure';
+      html += '<div class="vp-card' + (isSel?' sel':'') + '" onclick="selVoiceById(\'' + v.id + '\')" style="' + (isAzure?'border-color:#0ea5e9;':'') + '">'
         + _vpAvatarHtml(v)
-        // name + flag row
+        // demo badge + name + flag row
+        + (isAzure ? '<div style="font-size:9px;font-weight:800;background:#0ea5e9;color:#fff;border-radius:4px;padding:1px 5px;margin-bottom:4px;display:inline-block;letter-spacing:.5px;">DEMO</div>' : '')
         + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">'
         + '  <span style="font-size:11px;font-weight:700;color:#e8edf5;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v.name + '</span>'
         + '  <span style="font-size:13px;flex-shrink:0;">' + (v.flag||'') + '</span>'
@@ -7179,9 +7217,10 @@ function profilAc() {
 
   const plan     = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
   const kullanim = parseFloat((_sbProfil && _sbProfil.kullanim_dakika != null) ? _sbProfil.kullanim_dakika : (localStorage.getItem('vf_kullanim_dk') || '0'));
-  const limitler = { lite:10, creator:75, studio:200, business:600 };
-  const limit    = limitler[plan.toLowerCase()] || 10;
-  const yuzde    = Math.min(100, (kullanim / limit) * 100);
+  const PROFIL_LIMIT_KREDI = { lite:100, creator:750, studio:2000, business:6000 };
+  const limit    = PROFIL_LIMIT_KREDI[plan.toLowerCase()] || 100;
+  const kulKrediP = _sbProfil && _sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : kullanim * 10;
+  const yuzde    = Math.min(100, (kulKrediP / limit) * 100);
   const renk     = yuzde > 85 ? '#ef4444' : yuzde > 60 ? '#f59e0b' : '#22c55e';
   const email    = (_sbUser && _sbUser.email) ? _sbUser.email : 'Not signed in';
   const ilk      = email[0] ? email[0].toUpperCase() : '?';
@@ -7190,7 +7229,7 @@ function profilAc() {
     ? '<button onclick="authCikis()" style="background:var(--s2);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign Out</button>'
     : '<button onclick="document.getElementById(\'_profil_overlay\').remove();loginModalAc()" style="background:var(--accent);border:none;color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Sign In</button>';
 
-  const planlar = [['lite','$0','10 min'],['creator','$19','65 min'],['studio','$45','160 min'],['business','$115','450 min']];
+  const planlar = [['lite','$0','100 kredi'],['creator','$14','750 kredi'],['studio','$34','2000 kredi'],['business','$89','6000 kredi']];
   const planHtml = planlar.map(function(pfd) {
     const p = pfd[0], f = pfd[1], d = pfd[2];
     const aktif = p === plan.toLowerCase();
@@ -7224,12 +7263,12 @@ function profilAc() {
     + '<div style="font-size:18px;font-weight:700;color:var(--accent3);text-transform:capitalize;">' + plan + '</div></div>'
     + '<button onclick="planYukselt()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Upgrade ↑</button>'
     + '</div>'
-    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + kullanim.toFixed(1) + ' / ' + limit + ' minutes used this month</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">' + Math.round(kulKrediP) + ' / ' + limit + ' kredi kullanıldı · <span style="color:#60a5fa;">altyazı 2.5kr/dk</span></div>'
     + '<div style="background:var(--s2);border-radius:100px;height:5px;overflow:hidden;margin-bottom:10px;">'
     + '<div style="height:100%;background:' + renk + ';border-radius:100px;width:' + yuzde + '%;"></div>'
     + '</div>'
     + '<div id="_profil_kredi_row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);">'
-    + '<div><div style="font-size:10px;color:var(--muted2);">Ek Kredi</div><div id="_profil_kredi_val" style="font-size:13px;font-weight:700;">-- dk</div></div>'
+    + '<div><div style="font-size:10px;color:var(--muted2);">Ek Kredi</div><div id="_profil_kredi_val" style="font-size:13px;font-weight:700;">-- kredi</div></div>'
     + '<button onclick="kredSatinAlModalAc()" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.4);color:#eab308;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ Kredi Al</button>'
     + '</div>'
     + '</div>'
@@ -7256,9 +7295,9 @@ async function planYukselt(plan) {
       + '<button onclick="document.getElementById(\'_plan_modal\').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;">×</button>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
-      + _planCard('creator','Creator','$19/mo','65 min/month',['AI Dubbing','Voice Cloning','30+ voices','Emotion controls'],'#22c55e')
-      + _planCard('studio','Studio','$45/mo','160 min/month',['Everything in Creator','Batch processing','API access','A/B compare'],'#6366f1')
-      + _planCard('business','Business','$115/mo','450 min/month',['Everything in Studio','Unlimited clones','Custom brand kit','Priority support'],'#ec4899')
+      + _planCard('creator','Creator','$14/mo','750 kredi/ay · Dublaj 10kr/dk · Altyazı 2.5kr/dk',['AI Dubbing','ElevenLabs voices','30+ voices','Glossary'],'#22c55e')
+      + _planCard('studio','Studio','$34/mo','2000 kredi/ay · Dublaj 10kr/dk · Altyazı 2.5kr/dk',['Everything in Creator','Multi-speaker clone','API access','A/B compare'],'#6366f1')
+      + _planCard('business','Business','$89/mo','6000 kredi/ay · Dublaj 10kr/dk · Altyazı 2.5kr/dk',['Everything in Studio','Unlimited clones','Custom brand kit','Priority support'],'#ec4899')
       + '</div>'
       + '<div style="margin-top:14px;font-size:11px;color:var(--muted);text-align:center;">Secure payment via Stripe · Cancel anytime · All plans include 7-day free trial</div>'
       + '</div>';
@@ -7439,7 +7478,10 @@ async function _kullanimi_kaydet(dosya_adi) {
         // Locale state güncelle
         const mevcut = parseFloat(localStorage.getItem('vf_kullanim_dk') || '0');
         localStorage.setItem('vf_kullanim_dk', String(Math.round((mevcut + d.eklenen_dakika) * 100) / 100));
-        if (_sbProfil) _sbProfil.kullanim_dakika = (parseFloat(_sbProfil.kullanim_dakika || 0) + d.eklenen_dakika);
+        if (_sbProfil) {
+          _sbProfil.kullanim_dakika = (parseFloat(_sbProfil.kullanim_dakika || 0) + d.eklenen_dakika);
+          _sbProfil.kullanim_kredi  = (_sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : mevcut * 10) + (d.eklenen_kredi || d.eklenen_dakika * 10);
+        }
         _planPillGuncelle();
       }
     }
@@ -8068,7 +8110,7 @@ async function _profilKrediyiGuncelle() {
     if (!r.ok) return;
     const d = await r.json();
     const el = document.getElementById('_profil_kredi_val');
-    if (el) el.textContent = (d.kredi_dakika || 0).toFixed(1) + ' dk';
+    if (el) el.textContent = Math.round(d.ek_kredi || 0) + ' kredi';
   } catch(e) {}
 }
 
@@ -8077,9 +8119,9 @@ function kredSatinAlModalAc() {
   document.getElementById('_kred_modal')?.remove();
 
   const PAKETLER = [
-    { id:'mini',  fiyat:'$6',  dk:'20 dk',  desc:'Küçük işler için',    renk:'#22c55e'  },
-    { id:'pro',   fiyat:'$14', dk:'50 dk',  desc:'Düzenli kullanım',    renk:'#6366f1'  },
-    { id:'power', fiyat:'$26', dk:'100 dk', desc:'Yoğun üreticiler',    renk:'#ec4899'  },
+    { id:'mini',  fiyat:'$4',  dk:'250 kredi',  desc:'Küçük işler için',    renk:'#22c55e'  },
+    { id:'pro',   fiyat:'$8',  dk:'600 kredi',  desc:'Düzenli kullanım',    renk:'#6366f1'  },
+    { id:'power', fiyat:'$18', dk:'1500 kredi', desc:'Yoğun üreticiler',    renk:'#ec4899'  },
   ];
 
   const ov = document.createElement('div');
