@@ -3859,16 +3859,30 @@ async def ses_onizle(
     ses_id: str = Form(...),
     metin: str  = Form("Merhaba, ben Lumnex. Bu benim sesim."),
 ):
-    """
-    ElevenLabs preview endpoint ile sesin küçük bir örneğini üretir.
-    Karakter kotasından düşmez — sadece önizleme.
-    """
+    """Ses önizleme — ElevenLabs, Azure Neural ve OpenAI TTS destekler."""
+    b_id = uuid.uuid4().hex[:8]
+    onizleme_yol = os.path.join(TEMP_DIR, f"onizleme_{b_id}.mp3")
+    onizleme_metni = metin[:150]
+
+    # ── Azure Neural ──
+    if ses_id.startswith("azure_"):
+        if not AZURE_SPEECH_KEY:
+            return JSONResponse({"hata": "AZURE_SPEECH_KEY eksik"}, status_code=500)
+        ok = await azure_ses_uret(onizleme_metni, ses_id, onizleme_yol)
+        if ok and os.path.exists(onizleme_yol):
+            return FileResponse(onizleme_yol, media_type="audio/mpeg", filename=f"preview_{ses_id}.mp3")
+        return JSONResponse({"hata": "Azure TTS başarısız"}, status_code=500)
+
+    # ── OpenAI TTS ──
+    if ses_id.startswith("openai_"):
+        ok = await openai_ses_uret(onizleme_metni, ses_id, onizleme_yol)
+        if ok and os.path.exists(onizleme_yol):
+            return FileResponse(onizleme_yol, media_type="audio/mpeg", filename=f"preview_{ses_id}.mp3")
+        return JSONResponse({"hata": "OpenAI TTS başarısız"}, status_code=500)
+
+    # ── ElevenLabs ──
     if not ELEVENLABS_API_KEY:
         return JSONResponse({"hata": _hata_mesaji("elevenlabs_401")}, status_code=500)
-
-    # Metni 100 karakterle sınırla — preview için yeterli
-    onizleme_metni = metin[:100]
-
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ses_id}/stream"
     headers = {
         "Accept": "audio/mpeg",
@@ -3878,24 +3892,15 @@ async def ses_onizle(
     data = {
         "text": onizleme_metni,
         "model_id": "eleven_multilingual_v2",
-        "voice_settings": {
-            "stability": 0.35,
-            "similarity_boost": 0.85,
-            "style": 0.25,
-            "use_speaker_boost": True,
-        },
+        "voice_settings": {"stability": 0.35, "similarity_boost": 0.85, "style": 0.25, "use_speaker_boost": True},
     }
     try:
         async with httpx.AsyncClient() as client:
             r = await client.post(url, json=data, headers=headers, timeout=30.0)
         if r.status_code == 200:
-            # Geçici dosyaya kaydet, serve et
-            b_id = uuid.uuid4().hex[:8]
-            onizleme_yol = os.path.join(TEMP_DIR, f"onizleme_{b_id}.mp3")
             with open(onizleme_yol, "wb") as f:
                 f.write(r.content)
-            return FileResponse(onizleme_yol, media_type="audio/mpeg",
-                                filename=f"preview_{ses_id}.mp3")
+            return FileResponse(onizleme_yol, media_type="audio/mpeg", filename=f"preview_{ses_id}.mp3")
         return JSONResponse({"hata": f"ElevenLabs {r.status_code}: {r.text[:100]}"}, status_code=r.status_code)
     except Exception as e:
         return JSONResponse({"hata": str(e)}, status_code=500)
