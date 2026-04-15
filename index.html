@@ -1213,6 +1213,35 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
           <span><i class="fa-solid fa-music" style="color:var(--green2);margin-right:4px;"></i>Arka plan müziğini koru</span>
         </label>
       </div>
+
+      <!-- Voice Clone + Premium Dub -->
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
+        <!-- Voice Clone -->
+        <label id="voice_clone_row" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(245,158,11,.35);background:rgba(245,158,11,.06);transition:all .18s;" onclick="void(0)">
+          <input type="checkbox" id="voice_clone_chk" style="accent-color:#f59e0b;margin-top:2px;flex-shrink:0;" onchange="_klonToggle(this.checked)">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b;font-size:12px;"></i>
+              <span style="font-size:12px;font-weight:700;color:#f59e0b;">Voice Clone</span>
+              <span style="background:#f59e0b;color:#000;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.3px;">YENİ</span>
+            </div>
+            <div style="font-size:10px;color:var(--muted2);line-height:1.4;">Konuşmacının kendi sesiyle dublaj — aynı tını, farklı dil</div>
+          </div>
+        </label>
+
+        <!-- Premium Dub -->
+        <label id="premium_dub_row" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(139,92,246,.35);background:rgba(139,92,246,.06);transition:all .18s;" onclick="void(0)">
+          <input type="checkbox" id="premium_dub_chk" style="accent-color:#8b5cf6;margin-top:2px;flex-shrink:0;" onchange="_premiumDubToggle(this.checked)">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+              <i class="fa-solid fa-crown" style="color:#8b5cf6;font-size:12px;"></i>
+              <span style="font-size:12px;font-weight:700;color:#8b5cf6;">Premium Dub</span>
+              <span style="background:linear-gradient(90deg,#8b5cf6,#6366f1);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.3px;">ElevenLabs AI</span>
+            </div>
+            <div style="font-size:10px;color:var(--muted2);line-height:1.4;">Ses ayrıştırma + konuşmacı klonlama + lip-sync uyum — en yüksek kalite</div>
+          </div>
+        </label>
+      </div>
     </div>
   </div>
 </div>
@@ -5447,6 +5476,13 @@ async function startProcess(){
   const stabilityVal = ((document.getElementById(isTTS ? 'tts_emo_stability' : 'emo_stability')?.value || 55) / 100).toFixed(2);
   fd.append('style', styleVal);
   fd.append('stability', stabilityVal);
+  // Voice clone + Premium dub
+  if (mod === 'seslendirme') {
+    const vcChk = document.getElementById('voice_clone_chk');
+    const pdChk = document.getElementById('premium_dub_chk');
+    if (vcChk?.checked) fd.append('voice_clone', 'true');
+    if (pdChk?.checked) fd.append('premium_dub', 'true');
+  }
   if(mod==='metinden_sese'){
     const metin = document.getElementById('txt_input')?.value.trim();
     if(!metin){ alert('Metin girin!'); return; }
@@ -6497,6 +6533,41 @@ function buildVoiceList() {
 /* ═══ VOICE PICKER MODAL ═══ */
 let _vpFavs = JSON.parse(localStorage.getItem('vf_fav_voices') || '[]');
 let _vpFilter = { genderF:false, genderM:false, favOnly:false, proOnly:false };
+
+function _klonToggle(checked) {
+  const pdChk = document.getElementById('premium_dub_chk');
+  const vcRow  = document.getElementById('voice_clone_row');
+  const selBtn = document.getElementById('sel_voice_btn'); // ses seçme butonu varsa
+
+  if (checked) {
+    // Premium Dub zaten aktifse, ikisi aynı anda olamaz — Premium Dub devre dışı bırak
+    if (pdChk) pdChk.checked = false;
+    vcRow.style.borderColor = 'rgba(245,158,11,.8)';
+    vcRow.style.background  = 'rgba(245,158,11,.12)';
+    toast('🎙 Voice Clone aktif — konuşmacının sesi otomatik klonlanacak', 'tok', 3000);
+    if (selBtn) { selBtn.style.opacity = '0.4'; selBtn.style.pointerEvents = 'none'; }
+  } else {
+    vcRow.style.borderColor = 'rgba(245,158,11,.35)';
+    vcRow.style.background  = 'rgba(245,158,11,.06)';
+    if (selBtn) { selBtn.style.opacity = ''; selBtn.style.pointerEvents = ''; }
+  }
+}
+
+function _premiumDubToggle(checked) {
+  const vcChk  = document.getElementById('voice_clone_chk');
+  const pdRow  = document.getElementById('premium_dub_row');
+
+  if (checked) {
+    if (vcChk) vcChk.checked = false;
+    _klonToggle(false);
+    pdRow.style.borderColor = 'rgba(139,92,246,.8)';
+    pdRow.style.background  = 'rgba(139,92,246,.12)';
+    toast('👑 Premium Dub aktif — ElevenLabs AI pipeline kullanılacak', 'tok', 3000);
+  } else {
+    pdRow.style.borderColor = 'rgba(139,92,246,.35)';
+    pdRow.style.background  = 'rgba(139,92,246,.06)';
+  }
+}
 
 function voicePickerAc(ctx) {
   window._vpCtx = ctx || '';

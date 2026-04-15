@@ -699,6 +699,165 @@ async def azure_ses_uret(metin: str, ses_id: str, output_path: str) -> bool:
         return False
 
 
+# ============================================================
+# SES KLONLAMA — ElevenLabs Instant Voice Clone (IVC)
+# ============================================================
+async def elevenlabs_ses_klonla(video_yolu: str) -> dict:
+    """
+    Video/ses dosyasından ilk 30s'yi alıp ElevenLabs IVC ile geçici klon oluşturur.
+    Returns: {"basarili": True, "voice_id": "...", "isim": "..."} veya {"basarili": False, "hata": "..."}
+    """
+    if not ELEVENLABS_API_KEY:
+        return {"basarili": False, "hata": "ELEVENLABS_API_KEY eksik"}
+
+    gecici_ornek = video_yolu + "_klon_ornek.mp3"
+    try:
+        # 1. İlk 30s ses örneği — mono 22kHz, temiz konuşma için EQ
+        r_ffmpeg = subprocess.run([
+            "ffmpeg", "-y", "-i", video_yolu,
+            "-t", "30", "-vn",
+            "-ac", "1", "-ar", "22050",
+            "-af", "highpass=f=80,lowpass=f=8000,dynaudnorm=p=0.9",
+            "-b:a", "64k", gecici_ornek
+        ], capture_output=True, timeout=60)
+
+        if r_ffmpeg.returncode != 0 or not os.path.exists(gecici_ornek):
+            return {"basarili": False, "hata": "Ses örneği çıkarılamadı"}
+
+        if os.path.getsize(gecici_ornek) < 2000:
+            return {"basarili": False, "hata": "Ses örneği çok kısa"}
+
+        isim = f"lumnex_clone_{uuid.uuid4().hex[:8]}"
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            with open(gecici_ornek, "rb") as f:
+                r = await client.post(
+                    "https://api.elevenlabs.io/v1/voices/add",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    data={"name": isim, "description": "Lumnex auto-clone — temp"},
+                    files={"files": (os.path.basename(gecici_ornek), f, "audio/mpeg")},
+                )
+
+        if r.status_code == 200:
+            voice_id = r.json().get("voice_id", "")
+            log.info(f"[IVC] Klon oluşturuldu: {isim} → {voice_id}")
+            return {"basarili": True, "voice_id": voice_id, "isim": isim}
+        else:
+            log.warning(f"[IVC] Klon başarısız: {r.status_code} — {r.text[:300]}")
+            return {"basarili": False, "hata": f"ElevenLabs {r.status_code}: {r.text[:150]}"}
+
+    except Exception as e:
+        log.error(f"[IVC] İstisna: {e}")
+        return {"basarili": False, "hata": str(e)}
+    finally:
+        try:
+            if os.path.exists(gecici_ornek):
+                os.remove(gecici_ornek)
+        except Exception:
+            pass
+
+
+async def elevenlabs_ses_sil(voice_id: str):
+    """Geçici IVC klonunu ElevenLabs'tan sil (temizlik)."""
+    if not ELEVENLABS_API_KEY or not voice_id:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.delete(
+                f"https://api.elevenlabs.io/v1/voices/{voice_id}",
+                headers={"xi-api-key": ELEVENLABS_API_KEY},
+            )
+        log.info(f"[IVC] Klon silindi: {voice_id} → HTTP {r.status_code}")
+    except Exception as e:
+        log.warning(f"[IVC] Silme hatası: {e}")
+
+
+# ============================================================
+# ELEVENLABS DUBBING API — Premium pipeline
+# ============================================================
+async def elevenlabs_dubbing_api_islemi(
+    video_yolu: str,
+    kaynak_dil: str,
+    hedef_dil: str,
+    out_file: str,
+    durum_dict: dict,
+) -> bool:
+    """
+    ElevenLabs /v1/dubbing endpoint ile full pipeline:
+    - Otomatik ses ayrıştırma
+    - Konuşmacı tespiti + klonlama
+    - Lip-sync farkındalığı
+    """
+    if not ELEVENLABS_API_KEY:
+        return False
+
+    kd = kaynak_dil.lower()[:2] if kaynak_dil else "auto"
+    hd = hedef_dil.lower()[:2] if hedef_dil else "en"
+
+    try:
+        durum_dict[out_file] = {"durum": "Premium Dub: video yükleniyor...", "yuzde": 10}
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            with open(video_yolu, "rb") as f:
+                r = await client.post(
+                    "https://api.elevenlabs.io/v1/dubbing",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    data={
+                        "source_lang": kd if kd != "au" else "auto",
+                        "target_lang": hd,
+                        "num_speakers": 0,      # otomatik tespit
+                        "watermark": False,
+                        "drop_background_audio": False,
+                        "use_profanity_filter": False,
+                    },
+                    files={"file": (os.path.basename(video_yolu), f, "video/mp4")},
+                )
+
+        if r.status_code not in (200, 201):
+            log.error(f"[PremiumDub] Başlatma hatası: {r.status_code} — {r.text[:300]}")
+            return False
+
+        dubbing_id = r.json().get("dubbing_id")
+        beklenen_sure = r.json().get("expected_duration_sec", 120)
+        log.info(f"[PremiumDub] Başlatıldı: dubbing_id={dubbing_id}, beklenen={beklenen_sure}s")
+
+        # Status polling
+        for deneme in range(int(beklenen_sure * 3 / 5) + 60):  # max beklenen*3 süre
+            await asyncio.sleep(5)
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                sr = await client.get(
+                    f"https://api.elevenlabs.io/v1/dubbing/{dubbing_id}",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY},
+                )
+            durum = sr.json().get("status", "processing")
+            pct = min(90, 10 + (deneme * 80 // max(int(beklenen_sure * 3 / 5) + 60, 1)))
+            durum_dict[out_file] = {"durum": f"Premium Dub: işleniyor ({durum})...", "yuzde": pct}
+
+            if durum == "dubbed":
+                durum_dict[out_file] = {"durum": "Premium Dub: indiriliyor...", "yuzde": 93}
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    dr = await client.get(
+                        f"https://api.elevenlabs.io/v1/dubbing/{dubbing_id}/audio/{hd}",
+                        headers={"xi-api-key": ELEVENLABS_API_KEY},
+                    )
+                if dr.status_code == 200:
+                    cikti_tam = os.path.join(OUTPUT_DIR, out_file)
+                    with open(cikti_tam, "wb") as f:
+                        f.write(dr.content)
+                    log.info(f"[PremiumDub] ✓ Tamamlandı → {out_file}")
+                    return True
+                log.error(f"[PremiumDub] İndirme hatası: {dr.status_code}")
+                return False
+            elif durum == "failed":
+                log.error(f"[PremiumDub] ElevenLabs işlem başarısız: dubbing_id={dubbing_id}")
+                return False
+
+        log.error(f"[PremiumDub] Zaman aşımı: dubbing_id={dubbing_id}")
+        return False
+
+    except Exception as e:
+        log.error(f"[PremiumDub] İstisna: {e}")
+        return False
+
+
 async def elevenlabs_ses_uret(metin: str, ses_id: str, output_path: str, retry: int = 2, style: float = 0.0, stability: float = 0.5) -> bool:
     # OpenAI / Azure seslerini ilgili fonksiyona yönlendir
     if ses_id.startswith("openai_"):
@@ -1105,10 +1264,13 @@ def ffmpeg_ses_miksleme(
     orig_vol: float = 0.1,
     dub_vol: float  = 1.0,
     gecici_klasor: str = "",
+    ducking: bool = True,
 ) -> bool:
     """
     1) Segment seslerinden dublaj WAV track'i oluştur (sessizlik+concat)
-    2) Orijinal ses + dublaj track'i mikslayıp video'ya göm
+    2) Ducking modu (varsayılan): dublaj çalarken arka plan müziği otomatik düşer,
+       sessizlikte geri çıkar — TV/film kalitesinde ses karışımı.
+    3) Ducking yoksa: basit volume karışımı.
     """
     if not ses_listesi:
         return False
@@ -1127,15 +1289,32 @@ def ffmpeg_ses_miksleme(
 
     print(f"[Miks] Track OK ({ses_sure_olc(dublaj_wav):.1f}s) — video ile birleştiriliyor...")
 
+    if ducking:
+        # Sidechain ducking: dublaj ses çıkarken arka plan otomatik düşer
+        # Parametreler: threshold=0.008 (hassas), ratio=6:1, attack=20ms, release=400ms
+        # orig_vol → arka planın normal ses seviyesi (genellikle 0.25-0.5 önerilen)
+        bg_vol = max(orig_vol, 0.25)  # Ducking modunda arka planı daha dolu tut
+        filter_str = (
+            f"[1:a]volume={dub_vol},asplit=2[dub_out][sidechain];"
+            f"[0:a]volume={bg_vol}[bg_raw];"
+            f"[bg_raw][sidechain]sidechaincompress="
+            f"threshold=0.008:ratio=6:attack=20:release=400:makeup=1[bg_ducked];"
+            f"[bg_ducked][dub_out]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
+        )
+    else:
+        # Basit karışım — ducking yok
+        filter_str = (
+            f"[0:a]volume={orig_vol}[orig];"
+            f"[1:a]volume={dub_vol}[dub];"
+            f"[orig][dub]amix=inputs=2:duration=first:dropout_transition=1:normalize=0[aout]"
+        )
+
     cmd = [
         "ffmpeg", "-y",
-        "-threads", "0",          # tüm CPU çekirdekleri
+        "-threads", "0",
         "-i", video_yolu,
         "-i", dublaj_wav,
-        "-filter_complex",
-        f"[0:a]volume={orig_vol}[orig];"
-        f"[1:a]volume={dub_vol}[dub];"
-        f"[orig][dub]amix=inputs=2:duration=first:dropout_transition=1:normalize=0[aout]",
+        "-filter_complex", filter_str,
         "-map", "0:v",
         "-map", "[aout]",
         "-c:v", "copy",
@@ -1146,9 +1325,16 @@ def ffmpeg_ses_miksleme(
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if result.returncode != 0:
+        # Ducking başarısız → basit modla tekrar dene
+        if ducking:
+            print(f"[Miks] Ducking başarısız, basit mod deneniyor...")
+            return ffmpeg_ses_miksleme(
+                video_yolu, ses_listesi, cikti_yolu,
+                orig_vol, dub_vol, gecici_klasor, ducking=False
+            )
         print(f"[FFmpeg Final Hata] {result.stderr[-1000:]}")
         return False
-    print(f"[Miks] ✓ → {cikti_yolu}")
+    print(f"[Miks] ✓ {'(ducking)' if ducking else ''} → {cikti_yolu}")
     return True
 
 
@@ -1818,11 +2004,12 @@ def deepgram_to_srt(dg_response, path: str):
 # ============================================================
 # ANA İŞLEM MOTORU
 # ============================================================
-async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55, user_id="", filigran=False):
+async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin, kaynak_dil, f_name, f_size, f_color, is_bold, is_shadow, m_v, orig_vol=0.03, dub_vol=1.0, style=0.0, stability=0.55, user_id="", filigran=False, voice_clone=False, premium_dub=False):
     import time as _time
     b_id   = os.path.splitext(out_file)[0].replace("sonuc_", "")
     gecici = os.path.join(TEMP_DIR, b_id)
     _t0    = _time.time()
+    klonlanan_voice_id = None  # IVC temizliği için
 
     log.info(f"══ MOTOR BAŞLADI ══ id={b_id} modul={modul} ses={ses_id[:12]} dil={kaynak_dil}→{hedef_dil} style={style} stability={stability}")
 
@@ -2041,6 +2228,35 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
         # ── DUBLAJ ─────────────────────────────────────────
         if modul == "seslendirme":
 
+            # ── PREMIUM DUB (ElevenLabs Dubbing API) ──────────────────────────────
+            if premium_dub and hedef_dil and tmp_in and os.path.exists(tmp_in):
+                log.info(f"[Dublaj] Premium Dub modu aktif → ElevenLabs Dubbing API")
+                islem_durumlari[out_file] = {"durum": "Premium Dub başlatılıyor...", "yuzde": 5}
+                ok = await elevenlabs_dubbing_api_islemi(
+                    tmp_in, kaynak_dil, hedef_dil, out_file, islem_durumlari
+                )
+                if ok:
+                    islem_durumlari[out_file] = {"durum": "Tamamlandı", "yuzde": 100}
+                    return
+                else:
+                    log.warning("[Dublaj] Premium Dub başarısız → standart pipeline'a düşülüyor")
+                    islem_durumlari[out_file] = {"durum": "Premium Dub başarısız, standart mod deneniyor...", "yuzde": 3}
+
+            # ── SES KLONLAMA (IVC) ────────────────────────────────────────────────
+            klonlanan_voice_id = None
+            if voice_clone and tmp_in and os.path.exists(tmp_in) and not ses_id.startswith(("azure_", "openai_")):
+                log.info(f"[Dublaj] Ses klonlama modu aktif → IVC başlıyor")
+                islem_durumlari[out_file] = {"durum": "🎙 Konuşmacı sesi analiz ediliyor...", "yuzde": 4}
+                klon = await elevenlabs_ses_klonla(tmp_in)
+                if klon.get("basarili"):
+                    klonlanan_voice_id = klon["voice_id"]
+                    ses_id = klonlanan_voice_id  # pipeline boyunca bu ses kullanılacak
+                    log.info(f"[Dublaj] IVC klon hazır: {klonlanan_voice_id} — dubbing bu sesle yapılacak")
+                    islem_durumlari[out_file] = {"durum": "🎙 Ses klonu hazır — konuşmalar analiz ediliyor...", "yuzde": 6}
+                else:
+                    log.warning(f"[Dublaj] IVC klon başarısız: {klon.get('hata')} — seçili sesle devam ediliyor")
+                    islem_durumlari[out_file] = {"durum": "Ses klonu alınamadı, varsayılan sesle devam ediliyor...", "yuzde": 4}
+
             # 1. Deşifre
             islem_durumlari[out_file] = {"durum": "Konuşmalar analiz ediliyor...", "yuzde": 8}
             log.info(f"[Dublaj] Deepgram başlıyor: {os.path.basename(tmp_in)} dil={kaynak_dil}")
@@ -2250,6 +2466,10 @@ async def islem_motoru(out_file, modul, hedef_dil, ses_id, tmp_in, yazili_metin,
         log.error(f"[Motor FATAL] {e}\n{traceback.format_exc()}")
         islem_durumlari[out_file] = {"durum": f"Hata: Sistem işleyemedi — {e}", "yuzde": 0}
     finally:
+        # IVC geçici klonu temizle
+        if voice_clone and klonlanan_voice_id:
+            await elevenlabs_ses_sil(klonlanan_voice_id)
+            log.info(f"[IVC] Geçici klon temizlendi: {klonlanan_voice_id}")
         # Başarılıysa kullanım dakikasını Supabase'e kaydet
         try:
             durum = islem_durumlari.get(out_file, {})
@@ -2303,6 +2523,8 @@ async def islem_baslat(
     style: str        = Form("0.0"),      # Duygu yoğunluğu (0.0-1.0)
     stability: str    = Form("0.55"),     # Kararlılık (düşük = daha duygusal)
     user_id: str      = Form(""),         # Supabase user UUID (boş = demo mod)
+    voice_clone: str  = Form("false"),    # "true" → video'dan IVC klon oluştur
+    premium_dub: str  = Form("false"),    # "true" → ElevenLabs Dubbing API kullan
 ):
     b_id   = uuid.uuid4().hex[:8]
     tmp_in = ""
@@ -2370,12 +2592,15 @@ async def islem_baslat(
         except Exception:
             pass  # Süre ölçülemezse geç
 
+    voice_clone_b = voice_clone.strip().lower() == "true"
+    premium_dub_b = premium_dub.strip().lower() == "true"
+
     arka_plan.add_task(
         islem_motoru, out_file, modul, hedef_dil,
         ses_id, tmp_in, yazili_metin, kaynak_dil,
         f_name, f_size, f_color, is_bold, is_shadow, m_v,
         orig_vol_f, dub_vol_f, style_f, stability_f,
-        uid, filigran,
+        uid, filigran, voice_clone_b, premium_dub_b,
     )
     return JSONResponse({"beklened_dosya_adi": out_file, "beklenen_dosya_adi": out_file})
 
