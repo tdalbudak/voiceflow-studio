@@ -2335,15 +2335,40 @@ async def islem_baslat(
         style_f     = 0.0
         stability_f = 0.55
 
-    # Filigran: user_id yoksa (demo) veya Lite plan ise
+    # Filigran + Süre Limiti: user_id yoksa (demo) veya Lite plan ise
     uid = user_id.strip() or ""
     filigran = False
+    sure_limit_sn = None  # None = sınırsız
+
     if not uid:
-        filigran = True  # demo / giriş yapmamış
+        filigran = True
+        sure_limit_sn = 120  # demo: 2 dakika
     elif modul in ("altyazi", "seslendirme"):
         profil = await sb_profil_getir(uid)
         if profil and profil.get("plan", "lite") == "lite":
             filigran = True
+            sure_limit_sn = 600  # lite kayıtlı: 10 dakika
+
+    # Süre limiti kontrolü — dosya varsa ffprobe ile ölç
+    if dosya and tmp_in and sure_limit_sn is not None and os.path.exists(tmp_in):
+        try:
+            r_sure = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", tmp_in],
+                capture_output=True, text=True, timeout=15
+            )
+            dosya_sure = float(r_sure.stdout.strip())
+            if dosya_sure > sure_limit_sn:
+                os.unlink(tmp_in)
+                limit_mesaj = "2 dakika" if sure_limit_sn == 120 else "10 dakika"
+                kayit_mesaj = " Kayıt olarak 10 dakikaya kadar ücretsiz kullanabilirsiniz." if sure_limit_sn == 120 else " Daha uzun videolar için plan yükseltin."
+                return JSONResponse(
+                    {"hata": f"Demo süre limiti: {dosya_sure/60:.1f} dakika yüklediniz, limit {limit_mesaj}.{kayit_mesaj}",
+                     "demo_limit": True, "limit_dk": sure_limit_sn // 60},
+                    status_code=400
+                )
+        except Exception:
+            pass  # Süre ölçülemezse geç
 
     arka_plan.add_task(
         islem_motoru, out_file, modul, hedef_dil,

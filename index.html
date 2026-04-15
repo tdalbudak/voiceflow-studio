@@ -5253,7 +5253,13 @@ async function startProcess(){
       } else {
         try {
           const err = JSON.parse(xhr.responseText);
-          toast(err.hata||'İstek başarısız','terr',4000);
+          if (err.demo_limit) {
+            // Demo/Lite süre limiti aşıldı
+            document.getElementById('sbox')?.classList.add('hidden');
+            demoLimitModalAc(err.limit_dk, err.hata);
+          } else {
+            toast(err.hata||'İstek başarısız','terr',5000);
+          }
         } catch(e) { toast('Sunucu hatası','terr',4000); }
         document.getElementById('sbox')?.classList.add('hidden');
         reject();
@@ -7383,33 +7389,101 @@ function krediBittiModalAc(mevcutBakiye, gerekliKredi) {
   ov.id = '_kredi_modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
   const modulAdi = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'Metin>Ses' }[mod] || mod;
-  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:480px;max-width:95vw;">'
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:560px;max-width:95vw;">'
     + '<div style="text-align:center;margin-bottom:20px;">'
     + '<div style="font-size:32px;margin-bottom:8px;">⚡</div>'
     + '<div style="font-size:16px;font-weight:700;">Yeterli Krediniz Yok</div>'
-    + '<div style="font-size:12px;color:var(--muted2);margin-top:6px;">' + modulAdi + ' icin <b>' + gerekliKredi + ' kredi</b> gerekli, mevcut: <b style="color:var(--yellow2);">' + mevcutBakiye + ' kredi</b></div>'
+    + '<div style="font-size:12px;color:var(--muted2);margin-top:6px;">' + modulAdi + ' için <b>' + gerekliKredi + ' kredi</b> gerekli · mevcut: <b style="color:var(--yellow2);">' + mevcutBakiye + ' kredi</b></div>'
     + '</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">'
-    + '<div style="background:var(--s3);border:1.5px solid var(--accent2);border-radius:var(--r2);padding:16px;">'
-    + '<div style="font-size:10px;font-weight:700;color:var(--accent3);">Hızlı Cozum</div>'
-    + '<div style="font-size:20px;font-weight:700;">+50 Kredi <span style="font-size:12px;color:var(--muted2);">$5</span></div>'
-    + '<div style="font-size:11px;color:var(--muted2);margin:6px 0;">Tek seferlik, abonelik yok.</div>'
-    + '<button onclick="kredinalAc(50,5)" style="background:var(--accent);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Hemen Al</button>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Ek Kredi Satın Al — Tek Seferlik</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">'
+    + _krediKart('mini','250 Kredi','$4','25 dk dublaj',false)
+    + _krediKart('pro','600 Kredi','$8','60 dk dublaj',true)
+    + _krediKart('power','1500 Kredi','$18','150 dk dublaj',false)
     + '</div>'
-    + '<div style="background:var(--s3);border:1.5px solid var(--purple2);border-radius:var(--r2);padding:16px;">'
-    + '<div style="font-size:10px;font-weight:700;color:#a855f7;">En İyi Deger</div>'
-    + '<div style="font-size:20px;font-weight:700;">Studio <span style="font-size:12px;color:var(--muted2);">$34/ay</span></div>'
-    + '<div style="font-size:11px;color:var(--muted2);margin:6px 0;">2000 kredi/ay + Ses Klonlama.</div>'
-    + '<button onclick="planYukselt()" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;width:100%;">Yukselt</button>'
+    + '<div style="border-top:1px solid var(--border);padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">'
+    + '<div style="background:var(--s3);border:1.5px solid var(--purple2);border-radius:var(--r2);padding:14px;text-align:center;">'
+    + '<div style="font-size:10px;font-weight:700;color:#a855f7;margin-bottom:4px;">EN İYİ DEĞER</div>'
+    + '<div style="font-size:14px;font-weight:700;">Studio</div>'
+    + '<div style="font-size:18px;font-weight:800;margin:4px 0;">$34<span style="font-size:11px;font-weight:400;color:var(--muted2);">/ay</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;">2000 kredi/ay + Ses Klonlama</div>'
+    + '<button onclick="planYukselt(\'studio\');document.getElementById(\'_kredi_modal\').remove();" style="width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Yükselt</button>'
+    + '</div>'
+    + '<div style="background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:14px;text-align:center;">'
+    + '<div style="font-size:10px;font-weight:700;color:#22c55e;margin-bottom:4px;">BAŞLANGIÇ</div>'
+    + '<div style="font-size:14px;font-weight:700;">Creator</div>'
+    + '<div style="font-size:18px;font-weight:800;margin:4px 0;">$14<span style="font-size:11px;font-weight:400;color:var(--muted2);">/ay</span></div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;">750 kredi/ay · Tüm sesler</div>'
+    + '<button onclick="planYukselt(\'creator\');document.getElementById(\'_kredi_modal\').remove();" style="width:100%;background:#22c55e;border:none;color:#fff;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Yükselt</button>'
     + '</div></div>'
-    + '<div style="text-align:center;"><button onclick="document.getElementById(\'_kredi_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;">Simdi degil</button></div>'
+    + '<div style="text-align:center;"><button onclick="document.getElementById(\'_kredi_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;">Şimdi değil</button></div>'
     + '</div>';
   document.body.appendChild(ov);
 }
 
-function kredinalAc(kredi, fiyat) {
+function _krediKart(paket, baslik, fiyat, aciklama, popular) {
+  const renkler = { mini:'#60a5fa', pro:'#f59e0b', power:'#f97316' };
+  const renk = renkler[paket] || 'var(--accent)';
+  return '<div style="background:var(--s3);border:1.5px solid ' + (popular ? renk : 'var(--border2)') + ';border-radius:var(--r2);padding:14px;text-align:center;position:relative;">'
+    + (popular ? '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:' + renk + ';color:#000;font-size:9px;font-weight:800;padding:2px 8px;border-radius:10px;">POPÜLER</div>' : '')
+    + '<div style="font-size:15px;font-weight:800;color:' + renk + ';">' + baslik + '</div>'
+    + '<div style="font-size:22px;font-weight:800;margin:4px 0;">' + fiyat + '</div>'
+    + '<div style="font-size:11px;color:var(--muted2);margin-bottom:10px;">' + aciklama + '</div>'
+    + '<button onclick="kredinalAc(\'' + paket + '\')" style="width:100%;background:' + renk + ';border:none;color:#000;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Satın Al</button>'
+    + '</div>';
+}
+
+async function kredinalAc(paket) {
   document.getElementById('_kredi_modal')?.remove();
-  toast('Odeme sayfası yakında — Stripe entegrasyonu hazırlanıyor','twarn',4000);
+  if (!_sbUser) {
+    toast('Kredi satın almak için önce giriş yapın', 'twarn', 4000);
+    loginModalAc(); return;
+  }
+  toast('<i class="fa-solid fa-spinner fa-spin"></i> Ödeme sayfasına yönlendiriliyor...', 'tok', 8000);
+  try {
+    const fd = new FormData();
+    fd.append('paket', paket);
+    fd.append('user_id', _sbUser.id);
+    fd.append('email', _sbUser.email || '');
+    fd.append('success_url', window.location.origin);
+    const r = await fetch(B + '/api/stripe/credits/', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.checkout_url) {
+      window.location.href = d.checkout_url;
+    } else {
+      toast('Hata: ' + (d.hata || 'Bilinmeyen hata'), 'terr', 6000);
+    }
+  } catch(e) {
+    toast('Bağlantı hatası — tekrar deneyin', 'terr');
+  }
+}
+
+function demoLimitModalAc(limitDk, mesaj) {
+  document.getElementById('_demo_limit_modal')?.remove();
+  const isGuest = !_sbUser;
+  const ov = document.createElement('div');
+  ov.id = '_demo_limit_modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '<div style="background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:460px;max-width:95vw;text-align:center;">'
+    + '<div style="font-size:36px;margin-bottom:10px;">⏱</div>'
+    + '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">' + (isGuest ? 'Demo Süresi: 2 Dakika' : 'Ücretsiz Plan Süresi: 10 Dakika') + '</div>'
+    + '<div style="font-size:13px;color:var(--muted2);margin-bottom:20px;line-height:1.6;">'
+    + (mesaj || ('Yüklediğiniz video ' + limitDk + ' dakika limitini aşıyor.'))
+    + '</div>'
+    + (isGuest
+      ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<button onclick="loginModalAc();document.getElementById(\'_demo_limit_modal\').remove();" style="background:var(--accent);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">Ücretsiz Kayıt Ol<div style="font-size:10px;font-weight:400;opacity:.8;">10 dk limit + 100 kredi</div></button>'
+        + '<button onclick="planYukselt();document.getElementById(\'_demo_limit_modal\').remove();" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:12px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:13px;font-family:inherit;">Plan Al<div style="font-size:10px;font-weight:400;opacity:.8;">Sınırsız video</div></button>'
+        + '</div>'
+      : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+        + '<button onclick="planYukselt(\'creator\');document.getElementById(\'_demo_limit_modal\').remove();" style="background:#22c55e;border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">Creator<div style="font-size:10px;font-weight:400;">$14/ay</div></button>'
+        + '<button onclick="planYukselt(\'studio\');document.getElementById(\'_demo_limit_modal\').remove();" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">Studio<div style="font-size:10px;font-weight:400;">$34/ay</div></button>'
+        + '<button onclick="planYukselt(\'business\');document.getElementById(\'_demo_limit_modal\').remove();" style="background:#ec4899;border:none;color:#fff;padding:10px;border-radius:var(--r);cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;">Business<div style="font-size:10px;font-weight:400;">$89/ay</div></button>'
+        + '</div>'
+    )
+    + '<div style="margin-top:12px;"><button onclick="document.getElementById(\'_demo_limit_modal\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;">Kapat</button></div>'
+    + '</div>';
+  document.body.appendChild(ov);
 }
 
 /* ═══ SUPABASE AUTH ═══ */
