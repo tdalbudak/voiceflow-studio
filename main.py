@@ -1435,7 +1435,7 @@ async def gemini_srt_slang_normalize(srt_icerik: str, kaynak_dil: str = "tr") ->
         try:
             async with httpx.AsyncClient(timeout=12.0) as c:
                 r = await c.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                     json={"contents":[{"parts":[{"text":prompt}]}],
                           "generationConfig":{"maxOutputTokens":2000,"temperature":0.1}}
                 )
@@ -1488,7 +1488,7 @@ async def gemini_metin_kisalt(metin: str, hedef_sure: float, dil: str = "en") ->
     try:
         async with httpx.AsyncClient(timeout=8.0) as c:
             r = await c.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                 json={"contents": [{"parts": [{"text": prompt}]}],
                       "generationConfig": {"maxOutputTokens": 300, "temperature": 0.1}}
             )
@@ -1537,7 +1537,7 @@ async def gemini_jargon_temizle(metin: str, dil: str = "tr") -> str:
     try:
         async with httpx.AsyncClient(timeout=8.0) as c:
             r = await c.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                 json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"maxOutputTokens":400,"temperature":0.1}}
             )
         if r.status_code == 200:
@@ -3607,7 +3607,7 @@ async def kelime_cevir(
             )
             async with httpx.AsyncClient(timeout=10.0) as c:
                 r = await c.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                     json={"contents":[{"parts":[{"text":prompt}]}],
                           "generationConfig":{"maxOutputTokens":100,"temperature":0.5}}
                 )
@@ -3796,7 +3796,7 @@ async def kelime_oneri(
             )
             async with httpx.AsyncClient(timeout=8.0) as client:
                 r = await client.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                     json={"contents":[{"parts":[{"text":ai_prompt}]}],
                           "generationConfig":{"maxOutputTokens":80,"temperature":0.2}}
                 )
@@ -4003,7 +4003,7 @@ async def viral_analiz(transkript: str = Form(...), dil: str = Form("tr")):
     try:
         async with httpx.AsyncClient(timeout=20) as client:
             r = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                 json={"contents": [{"parts": [{"text": sistem + "\n\n" + prompt}]}],
                       "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1024}},
             )
@@ -4398,12 +4398,12 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
 
     # System context'i kullanıcı mesajının başına ekle — daha uyumlu yaklaşım
     tam_sorgu = f"{system_prompt}\n\n---\nUser: {sorgu}"
-    # Model fallback listesi — 429 quota aşılınca sıradakini dene
+    # Model fallback listesi — hata/quota aşılınca sıradakini dene
     GEMINI_MODELLER = [
-        "gemini-2.0-flash-001",
         "gemini-2.0-flash",
         "gemini-1.5-flash",
         "gemini-1.5-flash-8b",
+        "gemini-1.0-pro",
     ]
     son_hata = ""
     for model in GEMINI_MODELLER:
@@ -4433,8 +4433,8 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
                 continue
             else:
                 son_hata = f"HTTP {r.status_code}: {r.text[:120]}"
-                log.error(f"[Gemini AI Asistan] {son_hata}")
-                break
+                log.warning(f"[Gemini AI Asistan] {son_hata} — model={model}, fallback deneniyor")
+                continue
         except Exception as e:
             son_hata = str(e)
             log.error(f"[Gemini AI Asistan] model={model} hata: {e}")
@@ -4457,7 +4457,7 @@ async def ai_text(prompt: str = Form(...)):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={GEMINI_API_KEY}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
                 json={
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"maxOutputTokens": 1500, "temperature": 0.4}

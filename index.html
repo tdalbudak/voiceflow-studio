@@ -608,6 +608,10 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <button class="cloud-btn" onclick="versiyonPaneliAc()" title="Version history A/B compare" id="versiyon_btn" style="display:none;"><i class="fa-solid fa-code-compare"></i> A/B</button>
     <!-- Language indicator — updated from modal -->
     <button onclick="openModal()" id="nav_dil_goster" style="display:none;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:5px 10px;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:inherit;" title="Change language"></button>
+    <div id="kredi_info_bar" style="display:none;flex-direction:column;align-items:flex-end;gap:1px;margin-right:2px;">
+      <div id="kredi_info_maliyet" style="font-size:10px;font-weight:700;color:var(--accent3);white-space:nowrap;"></div>
+      <div id="kredi_info_kalan" style="font-size:10px;color:var(--muted2);white-space:nowrap;"></div>
+    </div>
     <button class="btn-run" id="btn_run" onclick="startProcess()"><span class="run-dot"></span> Start</button>
     <div class="xwrap hidden" id="xwrap">
       <button class="btn-dl"><i class="fa-solid fa-download"></i> Download ▾</button>
@@ -1749,7 +1753,7 @@ function fmt(s){return p2(Math.floor(s/3600)) + ':' + p2(Math.floor((s%3600)/60)
 function cps(txt,d){return d<=0?0:Math.round(txt.replace(/\s/g,'').length/d);}
 function cpsC(c){return c<=20?'cps-ok':c<=27?'cps-warn':'cps-bad';}
 
-/* ═══ PLAN PILL ═══ */
+/* ═══ PLAN PILL + KREDİ INFO BAR ═══ */
 function _planPillGuncelle() {
   const pill = document.getElementById('nav_plan_pill');
   const txt  = document.getElementById('nav_plan_pill_txt');
@@ -1759,11 +1763,31 @@ function _planPillGuncelle() {
   const PLAN_LIMIT_KREDI = {lite:100, creator:750, studio:2000, business:6000};
   const limitKredi     = PLAN_LIMIT_KREDI[plan] || 100;
   const kulKredi       = _sbProfil && _sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : kulDk * 10;
-  const kalanKredi     = Math.max(0, limitKredi - kulKredi);
+  const ekKredi        = _sbProfil && _sbProfil.kredi_dakika != null ? parseFloat(_sbProfil.kredi_dakika) * 10 : 0;
+  const kalanKredi     = Math.max(0, limitKredi - kulKredi) + ekKredi;
   const pct            = Math.min(100, (kulKredi / limitKredi) * 100);
   pill.style.display = 'flex';
-  txt.textContent = Math.round(kalanKredi) + ' kredi';
+  txt.textContent = Math.round(kalanKredi) + ' kr';
   pill.className  = pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : '';
+  _krediInfoBarGuncelle(kalanKredi);
+}
+
+function _krediInfoBarGuncelle(kalanKredi) {
+  const bar      = document.getElementById('kredi_info_bar');
+  const malEl    = document.getElementById('kredi_info_maliyet');
+  const kalanEl  = document.getElementById('kredi_info_kalan');
+  if (!bar || !_sbUser) return;
+  const MALIYET  = { desifre:'5 kr/dk', altyazi:'2.5 kr/dk', seslendirme:'10 kr/dk', metinden_sese:'5 kr/dk' };
+  const RENK     = { desifre:'#60a5fa', altyazi:'#34d399', seslendirme:'#f97316', metinden_sese:'#a78bfa' };
+  const mal = MALIYET[mod] || '';
+  if (!mal) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  malEl.textContent = mal;
+  malEl.style.color = RENK[mod] || 'var(--accent3)';
+  const kalan = Math.round(kalanKredi != null ? kalanKredi : 0);
+  const renk  = kalan < 20 ? '#f87171' : kalan < 50 ? '#fbbf24' : 'var(--muted2)';
+  kalanEl.style.color = renk;
+  kalanEl.textContent = kalan + ' kr kalan';
 }
 
 /* ═══ SMART ERROR MESSAGES ═══ */
@@ -4521,6 +4545,16 @@ function sw(m){
   mod=m;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab_' + m)?.classList.add('on');
+  // Kredi info bar'ı güncelle
+  const _kalanKr = (function(){
+    const plan = (_sbProfil && _sbProfil.plan) || 'lite';
+    const PLAN_LIMIT_KREDI = {lite:100, creator:750, studio:2000, business:6000};
+    const limitKredi = PLAN_LIMIT_KREDI[plan] || 100;
+    const kulKredi = _sbProfil && _sbProfil.kullanim_kredi != null ? parseFloat(_sbProfil.kullanim_kredi) : 0;
+    const ekKredi = _sbProfil && _sbProfil.kredi_dakika != null ? parseFloat(_sbProfil.kredi_dakika) * 10 : 0;
+    return Math.max(0, limitKredi - kulKredi) + ekKredi;
+  })();
+  _krediInfoBarGuncelle(_kalanKr);
   // Mobil alt tab güncelle
   document.querySelectorAll('[id^="mtab_"]').forEach(t=>{t.style.color='var(--muted2)';});
   const mtab = document.getElementById('mtab_' + m);
