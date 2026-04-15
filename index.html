@@ -1356,28 +1356,38 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         </select>
       </div>
 
-      <!-- Ses Aktörleri — inline kart grid -->
-      <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ses Aktörleri</div>
+      <!-- Ses Aktörü — seçili kart + değiştir butonu -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ses Aktörü</div>
 
-      <!-- Arama -->
-      <div style="position:relative;margin-bottom:8px;">
-        <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#5a7090;font-size:11px;pointer-events:none;"></i>
-        <input id="modal_voice_search" oninput="buildVoiceList()" placeholder="Ses ara…" style="width:100%;padding:7px 12px 7px 28px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;">
+      <!-- Seçili ses kartı -->
+      <div id="modal_sel_voice_card" onclick="voicePickerAc('seslendirme')" style="background:#111827;border:1.5px solid #1a2235;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .18s,background .18s;margin-bottom:8px;" onmouseover="this.style.borderColor='#3b82f6';this.style.background='#131e30'" onmouseout="this.style.background='#111827';this.style.borderColor='#1a2235'">
+        <div id="modal_sel_photo_wrap" style="width:48px;height:48px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#1a2235;">
+          <img id="modal_sel_photo" src="" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;" onerror="this.style.display='none'">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+            <span id="modal_sel_flag" style="font-size:14px;"></span>
+            <span id="modal_sel_name" style="font-size:13px;font-weight:700;color:#e8edf5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+            <span id="modal_sel_badge" style="font-size:9px;font-weight:700;background:rgba(14,165,233,.15);color:#38bdf8;padding:1px 6px;border-radius:10px;flex-shrink:0;"></span>
+          </div>
+          <div id="modal_sel_desc" style="font-size:11px;color:#5a7090;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+          <i class="fa-solid fa-chevron-right" style="color:#3b82f6;font-size:12px;"></i>
+          <span style="font-size:9px;color:#3b82f6;font-weight:600;">Değiştir</span>
+        </div>
       </div>
 
-      <!-- Kart grid (scrollable) -->
-      <div id="voice_list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:240px;overflow-y:auto;padding-right:2px;"></div>
-
-      <!-- Eski select — JS uyumluluğu için gizli -->
+      <!-- Gizli uyumluluk elementleri -->
       <select id="voice_select" onchange="voiceSecildi(this)" style="display:none;">
-        <option value="nPczCjzI2devNBz1zQrb">Brian</option>
+        <option value="azure_tr-TR-AhmetNeural">Ahmet (Neural)</option>
       </select>
-      <!-- Eski card — JS uyumluluğu için gizli -->
       <div id="voice_current_card" style="display:none;">
         <div id="vpc_dot"></div>
-        <div id="vpc_name">Brian</div>
+        <div id="vpc_name">Ahmet (Neural)</div>
         <div id="vpc_desc"></div>
       </div>
+      <div id="voice_list" style="display:none;"></div>
 
       <!-- Arka plan sesi koru -->
       <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:4px;">
@@ -1457,10 +1467,10 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     </div>
 
     <div class="mfoot" style="display:flex;gap:8px;">
-      <button id="modal_back_btn" onclick="modalStep(1)" class="btn-dl" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);flex:0 0 auto;width:80px;justify-content:center;height:42px;border-radius:var(--r);font-family:inherit;display:none;">
-        ← Back
+      <button id="modal_back_btn" onclick="modalStep(1)" class="btn-dl" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);flex:0 0 auto;width:70px;justify-content:center;height:46px;border-radius:var(--r);font-family:inherit;display:none;font-size:12px;">
+        ← Geri
       </button>
-      <button id="modal_main_btn" onclick="modalMainAction()" class="btn-dl" style="flex:1;justify-content:center;height:42px;font-size:14px;background:var(--accent);border-radius:var(--r);font-family:inherit;">
+      <button id="modal_main_btn" onclick="modalMainAction()" class="btn-dl" style="flex:1;justify-content:center;height:46px;font-size:14px;font-weight:700;background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:var(--r);font-family:inherit;">
         <i class="fa-solid fa-closed-captioning"></i> <span id="modal_btn_text">Start Auto-Subtitles</span>
       </button>
     </div>
@@ -1485,7 +1495,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
 const B = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://127.0.0.1:8000'
   : '';
-let mod="seslendirme", voice="nPczCjzI2devNBz1zQrb";
+let mod="seslendirme", voice="azure_tr-TR-AhmetNeural";
 let pFile=null, pURL=null;
 let aSrt=null, aDosya=null;
 let segs=[], dur=0, autoScroll=true;
@@ -3542,6 +3552,27 @@ function selVoiceById(id) {
   }
   // Picker modal'ı kapat
   document.getElementById('_voice_picker')?.remove();
+  // Wizard modal'daki seçili ses kartını güncelle
+  if (v) _modalSelKartGuncelle(v);
+}
+
+function _modalSelKartGuncelle(v) {
+  if (!v) v = VOICES.find(x => x.id === voice);
+  if (!v) return;
+  const photo = document.getElementById('modal_sel_photo');
+  const flag  = document.getElementById('modal_sel_flag');
+  const name  = document.getElementById('modal_sel_name');
+  const desc  = document.getElementById('modal_sel_desc');
+  const badge = document.getElementById('modal_sel_badge');
+  if (!photo) return;
+  const idx    = _vpPhotoIdx(v.name);
+  const gPath  = v.gender === 'female' ? 'women' : 'men';
+  photo.src    = 'https://randomuser.me/api/portraits/' + gPath + '/' + idx + '.jpg';
+  photo.style.display = 'block';
+  if (flag)  flag.textContent  = v.flag || '';
+  if (name)  name.textContent  = v.name;
+  if (desc)  desc.textContent  = v.desc || '';
+  if (badge) { badge.textContent = v.provider === 'azure' ? 'Neural' : v.provider === 'openai' ? 'OpenAI' : 'ElevenLabs'; badge.style.display = 'inline'; }
 }
 
 function voiceSecildi(sel) {
@@ -4393,7 +4424,7 @@ function modalStep(n) {
   document.getElementById('modal_step1')?.classList.toggle('hidden', n !== 1);
   document.getElementById('modal_step2')?.classList.toggle('hidden', n !== 2);
   (function(){var _oa=document.getElementById('modal_back_btn');if(_oa)_oa.style.display=n === 2 ? 'flex' : 'none';})();
-  if (n === 2) buildVoiceList();
+  if (n === 2) { buildVoiceList(); _modalSelKartGuncelle(); }
 }
 
 function modalMainAction() {
