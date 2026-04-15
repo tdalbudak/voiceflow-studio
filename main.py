@@ -4403,7 +4403,6 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
         "gemini-2.0-flash",
         "gemini-1.5-flash",
         "gemini-1.5-flash-8b",
-        "gemini-1.0-pro",
     ]
     son_hata = ""
     for model in GEMINI_MODELLER:

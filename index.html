@@ -8566,9 +8566,11 @@ function _aiAsistanToggle() {
   const bubble = document.getElementById('_ai_bubble');
   if (!bubble) return;
   _aiPanelAcik = !_aiPanelAcik;
-  bubble.style.display = _aiPanelAcik ? 'block' : 'none';
-  if (_aiPanelAcik && !document.getElementById('_ai_bubble_txt')?.textContent) {
+  if (_aiPanelAcik) {
+    if (window._aiAutoCloseTimer) { clearTimeout(window._aiAutoCloseTimer); window._aiAutoCloseTimer = null; }
     _aiProaktifMesaj();
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
@@ -8578,28 +8580,33 @@ function _aiProaktifMesaj() {
   const btnsEl = document.getElementById('_ai_bubble_btns');
   if (!bubble || !txtEl || !btnsEl) return;
 
+  // Önceki auto-close timer'ı iptal et
+  if (window._aiAutoCloseTimer) { clearTimeout(window._aiAutoCloseTimer); window._aiAutoCloseTimer = null; }
+
   let mesaj = '', butonlar = [];
 
   if (!pFile) {
     const gorev = window._magicGorev && MAGIC_GOREVLER[window._magicGorev];
     if (gorev) {
-      mesaj = '👋 ' + gorev.emoji + ' <b>' + gorev.baslik + '</b> seçtin. Başlamak için videonuzu yükle!';
+      mesaj = gorev.emoji + ' <b>' + gorev.baslik + '</b> hazır. Şimdi video yükle:';
       butonlar = [
-        { label: '📁 Dosya Seç', onclick: 'document.getElementById(\'finput\').click();_aiAsistanToggle()' },
-        { label: '🔗 Link Yapıştır', onclick: 'cloudUpload(\'url\');_aiAsistanToggle()' },
+        { label: '📁 Dosya Seç', onclick: 'document.getElementById(\'finput\').click()' },
+        { label: '🔗 Link Yapıştır', onclick: 'cloudUpload(\'url\')' },
       ];
     } else {
-      mesaj = '👋 Merhaba! Video yükle, ne yapmak istediğini söyle — seni yönlendiririm.';
+      mesaj = '👋 Merhaba! Ne yapmak istiyorsun?';
       butonlar = [
-        { label: '🌍 Dil Değiştir', onclick: '_welcomeGorevSec(\'dublaj\')' },
-        { label: '📱 TikTok Altyazı', onclick: '_welcomeGorevSec(\'tiktok\')' },
+        { label: '🌍 Video Dublaj', onclick: 'sw(\'seslendirme\');setTimeout(_aiProaktifMesaj,300)' },
+        { label: '📝 Altyazı Ekle', onclick: 'sw(\'altyazi\');setTimeout(_aiProaktifMesaj,300)' },
+        { label: '🔊 Metin → Ses', onclick: 'sw(\'metinden_sese\');setTimeout(_aiProaktifMesaj,300)' },
       ];
     }
   } else if (!segs.length) {
-    mesaj = '✅ Video yüklendi! Şimdi ne yapalım?';
+    const modAdi = mod==='seslendirme' ? 'Dublaj' : mod==='altyazi' ? 'Altyazı' : mod==='metinden_sese' ? 'TTS' : 'İşlem';
+    mesaj = '✅ Video yüklendi! <b>' + modAdi + '</b> modunda — ne yapalım?';
     butonlar = [
       { label: '▶ Başlat', onclick: 'startProcess();_aiAsistanToggle()' },
-      { label: '🌍 Dil Değiştir', onclick: 'hizliDublajModalAc();_aiAsistanToggle()' },
+      { label: '🌍 Dil Değiştir', onclick: 'hizliDublajModalAc()' },
       { label: '📱 TikTok Stili', onclick: 'magicAction(\'hormozi\');_aiAsistanToggle()' },
     ];
   } else {
@@ -8619,10 +8626,10 @@ function _aiProaktifMesaj() {
 
   bubble.style.display = 'block';
   _aiPanelAcik = true;
-  // 6sn sonra otomatik kapat (kullanıcı dokunamazsa)
-  setTimeout(function() {
+  // 10sn sonra otomatik kapat (kullanıcı dokunamazsa)
+  window._aiAutoCloseTimer = setTimeout(function() {
     if (_aiPanelAcik) { bubble.style.display='none'; _aiPanelAcik=false; }
-  }, 6000);
+  }, 10000);
 }
 
 /* ════════════════════════════════════════════════════
