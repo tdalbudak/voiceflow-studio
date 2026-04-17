@@ -4144,6 +4144,7 @@ function ttsSesListesiGuncelle() {
   const lang   = document.getElementById('tts_lang_filter')?.value || 'all';
 
   const filtreli = VOICES.filter(function(v) {
+    if (v.provider !== 'azure') return false; // TTS modunda sadece Azure Neural
     if (gender !== 'all' && v.gender !== gender) return false;
     if (lang !== 'all' && v.lang !== lang) return false;
     if (ara && !v.name.toLowerCase().includes(ara) && !(v.desc||'').toLowerCase().includes(ara)) return false;
@@ -6446,41 +6447,6 @@ document.addEventListener('keydown', e => {
 
 /* ═══ SES DEMOsu — ÜCRETSİZ vs PRO ═══ */
 
-// Ücretsiz kullanıcılar için hazır demo klipleri (ElevenLabs örnek URL'leri)
-// Gerçekte bunlar sunucudan pre-generated MP3 olabilir
-// Şimdilik önizleme API'si kullanıyoruz, plan kontrolü sonra Supabase ile gelecek
-const VOICE_TIERS = {
-  // Ücretsiz planda dinlenebilir (2 TR + temel EN sesler)
-  free: [
-    'E7GwUhgj9sbeAZgubRba', // Bahadır
-    'xFsOR54lR471QiCvQ5re', // İlknur
-    'nPczCjzI2devNBz1zQrb', // Brian
-    'EXAVITQu4vr4xnSDxMaL', // Sarah
-    'cgSgspJ2msm6clMCkdW9', // Jessica
-    'TX3LPaxmHKxFdv7VOQHJ', // Liam
-  ],
-  // Pro plan gerekli (Avrupa sesleri + premium EN)
-  pro: [
-    'dFA3XRddYScy6ylAYTIO', // Helmut DE
-    '60UU378MZ8YbeLyaF7TI', // Jonas DE
-    'kAzI34nYjizE0zON6rXv', // Sami DE
-    'KSyQzmsYhFbuOhqj1Xxv', // Lea DE
-    '8qnuneLiGjGrT4A62CCe', // Jules FR
-    'p2Wol3C7j3rHbfOrbL18', // Lisa FR
-    'RXoaSpLaWTEckJgPUBG3', // Tiziana IT
-    '7WZPc0ZjFzsx74E5qoQV', // Andrea IT
-    'f8NAZK1ciwrVujah7clz', // Valerio IT
-    'JBFqnCBsd6RMkjVDRZzb', // George
-    'onwK4e9ZLuTAKqWW03F9', // Daniel
-    'Xb7hH8MSUJpSbSDYk0k2', // Alice
-    'pFZP5JQG7iQjIQuC4Bku', // Lily
-    'UaYTS0wayjmO9KD1LR4R', // Asher
-  ],
-};
-
-// Şimdilik herkes dinleyebilir (Supabase gelince plan kontrolü eklenecek)
-const userPlan = 'free'; // 'free' | 'creator' | 'studio' | 'business'
-
 function isVoiceFree(sesId) {
   const v = VOICES.find(x => x.id === sesId);
   return v ? !v.paid : true;
@@ -6497,15 +6463,20 @@ function buildVoiceList() {
                 || document.getElementById('m_tgt')?.value
                 || 'en';
   const arama    = (document.getElementById('modal_voice_search')?.value || '').toLowerCase();
+  const _bvlPlan = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || 'lite';
+  const _bvlLite = _bvlPlan === 'lite' || _bvlPlan === 'demo';
 
-  // Önce hedef dil sesleri, sonra İngilizce, sonra diğerleri
+  // Önce hedef dil sesleri, sonra İngilizce; dil içinde Azure önce, sonra OpenAI, sonra ElevenLabs
   const sirali = [...VOICES].sort((a, b) => {
-    const aP = a.lang === hedefDil ? 0 : a.lang === 'en' ? 1 : 2;
-    const bP = b.lang === hedefDil ? 0 : b.lang === 'en' ? 1 : 2;
-    return aP - bP;
+    const langA = a.lang === hedefDil ? 0 : a.lang === 'en' ? 1 : 2;
+    const langB = b.lang === hedefDil ? 0 : b.lang === 'en' ? 1 : 2;
+    if (langA !== langB) return langA - langB;
+    const provRank = function(v) { return v.provider === 'azure' ? 0 : v.freeOk ? 1 : 2; };
+    return provRank(a) - provRank(b);
   });
 
   const filtreli = sirali.filter(v => {
+    if (_bvlLite && !v.freeOk && v.provider !== 'azure') return false;
     if (arama && !v.name.toLowerCase().includes(arama) && !(v.desc||'').toLowerCase().includes(arama)) return false;
     return true;
   });
@@ -6724,7 +6695,7 @@ function _vpRender() {
   if (!body) return;
   const q    = (document.getElementById('_vp_search')?.value || '').toLowerCase();
   const dial = document.getElementById('_vp_dial')?.value || '';
-  const userPlan = (localStorage.getItem('vf_plan') || (_sbUser ? 'lite' : 'demo'));
+  const userPlan = (_sbProfil && _sbProfil.plan) || localStorage.getItem('vf_plan') || (_sbUser ? 'lite' : 'demo');
   const isLite   = userPlan === 'lite' || userPlan === 'demo';
   // Metinden sese modunda sadece Azure sesler göster
   const isTtsMode = (mod === 'metinden_sese') || (window._vpCtx === 'tts');
@@ -6740,7 +6711,7 @@ function _vpRender() {
       if (v.lang !== lang) return false;
       // Metinden sese: sadece Azure sesler
       if (isTtsMode && v.provider !== 'azure') return false;
-      // Lite/demo plan: sadece openai_ ve azure_ sesler
+      // Lite/demo plan: sadece openai_ (freeOk) ve azure_ sesler — ElevenLabs kapalı
       if (isLite && !v.freeOk && v.provider !== 'azure') return false;
       if (_vpFilter.genderF && v.gender !== 'female') return false;
       if (_vpFilter.genderM && v.gender !== 'male')   return false;
@@ -6748,6 +6719,10 @@ function _vpRender() {
       if (_vpFilter.proOnly && !v.paid) return false;
       if (q && !v.name.toLowerCase().includes(q) && !(v.desc||'').toLowerCase().includes(q)) return false;
       return true;
+    }).sort(function(a, b) {
+      // Azure sesler önce, sonra OpenAI (freeOk), en sonda ElevenLabs
+      const rank = function(v) { return v.provider === 'azure' ? 0 : v.freeOk ? 1 : 2; };
+      return rank(a) - rank(b);
     });
     if (!voices.length) return;
 
@@ -6772,7 +6747,7 @@ function _vpRender() {
         + '  <div style="display:flex;align-items:center;gap:5px;">'
         + '    <button onclick="event.stopPropagation();_vpFavSet(\'' + v.id + '\',this)" '
         + '      style="background:none;border:none;cursor:pointer;font-size:14px;color:' + (isFav?'#f43f5e':'#2d4060') + ';padding:0;line-height:1;transition:color .15s;" title="Favori">♥</button>'
-        + (isAzure ? '<span style="font-size:8px;font-weight:800;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.35);color:#7dd3fc;padding:1px 5px;border-radius:4px;line-height:1.5;">DEMO</span>' : '')
+        + (isAzure ? '<span style="font-size:8px;font-weight:800;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.35);color:#7dd3fc;padding:1px 5px;border-radius:4px;line-height:1.5;">NEURAL</span>' : '')
         + (v.freeOk ? '<span class="vp-free-badge">FREE</span>' : '')
         + '  </div>'
         + '</div>'
