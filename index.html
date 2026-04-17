@@ -2605,6 +2605,20 @@ function dl(c,n,m){
 document.getElementById('finput').addEventListener('change',function(){
   if(!this.files.length)return;
   pFile=this.files[0];pURL=URL.createObjectURL(pFile);
+
+  // Panelden tetiklendiyse: paneli kapat, o moda gir
+  if (window._ppHedefMod) {
+    const _hedef = window._ppHedefMod;
+    window._ppHedefMod = null;
+    document.getElementById('_proje_paneli')?.remove();
+    _gercekSw(_hedef);
+    // Modal'ı aç (dil seçimi vs)
+    document.getElementById('modal')?.classList.remove('hidden');
+    modalStep(1); updateModalBtn();
+    loadMedia();
+    return;
+  }
+
   // Magic mode adım ilerlet
   if (_appMod==='sihirli') _magicAdimGoster(1);
   // Lokal dosyada aspect ratio'dan platform tespit et
@@ -3138,7 +3152,7 @@ function _dublajaHazirGoster() {
 function _dublajiBaslat() {
   // Pro moda ve seslendirme sekmesine geç (speaker map zaten kayıtlı)
   if (typeof modGecis === 'function') modGecis('pro');
-  if (typeof sw === 'function') sw('seslendirme');
+  if (typeof _gercekSw === 'function') _gercekSw('seslendirme');
   setTimeout(function(){ startProcess(); }, 400);
 }
 function _ttsHL(){
@@ -4575,7 +4589,167 @@ function reset(){
   if(liveBadge) liveBadge.style.display='none';
 }
 
-function sw(m){
+/* ═══ PROJE PANELİ ═══ */
+const _MOD_INFO = {
+  desifre:       { label:'Transkript', icon:'📝', renk:'#60a5fa', acik:'Ses / videoyu metne dök' },
+  altyazi:       { label:'Altyazı',    icon:'💬', renk:'#34d399', acik:'Otomatik altyazı ekle' },
+  seslendirme:   { label:'Dublaj',     icon:'🎙', renk:'#f97316', acik:'Sesi farklı dile çevir' },
+  metinden_sese: { label:'TTS',        icon:'✍',  renk:'#a78bfa', acik:'Metni sese dönüştür'   },
+};
+
+function sw(m) {
+  // Tab değişimi her zaman paneli açar
+  _projePanelAc(m);
+}
+
+function _projePanelAc(m) {
+  document.getElementById('_proje_paneli')?.remove();
+  const info = _MOD_INFO[m] || { label:m, icon:'📁', renk:'#6366f1', acik:'' };
+  const dML  = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'TTS' };
+  const digerModlar = ['desifre','altyazi','seslendirme','metinden_sese'].filter(function(x){ return x!==m; });
+
+  const ov = document.createElement('div');
+  ov.id = '_proje_paneli';
+  ov.style.cssText = 'position:fixed;inset:0;background:#080d14;z-index:9990;display:flex;flex-direction:column;overflow-y:auto;font-family:inherit;';
+  ov.innerHTML = ''
+    + '<div style="max-width:700px;width:100%;margin:0 auto;padding:40px 20px 80px;">'
+    /* Başlık */
+    + '<div style="display:flex;align-items:center;gap:16px;margin-bottom:36px;">'
+    + '  <div style="width:52px;height:52px;background:'+info.renk+'18;border:1.5px solid '+info.renk+'40;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">'+info.icon+'</div>'
+    + '  <div><div style="font-size:22px;font-weight:800;color:#e8edf5;">'+info.label+'</div><div style="font-size:13px;color:#5a7090;margin-top:2px;">'+info.acik+'</div></div>'
+    + '  <button onclick="document.getElementById(\'_proje_paneli\').remove()" style="margin-left:auto;background:none;border:none;color:#5a7090;font-size:26px;cursor:pointer;line-height:1;padding:4px;" title="Kapat">×</button>'
+    + '</div>'
+    /* Yeni yükle */
+    + '<div id="_pp_upload_zone" onclick="_ppYeniYukle(\''+m+'\')" style="border:2px dashed #1e3a5f;border-radius:16px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:32px;" onmouseover="this.style.borderColor=\''+info.renk+'\';this.style.background=\''+info.renk+'08\'" onmouseout="this.style.borderColor=\'#1e3a5f\';this.style.background=\'transparent\'">'
+    + '  <div style="font-size:36px;margin-bottom:10px;">📁</div>'
+    + '  <div style="font-size:16px;font-weight:700;color:#e8edf5;margin-bottom:6px;">Yeni Video / Ses Yükle</div>'
+    + '  <div style="font-size:12px;color:#5a7090;">MP4 · MOV · MKV · MP3 · WAV</div>'
+    + '</div>'
+    /* Önceki dosyalar */
+    + '<div style="font-size:11px;font-weight:700;color:#5a7090;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;">Önceki Dosyalar — '+info.label+'</div>'
+    + '<div id="_pp_dosya_listesi"><div style="text-align:center;padding:32px;color:#3a4a5a;font-size:13px;">Yükleniyor…</div></div>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+
+  // Tab aktif göster
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('on'); });
+  document.getElementById('tab_'+m)?.classList.add('on');
+  document.querySelectorAll('[id^="mtab_"]').forEach(function(t){ t.style.color='var(--muted2)'; });
+  const mtab = document.getElementById('mtab_'+m);
+  if (mtab) mtab.style.color = 'var(--accent3)';
+
+  _ppDosyaYukle(m);
+}
+
+async function _ppDosyaYukle(m) {
+  const el = document.getElementById('_pp_dosya_listesi');
+  if (!el) return;
+  let dosyalar = [];
+
+  // Backend
+  try {
+    const r = await fetch(B + '/api/dosyalar/');
+    const d = await r.json();
+    if (d.dosyalar) {
+      dosyalar = d.dosyalar.filter(function(f) {
+        const t = f.tur || '';
+        if (m === 'seslendirme')   return t === 'mp4' || t === 'seslendirme';
+        if (m === 'altyazi')       return t === 'srt' || t === 'altyazi' || t === 'ass';
+        if (m === 'desifre')       return t === 'txt' || t === 'desifre';
+        if (m === 'metinden_sese') return t === 'mp3' || t === 'metinden_sese';
+        return true;
+      }).map(function(f) {
+        return { dosya:f.ad, isim:f.goster_ad||f.ad, tarih:new Date(f.tarih).toLocaleDateString('tr-TR'), boyut:f.boyut, url:f.url };
+      });
+    }
+  } catch(e){}
+
+  // localStorage (mod-özel)
+  try {
+    const local = JSON.parse(localStorage.getItem('vf_dosyalar_'+m) || '[]');
+    local.forEach(function(l){
+      if (!dosyalar.find(function(d){ return d.dosya===l.dosya; })) dosyalar.push(l);
+    });
+  } catch(e){}
+
+  if (!dosyalar.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#3a4a5a;font-size:13px;border:1px solid #1a2235;border-radius:12px;">Bu modda henüz işlenmiş dosya yok.<br><span style="font-size:11px;margin-top:6px;display:block;color:#2a3a4a;">Yukarıdan yeni bir video yükleyin.</span></div>';
+    return;
+  }
+
+  const dML = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'TTS' };
+  const digerModlar = ['desifre','altyazi','seslendirme','metinden_sese'].filter(function(x){ return x!==m; });
+
+  el.innerHTML = dosyalar.map(function(d, i) {
+    const sD = (d.dosya||'').replace(/'/g,"&#39;");
+    const sI = (d.isim||d.dosya||'').replace(/'/g,"&#39;");
+    const sU = (d.url||'').replace(/'/g,"&#39;");
+    const aktarOpts = digerModlar.map(function(dm){
+      return '<div onclick="_ppAktar(\''+sD+'\',\''+m+'\',\''+dm+'\')" style="padding:9px 14px;cursor:pointer;font-size:12px;color:#e8edf5;border-bottom:1px solid #1a2235;transition:background .1s;" onmouseover="this.style.background=\'#1a2235\'" onmouseout="this.style.background=\'\'">'+dML[dm]+'\'a aktar</div>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #1a2235;border-radius:12px;margin-bottom:8px;transition:all .15s;" onmouseover="this.style.borderColor=\'#2a3a5a\';this.style.background=\'#0d1420\'" onmouseout="this.style.borderColor=\'#1a2235\';this.style.background=\'\'">'
+      + '<div style="width:40px;height:40px;background:#0f1a2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎬</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '  <div style="font-size:13px;font-weight:600;color:#e8edf5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+sI+'</div>'
+      + '  <div style="font-size:11px;color:#5a7090;margin-top:2px;">'+(d.tarih||'')+(d.boyut?' · '+d.boyut+' MB':'')+'</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+      /* Aktar dropdown */
+      + '  <div style="position:relative;">'
+      + '    <button id="_pp_ab_'+i+'" onclick="_ppAktarToggle('+i+')" style="background:#111827;border:1px solid #1e2d42;color:#8ba3be;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit;" title="Başka moda aktar">↗ Aktar</button>'
+      + '    <div id="_pp_add_'+i+'" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#0d1420;border:1px solid #1e2d42;border-radius:10px;min-width:150px;z-index:10;overflow:hidden;">'+aktarOpts+'</div>'
+      + '  </div>'
+      /* Aç */
+      + '  <button onclick="_ppDosyaAc(\''+sD+'\',\''+sU+'\',\''+sI+'\',\''+m+'\')" style="background:#1d4ed8;border:none;color:#fff;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Aç →</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _ppAktarToggle(i) {
+  const dd = document.getElementById('_pp_add_'+i);
+  if (!dd) return;
+  const acik = dd.style.display !== 'none';
+  document.querySelectorAll('[id^="_pp_add_"]').forEach(function(el){ el.style.display='none'; });
+  if (!acik) dd.style.display = 'block';
+}
+
+function _ppAktar(dosya, kaynakMod, hedefMod) {
+  const dML = { desifre:'Transkript', altyazi:'Altyazı', seslendirme:'Dublaj', metinden_sese:'TTS' };
+  try {
+    const src = JSON.parse(localStorage.getItem('vf_dosyalar_'+kaynakMod) || '[]');
+    const obj = src.find(function(d){ return d.dosya===dosya; });
+    if (obj) {
+      const dst = JSON.parse(localStorage.getItem('vf_dosyalar_'+hedefMod) || '[]');
+      if (!dst.find(function(d){ return d.dosya===dosya; })) {
+        dst.unshift(Object.assign({}, obj));
+        localStorage.setItem('vf_dosyalar_'+hedefMod, JSON.stringify(dst.slice(0,20)));
+      }
+    }
+  } catch(e){}
+  document.querySelectorAll('[id^="_pp_add_"]').forEach(function(el){ el.style.display='none'; });
+  toast('✓ '+dML[hedefMod]+'\'a aktarıldı', 'tok', 2500);
+}
+
+function _ppYeniYukle(m) {
+  window._ppHedefMod = m;
+  document.getElementById('finput')?.click();
+}
+
+function _ppDosyaAc(dosya, url, isim, m) {
+  document.getElementById('_proje_paneli')?.remove();
+  if (url && url !== 'undefined' && url !== '') {
+    pFile = { name: isim || dosya, size: 0, _dosyaYolu: dosya };
+    pURL  = url.startsWith('http') ? url : B + '/indir/' + dosya;
+    _gercekSw(m);
+    setTimeout(loadMedia, 50);
+  } else {
+    _gercekSw(m);
+  }
+}
+
+function _gercekSw(m){
   // pFile'ı koru — sadece UI state'i sıfırla
   const _pFile = pFile, _pURL = pURL;
   // Altyazı modundan çıkıyorsak vbox'ı geri rp'ye al
@@ -5054,15 +5228,26 @@ function _dosyaAdlandir_iptal(idx, eskiAd) {
 
 // İşlem bitince localStorage'a kaydet
 function sonDosyayiKaydet(dosyaAdi, modul) {
-  const liste = JSON.parse(localStorage.getItem('vf_son_dosyalar') || '[]');
-  liste.unshift({
+  const dML = {desifre:'Transkript',altyazi:'Altyazı',seslendirme:'Dublaj',metinden_sese:'TTS'};
+  const obj = {
     dosya: dosyaAdi,
     isim: pFile ? pFile.name : dosyaAdi,
-    modul: {desifre:'Transkript',altyazi:'Altyazı',seslendirme:'Dublaj',metinden_sese:'TTS'}[modul]||modul,
+    modul: dML[modul] || modul,
     tarih: new Date().toLocaleDateString('tr-TR'),
-    tip: dosyaAdi.endsWith('.mp4')?'mp4':'srt'
-  });
-  localStorage.setItem('vf_son_dosyalar', JSON.stringify(liste.slice(0,20)));
+    tip: dosyaAdi.endsWith('.mp4') ? 'mp4' : 'srt',
+    url: B + '/indir/' + dosyaAdi,
+  };
+  // Mod-özel localStorage
+  const modKey = 'vf_dosyalar_' + modul;
+  const modListe = JSON.parse(localStorage.getItem(modKey) || '[]');
+  if (!modListe.find(function(d){ return d.dosya === dosyaAdi; })) {
+    modListe.unshift(obj);
+    localStorage.setItem(modKey, JSON.stringify(modListe.slice(0,20)));
+  }
+  // Global liste (dashboard için)
+  const global = JSON.parse(localStorage.getItem('vf_son_dosyalar') || '[]');
+  global.unshift(obj);
+  localStorage.setItem('vf_son_dosyalar', JSON.stringify(global.slice(0,20)));
 }
 function segNotToggle(segNo) {
   const notDiv = document.getElementById('not_' + segNo);
@@ -7998,7 +8183,7 @@ function modGecis(yeniMod) {
   } else {
     (function(){var _oa=document.getElementById('magic_actions');if(_oa)_oa.style.display='none';})();
     document.getElementById('_magic_steps')?.remove();
-    sw(mod);
+    _gercekSw(mod);
   }
 }
 
@@ -8053,7 +8238,7 @@ function magicAction(tip) {
     if (typeof subSablonUygula === 'function') subSablonUygula('tiktok_bold');
     // TikTok modunu tetikle, Pro'ya ATMA
     document.getElementById('tiktok_mode') && (document.getElementById('tiktok_mode').checked = true);
-    sw('altyazi');
+    _gercekSw('altyazi');
     toast('📱 TikTok altyazı stili ayarlandı — Start\'a bas!', 'tok', 3500);
 
   } else if (tip==='klonlama') {
@@ -8063,7 +8248,7 @@ function magicAction(tip) {
   } else if (tip==='silence_cut') {
     _magicAdimGoster(1);
     if (segs.length===0) {
-      sw('desifre');
+      _gercekSw('desifre');
       toast('Transkript alınıyor, bittikten sonra temizlik yapılacak...', 'twarn', 4000);
     } else {
       magicCut().then(function(){ if (aDosya) silenceCut(); });
@@ -8071,7 +8256,7 @@ function magicAction(tip) {
 
   } else if (tip==='magic_cut') {
     _magicAdimGoster(1);
-    if (segs.length===0) { sw('desifre'); toast('Önce transkript alın', 'twarn', 3000); }
+    if (segs.length===0) { _gercekSw('desifre'); toast('Önce transkript alın', 'twarn', 3000); }
     else magicCut();
 
   } else if (tip==='podcast_ozet') {
@@ -8107,7 +8292,7 @@ async function hizliDublajBaslat(hedefDil) {
   const tgtInput = document.getElementById('tgt_lang');
   if (tgtInput) tgtInput.value = hedefDil;
   // Seslendirme moduna geç
-  sw('seslendirme'); modGecis('pro');
+  _gercekSw('seslendirme'); modGecis('pro');
   // Modal'da hedef dili de ayarla
   const mTgt = document.getElementById('m_tgt');
   if (mTgt) { mTgt.value = hedefDil; mTgt.dispatchEvent(new Event('change')); }
@@ -8125,7 +8310,7 @@ async function podcastOzetModalAc() {
   // Transkript yoksa önce al
   if (!segs.length) {
     toast('Önce transkript alınıyor...','twarn',3000);
-    sw('desifre'); modGecis('pro');
+    _gercekSw('desifre'); modGecis('pro');
     return;
   }
 
@@ -8290,7 +8475,7 @@ async function videoSesiKlonlaBaslat(hedefDilKod) {
     toast('✓ Ses klonlandı → ' + hedefDilKod + ' dublaj başlıyor...', 'tok', 4000);
 
     // 3. Modu seslendirme'ye geç, hedef dili ayarla ve başlat
-    if (mod !== 'seslendirme') sw('seslendirme');
+    if (mod !== 'seslendirme') _gercekSw('seslendirme');
     const tgtEl = document.getElementById('tgt_lang') || document.getElementById('m_tgt');
     if (tgtEl) { tgtEl.value = hedefDilKod; tgtEl.dispatchEvent(new Event('change')); }
     setTimeout(() => startProcess(), 800);
@@ -8975,7 +9160,7 @@ async function _teSil() {
     localStorage.removeItem('lumnex_wiz');
     if(!state || !state.mode) return;
     setTimeout(function(){
-      if(typeof sw === 'function') sw(state.mode);
+      if(typeof _gercekSw === 'function') _gercekSw(state.mode);
       if(state.targetLang){
         var tl = document.getElementById('tgt_lang');
         if(tl) tl.value = state.targetLang.toUpperCase();
