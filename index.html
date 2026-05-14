@@ -764,7 +764,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <div class="slist" id="slist">
       <div class="empty-state">
         <i class="fa-solid fa-film"></i>
-        <span>Medya yükleyip işlemi başlatın</span>
+        <span id="empty_state_txt">Medya yükleyip işlemi başlatın</span>
       </div>
     </div>
 
@@ -775,7 +775,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <div style="width:280px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--s1);">
         <!-- Başlık + Filtreler -->
         <div style="padding:12px;border-bottom:1px solid var(--border);">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">Ses Aktörü</div>
+          <div id="lbl_ses_aktoru" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">Ses Aktörü</div>
           <div style="position:relative;margin-bottom:8px;">
             <i class="fa-solid fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:11px;pointer-events:none;"></i>
             <input id="tts_ses_ara" type="text" placeholder="Ses ara..." oninput="ttsSesListesiGuncelle()"
@@ -1105,31 +1105,31 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     <!-- FUNCTIONS PANEL — Maestra benzeri -->
     <div id="functions_panel" style="background:var(--s1);border-top:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;justify-content:space-between;">
-        Fonksiyonlar
+        <span id="lbl_fonksiyonlar">Fonksiyonlar</span>
         <button onclick="dashboardAc()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:11px;font-family:inherit;display:flex;align-items:center;gap:4px;">
-          <i class="fa-solid fa-folder-open"></i> Dosyalarım
+          <i class="fa-solid fa-folder-open"></i> <span id="lbl_dosyalarim">Dosyalarım</span>
         </button>
       </div>
 
       <!-- Ara & Değiştir -->
       <div>
-        <div style="font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px;">Ara &amp; Değiştir</div>
+        <div id="lbl_ara_degistir" style="font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px;">Ara &amp; Değiştir</div>
         <div style="display:flex;gap:4px;margin-bottom:4px;">
-          <input id="fn_ara" placeholder="Ara..." style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')fnAra(1)">
+          <input id="fn_ara" placeholder="Ara..."style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')fnAra(1)">
           <button onclick="fnAra(0)" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;" title="Önceki"><i class="fa-solid fa-chevron-left"></i></button>
           <button onclick="fnAra(1)" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;" title="Sonraki"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
         <div style="display:flex;gap:4px;">
-          <input id="fn_degistir" placeholder="İle değiştir..." style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;">
-          <button onclick="fnDegistir()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">Değiştir</button>
-          <button onclick="fnDegistirHepsi()" style="background:var(--accent);border:none;color:#fff;padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">Tümü</button>
+          <input id="fn_degistir" placeholder="İle değiştir..."  data-placeholder-key="ile_degistir" style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;outline:none;">
+          <button id="btn_degistir" onclick="fnDegistir()" style="background:var(--s3);border:1px solid var(--border2);color:var(--muted2);padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">Değiştir</button>
+          <button id="btn_degistir_hepsi" onclick="fnDegistirHepsi()" style="background:var(--accent);border:none;color:#fff;padding:6px 9px;border-radius:var(--r);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;">Tümü</button>
         </div>
         <div id="fn_ara_sonuc" style="font-size:10px;color:var(--muted);margin-top:3px;"></div>
       </div>
 
       <!-- Format -->
       <div>
-        <div style="font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px;">Format</div>
+        <div id="lbl_format" style="font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px;">Format</div>
         <div style="display:flex;gap:4px;">
           <button onclick="fnFormat('bold')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:5px 10px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;" title="Kalın">B</button>
           <button onclick="fnFormat('italic')" style="background:var(--s3);border:1px solid var(--border2);color:var(--txt);padding:5px 10px;border-radius:5px;font-size:12px;font-style:italic;cursor:pointer;" title="İtalik">i</button>
@@ -1142,34 +1142,34 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <!-- Notlar -->
       <div>
         <div style="font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;">
-          Notlar
-          <button onclick="tumNotlarIndir()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:10px;font-family:inherit;" title="Tüm notları indir"><i class="fa-solid fa-download"></i> İndir</button>
+          <span id="lbl_notlar">Notlar</span>
+          <button onclick="tumNotlarIndir()" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:10px;font-family:inherit;" title="Tüm notları indir"><i class="fa-solid fa-download"></i> <span id="lbl_indir">İndir</span></button>
         </div>
         <textarea id="genel_not" placeholder="Proje notları buraya..." style="width:100%;height:64px;padding:7px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;font-family:inherit;resize:none;outline:none;box-sizing:border-box;" oninput="localStorage.setItem('vf_genel_not',this.value)" onclick="event.stopPropagation()"></textarea>
       </div>
     </div>
 
     <div class="mixer" id="mixer">
-      <div class="mix-title"><i class="fa-solid fa-sliders"></i> Ses Mikseri</div>
+      <div class="mix-title"><i class="fa-solid fa-sliders"></i> <span id="lbl_ses_mikseri">Ses Mikseri</span></div>
 
       <!-- Orijinal konuşmacı sesi -->
       <div class="mix-row">
         <i class="fa-solid fa-person-chalkboard" style="color:var(--muted2);"></i>
-        <div class="mix-lbl"><b>Konuşmacı Sesi</b><small id="src_vol_pct">3%</small></div>
+        <div class="mix-lbl"><b id="lbl_konusmaci_sesi">Konuşmacı Sesi</b><small id="src_vol_pct">3%</small></div>
         <input type="range" min="0" max="100" value="3" id="src_vol" oninput="document.getElementById('src_vol_pct').textContent=this.value+'%'">
       </div>
 
       <!-- Arka plan müziği / gürültü (orijinal ses - konuşmacı hariç) -->
       <div class="mix-row">
         <i class="fa-solid fa-music" style="color:var(--muted2);"></i>
-        <div class="mix-lbl"><b>Arka Plan</b><small id="bg_vol_pct">30%</small></div>
+        <div class="mix-lbl"><b id="lbl_arka_plan">Arka Plan</b><small id="bg_vol_pct">30%</small></div>
         <input type="range" min="0" max="100" value="30" id="bg_vol" oninput="document.getElementById('bg_vol_pct').textContent=this.value+'%'">
       </div>
 
       <!-- Dublaj sesi -->
       <div class="mix-row">
         <i class="fa-solid fa-microphone" style="color:var(--accent2);"></i>
-        <div class="mix-lbl"><b>AI Dublaj</b><small id="dub_vol_pct">100%</small></div>
+        <div class="mix-lbl"><b id="lbl_ai_dublaj">AI Dublaj</b><small id="dub_vol_pct">100%</small></div>
         <input type="range" min="0" max="100" value="100" id="dub_vol" oninput="document.getElementById('dub_vol_pct').textContent=this.value+'%'">
       </div>
 
@@ -1177,13 +1177,13 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
       <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">
           <i class="fa-solid fa-masks-theater" style="color:var(--purple2);font-size:11px;"></i>
-          <span style="font-size:10px;font-weight:700;color:var(--purple2);text-transform:uppercase;letter-spacing:.5px;">Duygu Kontrolü</span>
-          <span style="font-size:9px;color:var(--muted2);margin-left:2px;">(isteğe bağlı)</span>
+          <span id="lbl_duygu_kontrolu" style="font-size:10px;font-weight:700;color:var(--purple2);text-transform:uppercase;letter-spacing:.5px;">Duygu Kontrolü</span>
+          <span id="lbl_istege_bagli" style="font-size:9px;color:var(--muted2);margin-left:2px;">(isteğe bağlı)</span>
         </div>
         <!-- Duygu Yoğunluğu (style) -->
         <div class="mix-row">
           <i class="fa-solid fa-fire" style="color:#f97316;font-size:12px;"></i>
-          <div class="mix-lbl"><b>Duygu</b><small id="style_pct">0%</small></div>
+          <div class="mix-lbl"><b id="lbl_duygu">Duygu</b><small id="style_pct">0%</small></div>
           <input type="range" min="0" max="100" value="0" id="emo_style"
             oninput="document.getElementById('style_pct').textContent=this.value+'%'"
             title="Duygu yoğunluğu — 0: nötr, 100: maksimum ifade">
@@ -1191,13 +1191,13 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <!-- Kararlılık/Rastlantısallık (stability) -->
         <div class="mix-row">
           <i class="fa-solid fa-gauge" style="color:#8b5cf6;font-size:12px;"></i>
-          <div class="mix-lbl"><b>Kararlılık</b><small id="stab_pct">55%</small></div>
+          <div class="mix-lbl"><b id="lbl_kararlilik">Kararlılık</b><small id="stab_pct">55%</small></div>
           <input type="range" min="0" max="100" value="55" id="emo_stability"
             oninput="document.getElementById('stab_pct').textContent=this.value+'%'"
             title="Yüksek = daha tutarlı/monoton, Düşük = daha dinamik/doğal">
         </div>
         <div style="font-size:9px;color:var(--muted2);line-height:1.4;margin-top:4px;">
-          Duygu 0 bırakılırsa varsayılan (nötr) kullanılır. Yüksek duygu bazı seslerde farklı sonuçlar verebilir.
+          <span id="lbl_duygu_tip">Duygu 0 bırakılırsa varsayılan (nötr) kullanılır. Yüksek duygu bazı seslerde farklı sonuçlar verebilir.</span>
         </div>
       </div>
 
@@ -1205,12 +1205,12 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
         <!-- Altyazı ekle/kaldır -->
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:var(--muted2);">
           <input type="checkbox" id="dub_altyazi_ekle" style="accent-color:var(--accent2);">
-          <span><i class="fa-solid fa-closed-captioning" style="color:var(--accent2);margin-right:4px;"></i>Videoya altyazı da göm</span>
+          <span><i class="fa-solid fa-closed-captioning" style="color:var(--accent2);margin-right:4px;"></i><span id="lbl_dub_altyazi">Videoya altyazı da göm</span></span>
         </label>
         <!-- Arka plan müziği koru -->
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:var(--muted2);">
           <input type="checkbox" id="bg_muzik_koru" checked style="accent-color:var(--green2);">
-          <span><i class="fa-solid fa-music" style="color:var(--green2);margin-right:4px;"></i>Arka plan müziğini koru</span>
+          <span><i class="fa-solid fa-music" style="color:var(--green2);margin-right:4px;"></i><span id="lbl_bg_muzik">Arka plan müziğini koru</span></span>
         </label>
       </div>
 
@@ -1263,7 +1263,7 @@ kbd{background:var(--s4);border:1px solid var(--border2);border-radius:3px;paddi
     </div>
   </div>
   <div class="tl-track" id="tl_track">
-    <div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Medya bekleniyor...</div>
+    <div id="tl_empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;"><span id="lbl_medya_bekliyor">Medya bekleniyor...</span></div>
   </div>
 </div>
 
@@ -3828,7 +3828,17 @@ const UI_DILLER = {
     't3':'Kendi Sesimle Dublaj','d3':'Sesini klonla, başka dilde kendine dub yap',
     't4':'Sessizlik & Dolgu Temizle','d4':'um, uh, uzun sessizlikler otomatik silinir',
     't5':'Podcast / Video Özeti','d5':'Transkript çıkar → AI ile özetle ve blog yaz',
-    'Magic':'✨ Sihirli','Pro':'🎛️ Pro'
+    'Magic':'✨ Sihirli','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Medya yükleyip işlemi başlatın',
+    'Fonksiyonlar':'Fonksiyonlar','Dosyalarım':'Dosyalarım',
+    'Ara & Değiştir':'Ara & Değiştir','Değiştir':'Değiştir','Tümü':'Tümü',
+    'Format':'Format','Notlar':'Notlar','İndir':'İndir',
+    'Ses Mikseri':'Ses Mikseri','Konuşmacı Sesi':'Konuşmacı Sesi','Arka Plan':'Arka Plan','AI Dublaj':'AI Dublaj',
+    'Duygu Kontrolü':'Duygu Kontrolü','(isteğe bağlı)':'(isteğe bağlı)','Duygu':'Duygu','Kararlılık':'Kararlılık',
+    'duygu_tip':'Duygu 0 bırakılırsa varsayılan (nötr) kullanılır. Yüksek duygu bazı seslerde farklı sonuçlar verebilir.',
+    'Videoya altyazı da göm':'Videoya altyazı da göm','Arka plan müziğini koru':'Arka plan müziğini koru',
+    'Medya bekleniyor':'Medya bekleniyor...','Altyazı Kapat':'Altyazı Kapat',
+    'Ara...':'Ara...','İle değiştir...':'İle değiştir...','Proje notları...':'Proje notları buraya...'
   },
   en: { ad:'English', flag:'🇺🇸',
     'Transkript':'Transcript','Altyazı':'Subtitles','Dublaj':'Dubbing','Metin→Ses':'Text→Speech',
@@ -3839,7 +3849,17 @@ const UI_DILLER = {
     't3':'Dub with My Voice','d3':'Clone your voice, dub in any language as yourself',
     't4':'Silence & Filler Removal','d4':'um, uh, long silences auto-removed',
     't5':'Podcast / Video Summary','d5':'Transcribe → AI summarize & write blog',
-    'Magic':'✨ Magic','Pro':'🎛️ Pro'
+    'Magic':'✨ Magic','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Upload media and start processing',
+    'Fonksiyonlar':'Functions','Dosyalarım':'My Files',
+    'Ara & Değiştir':'Find & Replace','Değiştir':'Replace','Tümü':'All',
+    'Format':'Format','Notlar':'Notes','İndir':'Download',
+    'Ses Mikseri':'Audio Mixer','Konuşmacı Sesi':'Speaker Voice','Arka Plan':'Background','AI Dublaj':'AI Dub',
+    'Duygu Kontrolü':'Emotion Control','(isteğe bağlı)':'(optional)','Duygu':'Emotion','Kararlılık':'Stability',
+    'duygu_tip':'If emotion is 0, default (neutral) is used. High emotion may produce different results on some voices.',
+    'Videoya altyazı da göm':'Burn subtitles into video','Arka plan müziğini koru':'Keep background music',
+    'Medya bekleniyor':'Waiting for media...','Altyazı Kapat':'Hide Subtitles',
+    'Ara...':'Search...','İle değiştir...':'Replace with...','Proje notları...':'Project notes...'
   },
   de: { ad:'Deutsch', flag:'🇩🇪',
     'Transkript':'Transkript','Altyazı':'Untertitel','Dublaj':'Synchronisation','Metin→Ses':'Text→Sprache',
@@ -3850,7 +3870,17 @@ const UI_DILLER = {
     't3':'Synchron mit meiner Stimme','d3':'Stimme klonen, in jeder Sprache als du selbst',
     't4':'Stille & Füllwörter entfernen','d4':'äh, öh, lange Pausen automatisch entfernt',
     't5':'Podcast / Video-Zusammenfassung','d5':'Transkribieren → KI zusammenfassen & Blog',
-    'Magic':'✨ Magisch','Pro':'🎛️ Pro'
+    'Magic':'✨ Magisch','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Datei hochladen und starten',
+    'Fonksiyonlar':'Funktionen','Dosyalarım':'Meine Dateien',
+    'Ara & Değiştir':'Suchen & Ersetzen','Değiştir':'Ersetzen','Tümü':'Alle',
+    'Format':'Format','Notlar':'Notizen','İndir':'Herunterladen',
+    'Ses Mikseri':'Audio-Mixer','Konuşmacı Sesi':'Sprecherstimme','Arka Plan':'Hintergrund','AI Dublaj':'KI-Sync',
+    'Duygu Kontrolü':'Emotionssteuerung','(isteğe bağlı)':'(optional)','Duygu':'Emotion','Kararlılık':'Stabilität',
+    'duygu_tip':'Bei Emotion 0 wird Standard (neutral) verwendet. Hohe Emotion kann bei manchen Stimmen abweichen.',
+    'Videoya altyazı da göm':'Untertitel ins Video einbrennen','Arka plan müziğini koru':'Hintergrundmusik behalten',
+    'Medya bekleniyor':'Warten auf Datei...','Altyazı Kapat':'Untertitel ausblenden',
+    'Ara...':'Suchen...','İle değiştir...':'Ersetzen durch...','Proje notları...':'Projektnotizen...'
   },
   fr: { ad:'Français', flag:'🇫🇷',
     'Transkript':'Transcription','Altyazı':'Sous-titres','Dublaj':'Doublage','Metin→Ses':'Texte→Parole',
@@ -3861,7 +3891,17 @@ const UI_DILLER = {
     't3':'Doubler avec ma voix','d3':'Clonez votre voix, doublez dans n\'importe quelle langue',
     't4':'Supprimer silences & remplissages','d4':'euh, les longues pauses sont supprimées',
     't5':'Résumé podcast / vidéo','d5':'Transcrire → résumé IA & rédiger un blog',
-    'Magic':'✨ Magie','Pro':'🎛️ Pro'
+    'Magic':'✨ Magie','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Téléchargez un fichier pour commencer',
+    'Fonksiyonlar':'Fonctions','Dosyalarım':'Mes Fichiers',
+    'Ara & Değiştir':'Rechercher & Remplacer','Değiştir':'Remplacer','Tümü':'Tout',
+    'Format':'Format','Notlar':'Notes','İndir':'Télécharger',
+    'Ses Mikseri':'Mixeur Audio','Konuşmacı Sesi':'Voix du locuteur','Arka Plan':'Fond','AI Dublaj':'Doublage IA',
+    'Duygu Kontrolü':'Contrôle Émotionnel','(isteğe bağlı)':'(optionnel)','Duygu':'Émotion','Kararlılık':'Stabilité',
+    'duygu_tip':'Si émotion = 0, la valeur par défaut (neutre) est utilisée. Émotion élevée peut varier.',
+    'Videoya altyazı da göm':'Incruster les sous-titres','Arka plan müziğini koru':'Conserver la musique de fond',
+    'Medya bekleniyor':'En attente de fichier...','Altyazı Kapat':'Masquer les sous-titres',
+    'Ara...':'Rechercher...','İle değiştir...':'Remplacer par...','Proje notları...':'Notes du projet...'
   },
   es: { ad:'Español', flag:'🇪🇸',
     'Transkript':'Transcripción','Altyazı':'Subtítulos','Dublaj':'Doblaje','Metin→Ses':'Texto→Voz',
@@ -3872,7 +3912,17 @@ const UI_DILLER = {
     't3':'Doblar con mi voz','d3':'Clona tu voz, dobla en cualquier idioma como tú mismo',
     't4':'Eliminar silencios y muletillas','d4':'eh, palabras de relleno y silencios eliminados',
     't5':'Resumen de podcast / vídeo','d5':'Transcribir → resumir con IA & escribir blog',
-    'Magic':'✨ Magia','Pro':'🎛️ Pro'
+    'Magic':'✨ Magia','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Sube un archivo y comienza',
+    'Fonksiyonlar':'Funciones','Dosyalarım':'Mis Archivos',
+    'Ara & Değiştir':'Buscar y Reemplazar','Değiştir':'Reemplazar','Tümü':'Todo',
+    'Format':'Formato','Notlar':'Notas','İndir':'Descargar',
+    'Ses Mikseri':'Mezclador de Audio','Konuşmacı Sesi':'Voz del Narrador','Arka Plan':'Fondo','AI Dublaj':'Doblaje IA',
+    'Duygu Kontrolü':'Control de Emoción','(isteğe bağlı)':'(opcional)','Duygu':'Emoción','Kararlılık':'Estabilidad',
+    'duygu_tip':'Si emoción es 0, se usa el valor predeterminado (neutro). Alta emoción puede producir resultados diferentes.',
+    'Videoya altyazı da göm':'Añadir subtítulos al vídeo','Arka plan müziğini koru':'Mantener música de fondo',
+    'Medya bekleniyor':'Esperando archivo...','Altyazı Kapat':'Ocultar Subtítulos',
+    'Ara...':'Buscar...','İle değiştir...':'Reemplazar con...','Proje notları...':'Notas del proyecto...'
   },
   it: { ad:'Italiano', flag:'🇮🇹',
     'Transkript':'Trascrizione','Altyazı':'Sottotitoli','Dublaj':'Doppiaggio','Metin→Ses':'Testo→Voce',
@@ -3883,7 +3933,17 @@ const UI_DILLER = {
     't3':'Doppiare con la mia voce','d3':'Clona la tua voce, doppia in qualsiasi lingua',
     't4':'Rimuovi silenzi e riempitivi','d4':'ehm, le lunghe pause vengono rimosse',
     't5':'Riepilogo podcast / video','d5':'Trascrivi → riassumi con IA & scrivi blog',
-    'Magic':'✨ Magia','Pro':'🎛️ Pro'
+    'Magic':'✨ Magia','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Carica un file per iniziare',
+    'Fonksiyonlar':'Funzioni','Dosyalarım':'I Miei File',
+    'Ara & Değiştir':'Cerca & Sostituisci','Değiştir':'Sostituisci','Tümü':'Tutto',
+    'Format':'Formato','Notlar':'Note','İndir':'Scarica',
+    'Ses Mikseri':'Mixer Audio','Konuşmacı Sesi':'Voce del relatore','Arka Plan':'Sottofondo','AI Dublaj':'Doppiaggio IA',
+    'Duygu Kontrolü':'Controllo Emozioni','(isteğe bağlı)':'(opzionale)','Duygu':'Emozione','Kararlılık':'Stabilità',
+    'duygu_tip':'Se emozione = 0, viene usato il valore predefinito (neutro).',
+    'Videoya altyazı da göm':'Incorpora i sottotitoli','Arka plan müziğini koru':'Mantieni la musica di sottofondo',
+    'Medya bekleniyor':'In attesa del file...','Altyazı Kapat':'Nascondi Sottotitoli',
+    'Ara...':'Cerca...','İle değiştir...':'Sostituisci con...','Proje notları...':'Note progetto...'
   },
   pt: { ad:'Português', flag:'🇧🇷',
     'Transkript':'Transcrição','Altyazı':'Legendas','Dublaj':'Dublagem','Metin→Ses':'Texto→Fala',
@@ -3894,7 +3954,17 @@ const UI_DILLER = {
     't3':'Dublar com minha voz','d3':'Clone sua voz, dublando em qualquer idioma',
     't4':'Remover silêncios e preenchimentos','d4':'ã, éh, pausas longas removidas automaticamente',
     't5':'Resumo de podcast / vídeo','d5':'Transcrever → resumir com IA & escrever blog',
-    'Magic':'✨ Mágico','Pro':'🎛️ Pro'
+    'Magic':'✨ Mágico','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Faça upload de um arquivo para começar',
+    'Fonksiyonlar':'Funções','Dosyalarım':'Meus Arquivos',
+    'Ara & Değiştir':'Localizar & Substituir','Değiştir':'Substituir','Tümü':'Tudo',
+    'Format':'Formato','Notlar':'Notas','İndir':'Baixar',
+    'Ses Mikseri':'Mixer de Áudio','Konuşmacı Sesi':'Voz do Locutor','Arka Plan':'Fundo','AI Dublaj':'Dublagem IA',
+    'Duygu Kontrolü':'Controle de Emoção','(isteğe bağlı)':'(opcional)','Duygu':'Emoção','Kararlılık':'Estabilidade',
+    'duygu_tip':'Se emoção = 0, o padrão (neutro) é usado.',
+    'Videoya altyazı da göm':'Gravar legendas no vídeo','Arka plan müziğini koru':'Manter música de fundo',
+    'Medya bekleniyor':'Aguardando arquivo...','Altyazı Kapat':'Ocultar Legendas',
+    'Ara...':'Buscar...','İle değiştir...':'Substituir por...','Proje notları...':'Notas do projeto...'
   },
   ru: { ad:'Русский', flag:'🇷🇺',
     'Transkript':'Транскрипт','Altyazı':'Субтитры','Dublaj':'Дублирование','Metin→Ses':'Текст→Речь',
@@ -3905,7 +3975,17 @@ const UI_DILLER = {
     't3':'Дублировать своим голосом','d3':'Клонируй голос, дублируй на любом языке собой',
     't4':'Удаление тишины и слов-паразитов','d4':'эм, длинные паузы удаляются автоматически',
     't5':'Резюме подкаста / видео','d5':'Транскрибировать → AI резюме & написать блог',
-    'Magic':'✨ Магия','Pro':'🎛️ Pro'
+    'Magic':'✨ Магия','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Загрузите файл для начала',
+    'Fonksiyonlar':'Функции','Dosyalarım':'Мои Файлы',
+    'Ara & Değiştir':'Найти & Заменить','Değiştir':'Заменить','Tümü':'Все',
+    'Format':'Формат','Notlar':'Заметки','İndir':'Скачать',
+    'Ses Mikseri':'Аудио Микшер','Konuşmacı Sesi':'Голос диктора','Arka Plan':'Фон','AI Dublaj':'ИИ Дубляж',
+    'Duygu Kontrolü':'Контроль Эмоций','(isteğe bağlı)':'(опционально)','Duygu':'Эмоция','Kararlılık':'Стабильность',
+    'duygu_tip':'При эмоции 0 используется нейтральный режим.',
+    'Videoya altyazı da göm':'Вжечь субтитры в видео','Arka plan müziğini koru':'Сохранить фоновую музыку',
+    'Medya bekleniyor':'Ожидание файла...','Altyazı Kapat':'Скрыть субтитры',
+    'Ara...':'Поиск...','İle değiştir...':'Заменить на...','Proje notları...':'Заметки проекта...'
   },
   ja: { ad:'日本語', flag:'🇯🇵',
     'Transkript':'文字起こし','Altyazı':'字幕','Dublaj':'吹き替え','Metin→Ses':'テキスト→音声',
@@ -3916,7 +3996,17 @@ const UI_DILLER = {
     't3':'自分の声で吹き替え','d3':'声をクローンして、どの言語でも自分の声で吹き替え',
     't4':'無音・フィラー除去','d4':'えー、あー、長い無音を自動削除',
     't5':'ポッドキャスト/動画要約','d5':'文字起こし → AI要約 & ブログ執筆',
-    'Magic':'✨ マジック','Pro':'🎛️ プロ'
+    'Magic':'✨ マジック','Pro':'🎛️ プロ',
+    'Medya yükle başlat':'ファイルをアップロードして開始',
+    'Fonksiyonlar':'機能','Dosyalarım':'マイファイル',
+    'Ara & Değiştir':'検索と置換','Değiştir':'置換','Tümü':'すべて',
+    'Format':'フォーマット','Notlar':'メモ','İndir':'ダウンロード',
+    'Ses Mikseri':'オーディオミキサー','Konuşmacı Sesi':'話者の声','Arka Plan':'バックグラウンド','AI Dublaj':'AI吹き替え',
+    'Duygu Kontrolü':'感情コントロール','(isteğe bağlı)':'(任意)','Duygu':'感情','Kararlılık':'安定性',
+    'duygu_tip':'感情が0の場合、デフォルト（ニュートラル）が使用されます。',
+    'Videoya altyazı da göm':'字幕を動画に焼き込む','Arka plan müziğini koru':'BGMを保持',
+    'Medya bekleniyor':'ファイル待機中...','Altyazı Kapat':'字幕を非表示',
+    'Ara...':'検索...','İle değiştir...':'置換後...','Proje notları...':'プロジェクトメモ...'
   },
   ar: { ad:'العربية', flag:'🇸🇦',
     'Transkript':'النص','Altyazı':'ترجمة','Dublaj':'دبلجة','Metin→Ses':'نص→كلام',
@@ -3927,7 +4017,17 @@ const UI_DILLER = {
     't3':'الدبلجة بصوتي','d3':'استنسخ صوتك، ادبلج بأي لغة كأنك أنت',
     't4':'إزالة الصمت والكلمات الحشو','d4':'إيه، آه، الصمت الطويل يُحذف تلقائياً',
     't5':'ملخص بودكاست / فيديو','d5':'نسخ ← تلخيص بالذكاء الاصطناعي وكتابة مدونة',
-    'Magic':'✨ سحري','Pro':'🎛️ احترافي'
+    'Magic':'✨ سحري','Pro':'🎛️ احترافي',
+    'Medya yükle başlat':'ارفع ملفاً للبدء',
+    'Fonksiyonlar':'الوظائف','Dosyalarım':'ملفاتي',
+    'Ara & Değiştir':'بحث واستبدال','Değiştir':'استبدال','Tümü':'الكل',
+    'Format':'تنسيق','Notlar':'ملاحظات','İndir':'تحميل',
+    'Ses Mikseri':'خلاط الصوت','Konuşmacı Sesi':'صوت المتحدث','Arka Plan':'الخلفية','AI Dublaj':'دبلجة AI',
+    'Duygu Kontrolü':'التحكم في المشاعر','(isteğe bağlı)':'(اختياري)','Duygu':'المشاعر','Kararlılık':'الاستقرار',
+    'duygu_tip':'إذا كانت المشاعر 0، يُستخدم الوضع المحايد.',
+    'Videoya altyazı da göm':'دمج الترجمة في الفيديو','Arka plan müziğini koru':'الاحتفاظ بموسيقى الخلفية',
+    'Medya bekleniyor':'في انتظار الملف...','Altyazı Kapat':'إخفاء الترجمة',
+    'Ara...':'بحث...','İle değiştir...':'استبدال بـ...','Proje notları...':'ملاحظات المشروع...'
   },
   ko: { ad:'한국어', flag:'🇰🇷',
     'Transkript':'트랜스크립트','Altyazı':'자막','Dublaj':'더빙','Metin→Ses':'텍스트→음성',
@@ -3938,7 +4038,16 @@ const UI_DILLER = {
     't3':'내 목소리로 더빙','d3':'목소리를 클론하여 어떤 언어로든 더빙',
     't4':'침묵 & 필러 제거','d4':'어, 음, 긴 침묵이 자동 제거됨',
     't5':'팟캐스트 / 영상 요약','d5':'전사 → AI 요약 & 블로그 작성',
-    'Magic':'✨ 매직','Pro':'🎛️ 프로'
+    'Magic':'✨ 매직','Pro':'🎛️ 프로',
+    'Medya yükle başlat':'파일을 업로드하여 시작','Fonksiyonlar':'기능','Dosyalarım':'내 파일',
+    'Ara & Değiştir':'찾기 & 바꾸기','Değiştir':'바꾸기','Tümü':'모두',
+    'Format':'형식','Notlar':'메모','İndir':'다운로드',
+    'Ses Mikseri':'오디오 믹서','Konuşmacı Sesi':'화자 음성','Arka Plan':'배경','AI Dublaj':'AI 더빙',
+    'Duygu Kontrolü':'감정 제어','(isteğe bağlı)':'(선택사항)','Duygu':'감정','Kararlılık':'안정성',
+    'duygu_tip':'감정이 0이면 기본값(중립)이 사용됩니다.',
+    'Videoya altyazı da göm':'자막을 영상에 삽입','Arka plan müziğini koru':'배경음악 유지',
+    'Medya bekleniyor':'파일 대기 중...','Altyazı Kapat':'자막 숨기기',
+    'Ara...':'검색...','İle değiştir...':'바꿀 내용...','Proje notları...':'프로젝트 메모...'
   },
   zh: { ad:'中文', flag:'🇨🇳',
     'Transkript':'转录','Altyazı':'字幕','Dublaj':'配音','Metin→Ses':'文字→语音',
@@ -3949,7 +4058,16 @@ const UI_DILLER = {
     't3':'用我的声音配音','d3':'克隆你的声音，用任何语言以自己的声音配音',
     't4':'删除静音和填充词','d4':'嗯、啊、长时间停顿自动移除',
     't5':'播客 / 视频摘要','d5':'转录 → AI总结 & 写博客',
-    'Magic':'✨ 魔法','Pro':'🎛️ 专业'
+    'Magic':'✨ 魔法','Pro':'🎛️ 专业',
+    'Medya yükle başlat':'上传文件开始处理','Fonksiyonlar':'功能','Dosyalarım':'我的文件',
+    'Ara & Değiştir':'查找和替换','Değiştir':'替换','Tümü':'全部',
+    'Format':'格式','Notlar':'笔记','İndir':'下载',
+    'Ses Mikseri':'音频混音器','Konuşmacı Sesi':'演讲者声音','Arka Plan':'背景','AI Dublaj':'AI配音',
+    'Duygu Kontrolü':'情感控制','(isteğe bağlı)':'(可选)','Duygu':'情感','Kararlılık':'稳定性',
+    'duygu_tip':'情感为0时使用默认值（中性）。',
+    'Videoya altyazı da göm':'将字幕嵌入视频','Arka plan müziğini koru':'保留背景音乐',
+    'Medya bekleniyor':'等待文件...','Altyazı Kapat':'隐藏字幕',
+    'Ara...':'搜索...','İle değiştir...':'替换为...','Proje notları...':'项目笔记...'
   },
   hi: { ad:'हिन्दी', flag:'🇮🇳',
     'Transkript':'ट्रांसक्रिप्ट','Altyazı':'उपशीर्षक','Dublaj':'डबिंग','Metin→Ses':'पाठ→वाणी',
@@ -3960,7 +4078,16 @@ const UI_DILLER = {
     't3':'मेरी आवाज़ से डबिंग','d3':'अपनी आवाज़ क्लोन करें, किसी भी भाषा में डब करें',
     't4':'चुप्पी और फिलर हटाएं','d4':'उम, आह, लंबी चुप्पी अपने आप हटाई जाती है',
     't5':'पॉडकास्ट / वीडियो सारांश','d5':'ट्रांसक्राइब → AI सारांश & ब्लॉग लिखें',
-    'Magic':'✨ जादू','Pro':'🎛️ प्रो'
+    'Magic':'✨ जादू','Pro':'🎛️ प्रो',
+    'Medya yükle başlat':'फ़ाइल अपलोड करके शुरू करें','Fonksiyonlar':'फ़ंक्शन','Dosyalarım':'मेरी फ़ाइलें',
+    'Ara & Değiştir':'खोजें & बदलें','Değiştir':'बदलें','Tümü':'सभी',
+    'Format':'प्रारूप','Notlar':'नोट्स','İndir':'डाउनलोड',
+    'Ses Mikseri':'ऑडियो मिक्सर','Konuşmacı Sesi':'वक्ता की आवाज़','Arka Plan':'पृष्ठभूमि','AI Dublaj':'AI डबिंग',
+    'Duygu Kontrolü':'भावना नियंत्रण','(isteğe bağlı)':'(वैकल्पिक)','Duygu':'भावना','Kararlılık':'स्थिरता',
+    'duygu_tip':'यदि भावना 0 है, तो डिफ़ॉल्ट (तटस्थ) उपयोग किया जाता है।',
+    'Videoya altyazı da göm':'वीडियो में उपशीर्षक जोड़ें','Arka plan müziğini koru':'पृष्ठभूमि संगीत रखें',
+    'Medya bekleniyor':'फ़ाइल की प्रतीक्षा...','Altyazı Kapat':'उपशीर्षक छुपाएं',
+    'Ara...':'खोजें...','İle değiştir...':'से बदलें...','Proje notları...':'प्रोजेक्ट नोट्स...'
   },
   nl: { ad:'Nederlands', flag:'🇳🇱',
     'Transkript':'Transcript','Altyazı':'Ondertitels','Dublaj':'Nagesynchroniseerd','Metin→Ses':'Tekst→Spraak',
@@ -3971,7 +4098,16 @@ const UI_DILLER = {
     't3':'Nasynchroniseren met mijn stem','d3':'Kloon je stem, dubbel in elke taal als jezelf',
     't4':'Stilte & opvulwoorden verwijderen','d4':'eh, lange pauzes worden automatisch verwijderd',
     't5':'Podcast / Video samenvatting','d5':'Transcriberen → AI samenvatten & blog schrijven',
-    'Magic':'✨ Magie','Pro':'🎛️ Pro'
+    'Magic':'✨ Magie','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Upload een bestand om te beginnen','Fonksiyonlar':'Functies','Dosyalarım':'Mijn Bestanden',
+    'Ara & Değiştir':'Zoeken & Vervangen','Değiştir':'Vervangen','Tümü':'Alles',
+    'Format':'Opmaak','Notlar':'Notities','İndir':'Downloaden',
+    'Ses Mikseri':'Audiomixer','Konuşmacı Sesi':'Sprekerstem','Arka Plan':'Achtergrond','AI Dublaj':'AI Nasync',
+    'Duygu Kontrolü':'Emotiecontrole','(isteğe bağlı)':'(optioneel)','Duygu':'Emotie','Kararlılık':'Stabiliteit',
+    'duygu_tip':'Als emotie 0 is, wordt de standaard (neutraal) gebruikt.',
+    'Videoya altyazı da göm':'Ondertitels in video branden','Arka plan müziğini koru':'Achtergrondmuziek bewaren',
+    'Medya bekleniyor':'Wachten op bestand...','Altyazı Kapat':'Ondertitels verbergen',
+    'Ara...':'Zoeken...','İle değiştir...':'Vervangen door...','Proje notları...':'Projectnotities...'
   },
   pl: { ad:'Polski', flag:'🇵🇱',
     'Transkript':'Transkrypt','Altyazı':'Napisy','Dublaj':'Dubbing','Metin→Ses':'Tekst→Mowa',
@@ -3982,7 +4118,16 @@ const UI_DILLER = {
     't3':'Dubbing moim głosem','d3':'Sklonuj swój głos, dubbinguj w dowolnym języku',
     't4':'Usuwanie ciszy i słów wypełniaczy','d4':'ee, uhm, długie pauzy są automatycznie usuwane',
     't5':'Streszczenie podcastu / wideo','d5':'Transkrybuj → AI podsumuj & napisz blog',
-    'Magic':'✨ Magia','Pro':'🎛️ Pro'
+    'Magic':'✨ Magia','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Prześlij plik aby zacząć','Fonksiyonlar':'Funkcje','Dosyalarım':'Moje Pliki',
+    'Ara & Değiştir':'Znajdź & Zastąp','Değiştir':'Zastąp','Tümü':'Wszystko',
+    'Format':'Format','Notlar':'Notatki','İndir':'Pobierz',
+    'Ses Mikseri':'Mikser Audio','Konuşmacı Sesi':'Głos mówcy','Arka Plan':'Tło','AI Dublaj':'Dubbing AI',
+    'Duygu Kontrolü':'Kontrola Emocji','(isteğe bağlı)':'(opcjonalnie)','Duygu':'Emocja','Kararlılık':'Stabilność',
+    'duygu_tip':'Przy emocji 0 używana jest wartość domyślna (neutralna).',
+    'Videoya altyazı da göm':'Wpal napisy w wideo','Arka plan müziğini koru':'Zachowaj muzykę w tle',
+    'Medya bekleniyor':'Oczekiwanie na plik...','Altyazı Kapat':'Ukryj napisy',
+    'Ara...':'Szukaj...','İle değiştir...':'Zastąp przez...','Proje notları...':'Notatki projektu...'
   },
   sv: { ad:'Svenska', flag:'🇸🇪',
     'Transkript':'Transkript','Altyazı':'Undertexter','Dublaj':'Dubbning','Metin→Ses':'Text→Tal',
@@ -3993,7 +4138,16 @@ const UI_DILLER = {
     't3':'Dubba med min röst','d3':'Klona din röst, dubba på valfritt språk som du själv',
     't4':'Ta bort tystnad och fyllnadsord','d4':'eh, öh, långa pauser tas bort automatiskt',
     't5':'Podcast / Video sammanfattning','d5':'Transkribera → AI sammanfatta & skriv blogg',
-    'Magic':'✨ Magi','Pro':'🎛️ Pro'
+    'Magic':'✨ Magi','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Ladda upp en fil för att börja','Fonksiyonlar':'Funktioner','Dosyalarım':'Mina Filer',
+    'Ara & Değiştir':'Sök & Ersätt','Değiştir':'Ersätt','Tümü':'Alla',
+    'Format':'Format','Notlar':'Anteckningar','İndir':'Ladda ner',
+    'Ses Mikseri':'Ljudmixer','Konuşmacı Sesi':'Talarröst','Arka Plan':'Bakgrund','AI Dublaj':'AI Dubbning',
+    'Duygu Kontrolü':'Emotionskontroll','(isteğe bağlı)':'(valfritt)','Duygu':'Emotion','Kararlılık':'Stabilitet',
+    'duygu_tip':'Om emotion är 0 används standard (neutral).',
+    'Videoya altyazı da göm':'Bränn in undertexter','Arka plan müziğini koru':'Behåll bakgrundsmusik',
+    'Medya bekleniyor':'Väntar på fil...','Altyazı Kapat':'Dölj undertexter',
+    'Ara...':'Sök...','İle değiştir...':'Ersätt med...','Proje notları...':'Projektanteckningar...'
   },
   id: { ad:'Indonesia', flag:'🇮🇩',
     'Transkript':'Transkrip','Altyazı':'Subtitle','Dublaj':'Dubbing','Metin→Ses':'Teks→Suara',
@@ -4004,7 +4158,16 @@ const UI_DILLER = {
     't3':'Dubbing dengan Suara Saya','d3':'Kloning suara, dubbing bahasa apa pun sebagai diri sendiri',
     't4':'Hapus Jeda & Kata Filler','d4':'um, eh, jeda panjang dihapus otomatis',
     't5':'Ringkasan Podcast / Video','d5':'Transkripsi → AI ringkas & tulis blog',
-    'Magic':'✨ Ajaib','Pro':'🎛️ Pro'
+    'Magic':'✨ Ajaib','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Unggah file untuk mulai','Fonksiyonlar':'Fungsi','Dosyalarım':'File Saya',
+    'Ara & Değiştir':'Cari & Ganti','Değiştir':'Ganti','Tümü':'Semua',
+    'Format':'Format','Notlar':'Catatan','İndir':'Unduh',
+    'Ses Mikseri':'Mixer Audio','Konuşmacı Sesi':'Suara Pembicara','Arka Plan':'Latar Belakang','AI Dublaj':'Dubbing AI',
+    'Duygu Kontrolü':'Kontrol Emosi','(isteğe bağlı)':'(opsional)','Duygu':'Emosi','Kararlılık':'Stabilitas',
+    'duygu_tip':'Jika emosi 0, nilai default (netral) digunakan.',
+    'Videoya altyazı da göm':'Bakar subtitle ke video','Arka plan müziğini koru':'Pertahankan musik latar',
+    'Medya bekleniyor':'Menunggu file...','Altyazı Kapat':'Sembunyikan Subtitle',
+    'Ara...':'Cari...','İle değiştir...':'Ganti dengan...','Proje notları...':'Catatan proyek...'
   },
   uk: { ad:'Українська', flag:'🇺🇦',
     'Transkript':'Транскрипт','Altyazı':'Субтитри','Dublaj':'Дублювання','Metin→Ses':'Текст→Мовлення',
@@ -4015,7 +4178,16 @@ const UI_DILLER = {
     't3':'Дублювати своїм голосом','d3':'Клонуй голос, дублюй будь-якою мовою як ти',
     't4':'Видалення тиші та слів-паразитів','d4':'ем, тривала тиша видаляється автоматично',
     't5':'Резюме подкасту / відео','d5':'Транскрибувати → AI резюме & написати блог',
-    'Magic':'✨ Магія','Pro':'🎛️ Про'
+    'Magic':'✨ Магія','Pro':'🎛️ Про',
+    'Medya yükle başlat':'Завантажте файл для початку','Fonksiyonlar':'Функції','Dosyalarım':'Мої Файли',
+    'Ara & Değiştir':'Знайти & Замінити','Değiştir':'Замінити','Tümü':'Все',
+    'Format':'Формат','Notlar':'Нотатки','İndir':'Завантажити',
+    'Ses Mikseri':'Аудіо Мікшер','Konuşmacı Sesi':'Голос диктора','Arka Plan':'Фон','AI Dublaj':'ІІ Дублювання',
+    'Duygu Kontrolü':'Контроль Емоцій','(isteğe bağlı)':'(опціонально)','Duygu':'Емоція','Kararlılık':'Стабільність',
+    'duygu_tip':'При емоції 0 використовується нейтральний режим.',
+    'Videoya altyazı da göm':'Вжечь субтитри у відео','Arka plan müziğini koru':'Зберегти фонову музику',
+    'Medya bekleniyor':'Очікування файлу...','Altyazı Kapat':'Приховати субтитри',
+    'Ara...':'Пошук...','İle değiştir...':'Замінити на...','Proje notları...':'Нотатки проекту...'
   },
   vi: { ad:'Tiếng Việt', flag:'🇻🇳',
     'Transkript':'Phiên âm','Altyazı':'Phụ đề','Dublaj':'Lồng tiếng','Metin→Ses':'Văn bản→Giọng nói',
@@ -4026,7 +4198,16 @@ const UI_DILLER = {
     't3':'Lồng tiếng bằng giọng của tôi','d3':'Nhân bản giọng nói, lồng tiếng bằng tiếng bất kỳ',
     't4':'Xóa khoảng lặng và từ đệm','d4':'ừm, ư, khoảng lặng dài tự động bị xóa',
     't5':'Tóm tắt Podcast / Video','d5':'Phiên âm → AI tóm tắt & viết blog',
-    'Magic':'✨ Phép thuật','Pro':'🎛️ Pro'
+    'Magic':'✨ Phép thuật','Pro':'🎛️ Pro',
+    'Medya yükle başlat':'Tải lên tệp để bắt đầu','Fonksiyonlar':'Chức năng','Dosyalarım':'Tệp của tôi',
+    'Ara & Değiştir':'Tìm & Thay thế','Değiştir':'Thay thế','Tümü':'Tất cả',
+    'Format':'Định dạng','Notlar':'Ghi chú','İndir':'Tải xuống',
+    'Ses Mikseri':'Bộ trộn âm thanh','Konuşmacı Sesi':'Giọng người nói','Arka Plan':'Nền','AI Dublaj':'Lồng tiếng AI',
+    'Duygu Kontrolü':'Kiểm soát Cảm xúc','(isteğe bağlı)':'(tùy chọn)','Duygu':'Cảm xúc','Kararlılık':'Ổn định',
+    'duygu_tip':'Nếu cảm xúc = 0, mặc định (trung tính) được sử dụng.',
+    'Videoya altyazı da göm':'Đốt phụ đề vào video','Arka plan müziğini koru':'Giữ nhạc nền',
+    'Medya bekleniyor':'Đang chờ tệp...','Altyazı Kapat':'Ẩn phụ đề',
+    'Ara...':'Tìm kiếm...','İle değiştir...':'Thay thế bằng...','Proje notları...':'Ghi chú dự án...'
   },
 };
 
@@ -4064,6 +4245,37 @@ function uiDilDegistir(dil) {
   const btnPro = document.getElementById('btn_pro');
   if (btnSihirli) btnSihirli.innerHTML = sozluk['Magic'];
   if (btnPro) btnPro.innerHTML = sozluk['Pro'];
+  // Panel elementleri
+  const _t = function(id, key) { const el = document.getElementById(id); if (el && sozluk[key]) el.textContent = sozluk[key]; };
+  const _p = function(id, key) { const el = document.getElementById(id); if (el && sozluk[key]) el.placeholder = sozluk[key]; };
+  _t('empty_state_txt',    'Medya yükle başlat');
+  _t('lbl_ses_aktoru',     'Ses Aktörü');
+  _t('lbl_fonksiyonlar',   'Fonksiyonlar');
+  _t('lbl_dosyalarim',     'Dosyalarım');
+  _t('lbl_ara_degistir',   'Ara & Değiştir');
+  _t('btn_degistir',       'Değiştir');
+  _t('btn_degistir_hepsi', 'Tümü');
+  _t('lbl_format',         'Format');
+  _t('lbl_notlar',         'Notlar');
+  _t('lbl_indir',          'İndir');
+  _t('lbl_ses_mikseri',    'Ses Mikseri');
+  _t('lbl_konusmaci_sesi', 'Konuşmacı Sesi');
+  _t('lbl_arka_plan',      'Arka Plan');
+  _t('lbl_ai_dublaj',      'AI Dublaj');
+  _t('lbl_duygu_kontrolu', 'Duygu Kontrolü');
+  _t('lbl_istege_bagli',   '(isteğe bağlı)');
+  _t('lbl_duygu',          'Duygu');
+  _t('lbl_kararlilik',     'Kararlılık');
+  _t('lbl_duygu_tip',      'duygu_tip');
+  _t('lbl_dub_altyazi',    'Videoya altyazı da göm');
+  _t('lbl_bg_muzik',       'Arka plan müziğini koru');
+  _t('lbl_medya_bekliyor', 'Medya bekleniyor');
+  _p('fn_ara',             'Ara...');
+  _p('fn_degistir',        'İle değiştir...');
+  _p('genel_not',          'Proje notları...');
+  // Altyazı toggle butonu
+  const altBtn = document.getElementById('altyazi_toggle_btn');
+  if (altBtn) altBtn.innerHTML = '<i class="fa-solid fa-closed-captioning"></i> ' + sozluk['Altyazı Kapat'];
   toast(sozluk.flag + ' ' + sozluk.ad);
 }
 
