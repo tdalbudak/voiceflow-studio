@@ -4626,8 +4626,8 @@ async def ai_asistan(sorgu: str = Form(...), dil: str = Form("en")):
     # Model fallback listesi — hata/quota aşılınca sıradakini dene
     GEMINI_MODELLER = [
         "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
         "gemini-1.5-flash",
-        "gemini-1.5-flash-8b",
     ]
     son_hata = ""
     for model in GEMINI_MODELLER:
